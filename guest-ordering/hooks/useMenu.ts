@@ -47,6 +47,10 @@ async function mergedBeverages(): Promise<Beverage[]> {
         isFeatured:  liveBev.isFeatured,
         isAlcoholic: liveBev.isAlcoholic,
         prepMinutes: liveBev.prepMinutes,
+        // Supabase is the source of truth once the admin has set these —
+        // fall back to the static seed content only if Supabase has none.
+        emoji:       liveBev.emoji || staticBev.emoji,
+        description: liveBev.description || staticBev.description,
       };
     }
     // No static content yet — show with what Supabase has, gracefully
@@ -54,10 +58,10 @@ async function mergedBeverages(): Promise<Beverage[]> {
       id:           liveBev.id,
       name:         liveBev.name,
       tagline:      "",
-      description:  "",
+      description:  liveBev.description,
       ingredients:  [],
       category:     liveBev.category as Beverage["category"],
-      emoji:        "🍸",
+      emoji:        liveBev.emoji || "🍸",
       price:        liveBev.price,
       isAlcoholic:  liveBev.isAlcoholic,
       isAvailable:  liveBev.isAvailable,

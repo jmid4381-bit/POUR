@@ -55,6 +55,8 @@ export interface AdminBeverage {
   isAlcoholic: boolean;
   prepMinutes: number;
   category:    string;
+  emoji:       string;
+  description: string;
 }
 
 export interface AdminLocation {
@@ -204,7 +206,7 @@ export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
   try {
     const { data, error } = await supabase
       .from("beverages")
-      .select("id, name, price, is_available, is_featured, is_alcoholic, prep_minutes, category");
+      .select("id, name, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description");
 
     if (error) throw error;
     if (!data || data.length === 0) return null;
@@ -218,6 +220,8 @@ export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
       isAlcoholic: b.is_alcoholic,
       prepMinutes: b.prep_minutes,
       category:    b.category,
+      emoji:       b.emoji ?? "",
+      description: b.description ?? "",
     }));
 
   } catch {
