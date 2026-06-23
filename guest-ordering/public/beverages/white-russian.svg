@@ -6,28 +6,24 @@
 <stop offset="0" stop-color="#0a0e1a"/>
 <stop offset="1" stop-color="#040507"/>
 </linearGradient>
-<radialGradient id="glowRed" cx="0.1" cy="0.1" r="0.4">
-<stop offset="0" stop-color="#c0273a" stop-opacity="0.4"/>
-<stop offset="1" stop-color="#c0273a" stop-opacity="0"/>
-</radialGradient>
-<radialGradient id="glowBlue" cx="0.92" cy="0.92" r="0.42">
-<stop offset="0" stop-color="#2451d6" stop-opacity="0.38"/>
-<stop offset="1" stop-color="#2451d6" stop-opacity="0"/>
-</radialGradient>
+<linearGradient id="patrioticBand" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#c0273a" stop-opacity="0.6"/>
+<stop offset="0.5" stop-color="#fff4d6" stop-opacity="0.12"/>
+<stop offset="1" stop-color="#2451d6" stop-opacity="0.55"/>
+</linearGradient>
 <linearGradient id="frameGrad" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#c0273a"/>
 <stop offset="0.5" stop-color="#f4f4f4"/>
 <stop offset="1" stop-color="#2451d6"/>
 </linearGradient>
 <radialGradient id="spot" cx="0.5" cy="0.45" r="0.62">
-<stop offset="0" stop-color="#fff4d6" stop-opacity="0.6"/>
-<stop offset="0.35" stop-color="#ffdfa3" stop-opacity="0.3"/>
+<stop offset="0" stop-color="#fff4d6" stop-opacity="0.65"/>
+<stop offset="0.35" stop-color="#ffdfa3" stop-opacity="0.32"/>
 <stop offset="0.7" stop-color="#ffdfa3" stop-opacity="0.08"/>
 <stop offset="1" stop-color="#ffdfa3" stop-opacity="0"/>
 </radialGradient></defs>
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
-<rect x="0" y="0" width="680" height="680" fill="url(#glowRed)"/>
-<rect x="0" y="0" width="680" height="680" fill="url(#glowBlue)"/>
+<rect x="0" y="140" width="680" height="400" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>
 <path d="M270 230 L410 230 L398 400 Q398 416 382 416 L298 416 Q282 416 282 400 Z" fill="#160f08" opacity="0.5"/>
 <path d="M278 260 L402 260 L394 398 Q394 410 380 410 L300 410 Q286 410 286 398 Z" fill="#d8c39a"/>

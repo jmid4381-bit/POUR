@@ -11,40 +11,50 @@ const DEFS = `
 <stop offset="0" stop-color="#0a0e1a"/>
 <stop offset="1" stop-color="#040507"/>
 </linearGradient>
-<radialGradient id="glowRed" cx="0.1" cy="0.1" r="0.4">
-<stop offset="0" stop-color="#c0273a" stop-opacity="0.4"/>
-<stop offset="1" stop-color="#c0273a" stop-opacity="0"/>
-</radialGradient>
-<radialGradient id="glowBlue" cx="0.92" cy="0.92" r="0.42">
-<stop offset="0" stop-color="#2451d6" stop-opacity="0.38"/>
-<stop offset="1" stop-color="#2451d6" stop-opacity="0"/>
-</radialGradient>
+<linearGradient id="patrioticBand" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#c0273a" stop-opacity="0.6"/>
+<stop offset="0.5" stop-color="#fff4d6" stop-opacity="0.12"/>
+<stop offset="1" stop-color="#2451d6" stop-opacity="0.55"/>
+</linearGradient>
 <linearGradient id="frameGrad" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#c0273a"/>
 <stop offset="0.5" stop-color="#f4f4f4"/>
 <stop offset="1" stop-color="#2451d6"/>
 </linearGradient>
 <radialGradient id="spot" cx="0.5" cy="0.45" r="0.62">
-<stop offset="0" stop-color="#fff4d6" stop-opacity="0.6"/>
-<stop offset="0.35" stop-color="#ffdfa3" stop-opacity="0.3"/>
+<stop offset="0" stop-color="#fff4d6" stop-opacity="0.65"/>
+<stop offset="0.35" stop-color="#ffdfa3" stop-opacity="0.32"/>
 <stop offset="0.7" stop-color="#ffdfa3" stop-opacity="0.08"/>
 <stop offset="1" stop-color="#ffdfa3" stop-opacity="0"/>
 </radialGradient>`;
 
+// The patriotic band and spotlight both live in the vertical band that's
+// always visible regardless of crop aspect (object-fit: cover on the wide,
+// short card/modal/featured-strip containers only ever shows a horizontal
+// slice through the vertical center — corner accents and an edge border
+// get cropped away entirely, which is why earlier versions showed no color
+// at all). Red on the left, blue on the right, full width, centered on the
+// drink — guaranteed visible in every crop.
 const BACKGROUND = `
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
-<rect x="0" y="0" width="680" height="680" fill="url(#glowRed)"/>
-<rect x="0" y="0" width="680" height="680" fill="url(#glowBlue)"/>
+<rect x="0" y="140" width="680" height="400" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>`;
 
 const FRAME = `
 <rect x="40" y="40" width="600" height="600" rx="18" fill="none" stroke="url(#frameGrad)" stroke-width="5"/>
 <rect x="52" y="52" width="576" height="576" rx="14" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>`;
 
+function escapeXml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function card(title, desc, inner) {
   return `<svg width="100%" height="100%" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg" role="img">
-<title>${title}</title>
-<desc>${desc}</desc>
+<title>${escapeXml(title)}</title>
+<desc>${escapeXml(desc)}</desc>
 <defs>${DEFS}</defs>${BACKGROUND}
 ${inner}
 ${FRAME}
