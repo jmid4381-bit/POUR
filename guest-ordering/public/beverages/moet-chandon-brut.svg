@@ -23,9 +23,9 @@
 <stop offset="1" stop-color="#ffdfa3" stop-opacity="0"/>
 </radialGradient></defs>
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
-<rect x="0" y="140" width="680" height="400" fill="url(#patrioticBand)"/>
+<rect x="0" y="0" width="680" height="680" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>
-<path d="M312 150 C312 230 296 250 296 300 C296 330 320 345 340 345 C360 345 384 330 384 300 C384 250 368 230 368 150 Z" fill="#120d05" opacity="0.85"/>
+<g transform="translate(-192.38,-114.88) scale(1.5658)"><path d="M312 150 C312 230 296 250 296 300 C296 330 320 345 340 345 C360 345 384 330 384 300 C384 250 368 230 368 150 Z" fill="#120d05" opacity="0.85"/>
 <path d="M318 156 C318 230 305 248 305 298 C305 322 322 336 340 336 C358 336 375 322 375 298 C375 248 362 230 362 156 Z" fill="#e9c25a"/>
 <circle cx="332" cy="290" r="2.2" fill="#fff6da" opacity="0.8"/>
 <circle cx="346" cy="260" r="1.8" fill="#fff6da" opacity="0.7"/>
@@ -34,8 +34,8 @@
 <circle cx="330" cy="245" r="1.4" fill="#fff6da" opacity="0.6"/>
 <ellipse cx="335" cy="180" rx="14" ry="22" fill="#ffffff" opacity="0.08"/>
 <rect x="336" y="345" width="8" height="70" fill="#1c1408"/>
-<ellipse cx="340" cy="420" rx="56" ry="11" fill="#15100a"/>
+<ellipse cx="340" cy="420" rx="56" ry="11" fill="#15100a"/></g>
 
-<rect x="40" y="40" width="600" height="600" rx="18" fill="none" stroke="url(#frameGrad)" stroke-width="5"/>
-<rect x="52" y="52" width="576" height="576" rx="14" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
+<rect x="4" y="4" width="672" height="672" rx="6" fill="none" stroke="url(#frameGrad)" stroke-width="8"/>
+<rect x="16" y="16" width="648" height="648" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
 </svg>

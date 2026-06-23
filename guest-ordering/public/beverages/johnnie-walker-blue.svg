@@ -23,14 +23,14 @@
 <stop offset="1" stop-color="#ffdfa3" stop-opacity="0"/>
 </radialGradient></defs>
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
-<rect x="0" y="140" width="680" height="400" fill="url(#patrioticBand)"/>
+<rect x="0" y="0" width="680" height="680" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>
-<path d="M270 230 L410 230 L398 400 Q398 416 382 416 L298 416 Q282 416 282 400 Z" fill="#160f08" opacity="0.5"/>
+<g transform="translate(-435.13,-388.39) scale(2.2798)"><path d="M270 230 L410 230 L398 400 Q398 416 382 416 L298 416 Q282 416 282 400 Z" fill="#160f08" opacity="0.5"/>
 <path d="M278 260 L402 260 L394 398 Q394 410 380 410 L300 410 Q286 410 286 398 Z" fill="#a5731f"/>
 <rect x="308" y="300" width="16" height="16" rx="2" fill="#ffffff" opacity="0.22"/>
 <rect x="326" y="310" width="14" height="14" rx="2" fill="#ffffff" opacity="0.18"/>
-<ellipse cx="340" cy="232" rx="70" ry="9" fill="#ffffff" opacity="0.06"/>
+<ellipse cx="340" cy="232" rx="70" ry="9" fill="#ffffff" opacity="0.06"/></g>
 
-<rect x="40" y="40" width="600" height="600" rx="18" fill="none" stroke="url(#frameGrad)" stroke-width="5"/>
-<rect x="52" y="52" width="576" height="576" rx="14" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
+<rect x="4" y="4" width="672" height="672" rx="6" fill="none" stroke="url(#frameGrad)" stroke-width="8"/>
+<rect x="16" y="16" width="648" height="648" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
 </svg>

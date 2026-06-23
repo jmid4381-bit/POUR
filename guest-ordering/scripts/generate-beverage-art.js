@@ -28,21 +28,20 @@ const DEFS = `
 <stop offset="1" stop-color="#ffdfa3" stop-opacity="0"/>
 </radialGradient>`;
 
-// The patriotic band and spotlight both live in the vertical band that's
-// always visible regardless of crop aspect (object-fit: cover on the wide,
-// short card/modal/featured-strip containers only ever shows a horizontal
-// slice through the vertical center — corner accents and an edge border
-// get cropped away entirely, which is why earlier versions showed no color
-// at all). Red on the left, blue on the right, full width, centered on the
-// drink — guaranteed visible in every crop.
+// The red-left/blue-right gradient covers the entire canvas (not just a
+// center band) so there's no plain dark strip anywhere, in the full image
+// or in any cropped view — object-fit: cover on the wide, short
+// card/modal/featured-strip containers only ever shows a horizontal slice
+// through the vertical center, so full coverage guarantees color shows up
+// regardless of crop aspect.
 const BACKGROUND = `
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
-<rect x="0" y="140" width="680" height="400" fill="url(#patrioticBand)"/>
+<rect x="0" y="0" width="680" height="680" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>`;
 
 const FRAME = `
-<rect x="40" y="40" width="600" height="600" rx="18" fill="none" stroke="url(#frameGrad)" stroke-width="5"/>
-<rect x="52" y="52" width="576" height="576" rx="14" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>`;
+<rect x="4" y="4" width="672" height="672" rx="6" fill="none" stroke="url(#frameGrad)" stroke-width="8"/>
+<rect x="16" y="16" width="648" height="648" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>`;
 
 function escapeXml(str) {
   return str
@@ -87,66 +86,93 @@ function bubbles(cx, cy, color) {
 <circle cx="${cx-10}" cy="${cy-15}" r="1.4" fill="${color}" opacity="0.6"/>`;
 }
 
+// ─── Composition normalization ─────────────────────────────────────────────
+//
+// Each shape below is hand-drawn at its own natural size/position, which
+// varied wildly (some topped out near y=95, others near y=250) — that's
+// what let Diet Coke, Garden Lemonade, and San Pellegrino run off the top
+// of the frame, and made every drink a different size relative to its card.
+// recenter() fixes both at once: every shape gets uniformly rescaled so its
+// own bounding box (declared per shape as [yMin, yMax]) maps into the same
+// target band, centered on the canvas — so every drink ends up the same
+// height fraction of the frame, with consistent breathing room above and
+// below, regardless of its native size.
+
+const TARGET_TOP = 120, TARGET_BOTTOM = 560; // 440px tall = ~65% of the 680 canvas
+const CENTER_X = 340; // every shape below is hand-centered on this x already
+
+function recenter(markup, yMin, yMax) {
+  const h0 = yMax - yMin;
+  const yc0 = (yMin + yMax) / 2;
+  const s = (TARGET_BOTTOM - TARGET_TOP) / h0;
+  const dy = (TARGET_TOP + TARGET_BOTTOM) / 2 - s * yc0;
+  const dx = CENTER_X * (1 - s);
+  return `<g transform="translate(${dx.toFixed(2)},${dy.toFixed(2)}) scale(${s.toFixed(4)})">${markup}</g>`;
+}
+
 // ─── Glass / vessel shapes ─────────────────────────────────────────────────
+// Each return value is wrapped in recenter(markup, yMin, yMax) using that
+// shape's own natural bounding box — see comment above.
 
 function martiniGlass(liquid, garnishSvg) {
-  return `<path d="M255 255 L425 255 L348 415 L332 415 Z" fill="#160b06" opacity="0.92"/>
+  return recenter(`<path d="M255 255 L425 255 L348 415 L332 415 Z" fill="#160b06" opacity="0.92"/>
 <path d="M268 262 L412 262 L344 400 L336 400 Z" fill="${liquid}"/>
 <ellipse cx="340" cy="270" rx="72" ry="10" fill="${liquid}" opacity="0.55"/>
 <rect x="336" y="415" width="8" height="62" fill="#26160c"/>
 <ellipse cx="340" cy="480" rx="58" ry="11" fill="#1a0f08"/>
-${garnishSvg ? garnishSvg : ""}`;
+${garnishSvg ? garnishSvg : ""}`, 244, 491);
 }
 
 function champagneFlute(liquid) {
-  return `<path d="M312 150 C312 230 296 250 296 300 C296 330 320 345 340 345 C360 345 384 330 384 300 C384 250 368 230 368 150 Z" fill="#120d05" opacity="0.85"/>
+  return recenter(`<path d="M312 150 C312 230 296 250 296 300 C296 330 320 345 340 345 C360 345 384 330 384 300 C384 250 368 230 368 150 Z" fill="#120d05" opacity="0.85"/>
 <path d="M318 156 C318 230 305 248 305 298 C305 322 322 336 340 336 C358 336 375 322 375 298 C375 248 362 230 362 156 Z" fill="${liquid}"/>
 ${bubbles(340, 260, "#fff6da")}
 <ellipse cx="335" cy="180" rx="14" ry="22" fill="#ffffff" opacity="0.08"/>
 <rect x="336" y="345" width="8" height="70" fill="#1c1408"/>
-<ellipse cx="340" cy="420" rx="56" ry="11" fill="#15100a"/>`;
+<ellipse cx="340" cy="420" rx="56" ry="11" fill="#15100a"/>`, 150, 431);
 }
 
 function rocksGlass(liquid, withIce) {
-  return `<path d="M270 230 L410 230 L398 400 Q398 416 382 416 L298 416 Q282 416 282 400 Z" fill="#160f08" opacity="0.5"/>
+  return recenter(`<path d="M270 230 L410 230 L398 400 Q398 416 382 416 L298 416 Q282 416 282 400 Z" fill="#160f08" opacity="0.5"/>
 <path d="M278 260 L402 260 L394 398 Q394 410 380 410 L300 410 Q286 410 286 398 Z" fill="${liquid}"/>
 ${withIce ? iceCubes(322, 300) : ""}
-<ellipse cx="340" cy="232" rx="70" ry="9" fill="#ffffff" opacity="0.06"/>`;
+<ellipse cx="340" cy="232" rx="70" ry="9" fill="#ffffff" opacity="0.06"/>`, 223, 416);
 }
 
 function wineGlass(liquid) {
-  return `<path d="M300 180 C300 230 280 250 280 285 C280 320 308 345 340 345 C372 345 400 320 400 285 C400 250 380 230 380 180 Z" fill="#140d08" opacity="0.55"/>
+  return recenter(`<path d="M300 180 C300 230 280 250 280 285 C280 320 308 345 340 345 C372 345 400 320 400 285 C400 250 380 230 380 180 Z" fill="#140d08" opacity="0.55"/>
 <path d="M300 250 C302 275 312 300 340 320 C368 300 378 275 380 250 C380 220 364 200 340 195 C316 200 300 220 300 250 Z" fill="${liquid}"/>
 <rect x="336" y="345" width="8" height="80" fill="#1c150c"/>
-<ellipse cx="340" cy="430" rx="60" ry="11" fill="#15100a"/>`;
+<ellipse cx="340" cy="430" rx="60" ry="11" fill="#15100a"/>`, 180, 441);
 }
 
-function beerBottle(liquid, labelColor) {
-  return `<rect x="300" y="160" width="80" height="270" rx="16" fill="#0c1410" opacity="0.5"/>
+function beerBottle(liquid, labelColor, garnishSvg) {
+  return recenter(`<rect x="300" y="160" width="80" height="270" rx="16" fill="#0c1410" opacity="0.5"/>
 <rect x="308" y="200" width="64" height="220" rx="14" fill="${liquid}"/>
 <rect x="318" y="120" width="44" height="50" fill="#0c1410" opacity="0.6"/>
 <rect x="314" y="105" width="52" height="22" rx="6" fill="#caa84a"/>
 <rect x="300" y="290" width="80" height="60" fill="${labelColor}"/>
 <circle cx="330" cy="270" r="2.4" fill="#fff" opacity="0.5"/>
-<circle cx="352" cy="240" r="2" fill="#fff" opacity="0.45"/>`;
+<circle cx="352" cy="240" r="2" fill="#fff" opacity="0.45"/>
+${garnishSvg ? garnishSvg : ""}`, 105, 430);
 }
 
 function shotGlass(liquid) {
-  return `<path d="M296 250 L384 250 L372 380 Q372 392 360 392 L320 392 Q308 392 308 380 Z" fill="#160f08" opacity="0.5"/>
+  return recenter(`<path d="M296 250 L384 250 L372 380 Q372 392 360 392 L320 392 Q308 392 308 380 Z" fill="#160f08" opacity="0.5"/>
 <path d="M304 268 L376 268 L366 378 Q366 386 356 386 L324 386 Q314 386 314 378 Z" fill="${liquid}"/>
-<ellipse cx="340" cy="251" rx="44" ry="7" fill="#ffffff" opacity="0.07"/>`;
+<ellipse cx="340" cy="251" rx="44" ry="7" fill="#ffffff" opacity="0.07"/>`, 244, 392);
 }
 
 function highballGlass(liquid, wedgeColor) {
-  return `<rect x="290" y="200" width="100" height="220" rx="10" fill="#160f08" opacity="0.4"/>
+  return recenter(`<rect x="290" y="200" width="100" height="220" rx="10" fill="#160f08" opacity="0.4"/>
 <rect x="298" y="230" width="84" height="182" rx="8" fill="${liquid}"/>
 ${iceCubes(316, 260)}
 <path d="M375 220 q16 4 16 22 q0 16 -16 14" fill="${wedgeColor}" opacity="0.9"/>
-<ellipse cx="340" cy="201" rx="50" ry="8" fill="#ffffff" opacity="0.07"/>`;
+<ellipse cx="340" cy="201" rx="50" ry="8" fill="#ffffff" opacity="0.07"/>`, 193, 420);
 }
 
 function sodaCan(labelText) {
-  return `<rect x="288" y="170" width="104" height="250" rx="14" fill="#a9aeb2"/>
+  return recenter(`<rect x="288" y="170" width="104" height="250" rx="14" fill="#a9aeb2"/>
 <rect x="288" y="170" width="104" height="46" rx="14" fill="#0a0a0a" opacity="0.85"/>
 <rect x="288" y="270" width="104" height="58" fill="#c0273a"/>
 <text x="340" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="20" fill="#ffffff" letter-spacing="1">${labelText}</text>
@@ -154,7 +180,7 @@ function sodaCan(labelText) {
 <circle cx="320" cy="200" r="3" fill="#ffffff" opacity="0.55"/>
 <circle cx="365" cy="230" r="2.4" fill="#ffffff" opacity="0.5"/>
 <circle cx="305" cy="350" r="2.6" fill="#ffffff" opacity="0.5"/>
-<circle cx="372" cy="380" r="2.2" fill="#ffffff" opacity="0.45"/>`;
+<circle cx="372" cy="380" r="2.2" fill="#ffffff" opacity="0.45"/>`, 161, 420);
 }
 
 function limeOnNeck(cx, cy) {
@@ -163,11 +189,11 @@ function limeOnNeck(cx, cy) {
 }
 
 function sparklingBottle(liquid) {
-  return `<rect x="305" y="150" width="70" height="270" rx="18" fill="#0a1418" opacity="0.45"/>
+  return recenter(`<rect x="305" y="150" width="70" height="270" rx="18" fill="#0a1418" opacity="0.45"/>
 <rect x="313" y="190" width="54" height="222" rx="16" fill="${liquid}"/>
 ${bubbles(340, 280, "#eaf6ff")}
 <rect x="322" y="118" width="36" height="40" fill="#0a1418" opacity="0.55"/>
-<rect x="316" y="104" width="48" height="20" rx="5" fill="#9fb8c4"/>`;
+<rect x="316" y="104" width="48" height="20" rx="5" fill="#9fb8c4"/>`, 104, 420);
 }
 
 // ─── Beverage roster (the 22 currently on the menu) ────────────────────────
@@ -220,7 +246,7 @@ const beverages = [
   { id: "bev-22", file: "spicy-martini",         name: "Spicy Martini",
     inner: martiniGlass("#9fb83a", citrusWheel(380, 268, "#7a9c2a")) },
   { id: "bev-MQPY4GLG-OLT2", file: "corona",      name: "Corona",
-    inner: beerBottle("#e3c878", "#e9c25a") + limeOnNeck(372, 230) },
+    inner: beerBottle("#e3c878", "#e9c25a", limeOnNeck(372, 230)) },
   { id: "bev-MQPY62Q2-XKIS", file: "diet-coke",   name: "Diet Coke",
     inner: sodaCan("DIET") },
 ];

@@ -23,9 +23,9 @@
 <stop offset="1" stop-color="#ffdfa3" stop-opacity="0"/>
 </radialGradient></defs>
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
-<rect x="0" y="140" width="680" height="400" fill="url(#patrioticBand)"/>
+<rect x="0" y="0" width="680" height="680" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>
-<rect x="288" y="170" width="104" height="250" rx="14" fill="#a9aeb2"/>
+<g transform="translate(-237.61,-153.51) scale(1.6988)"><rect x="288" y="170" width="104" height="250" rx="14" fill="#a9aeb2"/>
 <rect x="288" y="170" width="104" height="46" rx="14" fill="#0a0a0a" opacity="0.85"/>
 <rect x="288" y="270" width="104" height="58" fill="#c0273a"/>
 <text x="340" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="20" fill="#ffffff" letter-spacing="1">DIET</text>
@@ -33,8 +33,8 @@
 <circle cx="320" cy="200" r="3" fill="#ffffff" opacity="0.55"/>
 <circle cx="365" cy="230" r="2.4" fill="#ffffff" opacity="0.5"/>
 <circle cx="305" cy="350" r="2.6" fill="#ffffff" opacity="0.5"/>
-<circle cx="372" cy="380" r="2.2" fill="#ffffff" opacity="0.45"/>
+<circle cx="372" cy="380" r="2.2" fill="#ffffff" opacity="0.45"/></g>
 
-<rect x="40" y="40" width="600" height="600" rx="18" fill="none" stroke="url(#frameGrad)" stroke-width="5"/>
-<rect x="52" y="52" width="576" height="576" rx="14" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
+<rect x="4" y="4" width="672" height="672" rx="6" fill="none" stroke="url(#frameGrad)" stroke-width="8"/>
+<rect x="16" y="16" width="648" height="648" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
 </svg>
