@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Fonts — aligned with staff dashboard and guest ordering */
+  --font-syne:       "Syne",           Georgia,    serif;
+  --font-outfit:     "Outfit",         system-ui,  sans-serif;
+  --font-jetbrains:  "JetBrains Mono", monospace;
+
+  /* Legacy aliases — keeps any remaining var() references working */
+  --font-playfair:   var(--font-syne);
+  --font-dm-sans:    var(--font-outfit);
+}
+
+html  { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+
+::-webkit-scrollbar        { width: 3px; height: 3px; }
+::-webkit-scrollbar-track  { background: #030508; }
+::-webkit-scrollbar-thumb  { background: #1c2f44; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c98e08; }
+
+::selection { background: rgba(201,142,8,0.22); color: white; }
+
+*:focus-visible       { outline: 2px solid #e8ac0c; outline-offset: 3px; border-radius: 8px; }
+*:focus:not(:focus-visible) { outline: none; }
+
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  select, textarea, input { font-size: 16px; }
+}
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Mobile nav tab scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@layer components {
+  .field-label {
+    @apply block text-[11px] font-mono text-ink-400 uppercase tracking-[0.15em] mb-1.5;
+  }
+  .field-input {
+    @apply w-full bg-raised/80 border border-edge rounded-xl px-3.5 py-2.5
+           text-sm text-ink-50 placeholder-ink-600 font-body
+           focus:outline-none focus:border-gold-500/50 transition-colors;
+  }
+}

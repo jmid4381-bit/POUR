@@ -1,0 +1,276 @@
+"use client";
+
+/**
+ * OrderConfirmation — Fix 3
+ *
+ * The progress tracker now advances in real time based on elapsed time
+ * vs estimated wait. Steps unlock at natural milestones:
+ *
+ *  Received   → immediately (0%)
+ *  Preparing  → after 8% of estimated time (~30s on an 8min order)
+ *  On the way → after 65% of estimated time
+ *  Delivered  → after 95% of estimated time
+ *
+ * Also polls the order queue every 15s for real status updates.
+ * When a real backend is connected, replace readOrderStatus() with
+ * a websocket subscription and the UI updates automatically.
+ */
+
+import React, { useEffect, useState } from "react";
+import { CheckCircle, Clock, MapPin, RotateCcw, UserRound } from "lucide-react";
+import { cn, fmtUSD, fmtTime } from "@/lib/utils";
+import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/lib/queue";
+import type { PlacedOrder } from "@/lib/data";
+
+interface OrderConfirmationProps {
+  order:       PlacedOrder;
+  onOrderMore: () => void;
+}
+
+// Step unlocks at this fraction of estimatedMinutes elapsed
+const STEP_THRESHOLDS = [0, 0.08, 0.65, 0.95];
+
+const STEPS = [
+  { label: "Received",   ariaLabel: "Order received by the bar" },
+  { label: "Preparing",  ariaLabel: "Drinks are being prepared"  },
+  { label: "On the way", ariaLabel: "Drinks are on the way to your seat" },
+  { label: "Delivered",  ariaLabel: "Drinks delivered to your seat" },
+];
+
+// Map real staff-dashboard statuses to our step index
+function statusToStep(status: QueuedOrderStatus): number {
+  switch (status) {
+    case "pending":   return 0;
+    case "accepted":
+    case "preparing": return 1;
+    case "ready":     return 2;
+    case "delivered": return 3;
+    default:          return 0;
+  }
+}
+
+export function OrderConfirmation({ order, onOrderMore }: OrderConfirmationProps) {
+  const total = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+
+  // ── Live step tracking ───────────────────────────────────────────────────
+  const [currentStep, setCurrentStep] = useState(0);
+  const [elapsedSecs, setElapsedSecs] = useState(0);
+  const [staffName,   setStaffName]   = useState<string | null>(null);
+
+  // Local clock tick — pure math, no network — ticks every second so the
+  // visible step advances at the same real-world instant regardless of when
+  // this screen happened to mount (a 10s-only tick would drift out of phase
+  // with other views of the same order by up to 10s).
+  useEffect(() => {
+    const placedAt = new Date(order.placedAt).getTime();
+
+    const tick = () => {
+      const elapsed  = (Date.now() - placedAt) / 1000;
+      const fraction = elapsed / (order.estimatedMinutes * 60);
+      setElapsedSecs(Math.floor(elapsed));
+
+      let timeStep = 0;
+      for (let i = STEP_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (fraction >= STEP_THRESHOLDS[i]) { timeStep = i; break; }
+      }
+      setCurrentStep(prev => Math.max(prev, timeStep));
+    };
+
+    tick();
+    const id = setInterval(tick, 1_000);
+    return () => clearInterval(id);
+  }, [order.placedAt, order.estimatedMinutes]);
+
+  // Network poll — separate, slower cadence; refines currentStep upward
+  // whenever real staff status moves ahead of the time-based estimate,
+  // and picks up the assigned staff member's name once one accepts
+  useEffect(() => {
+    const poll = async () => {
+      const [realStatus, name] = await Promise.all([
+        readOrderStatus(order.id),
+        readOrderStaffName(order.id),
+      ]);
+      const staffStep = statusToStep(realStatus);
+      setCurrentStep(prev => Math.max(prev, staffStep));
+      if (name) setStaffName(name);
+    };
+
+    poll();
+    const id = setInterval(poll, 5_000);
+    return () => clearInterval(id);
+  }, [order.id]);
+
+  const isDelivered     = currentStep >= 3;
+  const remainingSecs   = Math.max(0, order.estimatedMinutes * 60 - elapsedSecs);
+  const remainingMins   = Math.ceil(remainingSecs / 60);
+
+  return (
+    <div className="min-h-screen bg-base flex flex-col items-center justify-start pt-12 pb-32 px-4 animate-fade-in">
+      <div className="fixed inset-0 bg-hero-glow pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-sm space-y-6">
+
+        {/* Success icon */}
+        <div className="text-center">
+          <div className={cn(
+            "w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center shadow-btn-felt animate-scale-in",
+            isDelivered ? "bg-gold-grad" : "bg-felt-grad",
+          )}>
+            <CheckCircle size={36} className="text-white" strokeWidth={1.5} />
+          </div>
+          <h2 className="font-display text-4xl font-semibold text-white mb-2 animate-fade-up">
+            {isDelivered ? "Enjoy your drinks!" : "Order Placed!"}
+          </h2>
+          <p className="text-mist-300 text-sm font-body animate-fade-up" style={{ animationDelay:"0.05s" }}>
+            {isDelivered
+              ? "Your order has been delivered. Cheers!"
+              : "Your drinks are being prepared right now."}
+          </p>
+        </div>
+
+        {/* Order card */}
+        <div className="bg-card border border-edge rounded-2xl overflow-hidden shadow-card animate-fade-up" style={{ animationDelay:"0.1s" }}>
+          <div className="h-[2px] bg-gold-grad" />
+          <div className="p-5 space-y-4">
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest">Order</p>
+                <p className="font-mono text-sm text-white font-semibold">{order.id}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest">Placed</p>
+                <p className="font-mono text-sm text-mist-200">{fmtTime(order.placedAt)}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-lift/60 border border-edge rounded-xl px-3 py-2.5">
+              <MapPin size={14} className="text-felt-500 flex-shrink-0" />
+              <p className="text-white text-sm font-body font-medium">{order.locationName}</p>
+            </div>
+
+            <div className="space-y-2">
+              {order.items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{item.beverage.emoji}</span>
+                    <span className="text-mist-200 font-body">
+                      {item.beverage.name}
+                      {item.quantity > 1 && <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>}
+                    </span>
+                  </div>
+                  <span className="font-mono text-mist-300">
+                    {fmtUSD(item.beverage.price * item.quantity)}
+                  </span>
+                </div>
+              ))}
+
+              {order.items.some(i => i.note) && (
+                <div className="mt-2 px-3 py-2 bg-amber-400/5 border border-amber-400/15 rounded-xl">
+                  {order.items.filter(i => i.note).map((item, i) => (
+                    <p key={i} className="text-xs text-amber-300/80 font-body italic">
+                      {item.beverage.name}: "{item.note}"
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between pt-3 border-t border-edge">
+              <span className="text-sm text-mist-400 font-body">Total</span>
+              <span className="font-mono font-bold text-white">{fmtUSD(total)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ETA card — updates live */}
+        {!isDelivered && (
+          <div className="bg-card border border-felt-500/20 rounded-2xl p-5 flex items-center gap-4 animate-fade-up" style={{ animationDelay:"0.15s" }}>
+            <div className="w-12 h-12 bg-felt-grad rounded-xl flex items-center justify-center shadow-btn-felt flex-shrink-0">
+              <Clock size={20} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-body font-semibold" aria-live="polite">
+                {remainingMins <= 1 ? "Almost there!" : `~${remainingMins} minute${remainingMins !== 1 ? "s" : ""} remaining`}
+              </p>
+              <p className="text-felt-400 text-xs font-body mt-0.5">Estimated delivery to your seat</p>
+            </div>
+          </div>
+        )}
+
+        {/* Bartender assignment — only shown once someone has actually claimed it */}
+        {staffName && !isDelivered && (
+          <div className="bg-card border border-gold-500/20 rounded-2xl p-5 flex items-center gap-4 animate-fade-up" style={{ animationDelay:"0.17s" }}>
+            <div className="w-12 h-12 bg-gold-grad rounded-xl flex items-center justify-center shadow-btn-gold flex-shrink-0">
+              <UserRound size={20} className="text-void" />
+            </div>
+            <div>
+              <p className="text-white font-body font-semibold" aria-live="polite">
+                {currentStep >= 2 ? `${staffName} is bringing your order` : `${staffName} is preparing your order`}
+              </p>
+              <p className="text-gold-400/80 text-xs font-body mt-0.5">Your dedicated server</p>
+            </div>
+          </div>
+        )}
+
+        {/* Live progress tracker — advances automatically */}
+        <div
+          className="bg-card border border-edge rounded-2xl p-5 animate-fade-up"
+          style={{ animationDelay:"0.2s" }}
+          role="status"
+          aria-label={`Order status: ${STEPS[currentStep].ariaLabel}`}
+          aria-live="polite"
+        >
+          <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest mb-4">Order Progress</p>
+          <div className="flex items-center">
+            {STEPS.map((step, i) => {
+              const isDone   = i < currentStep;
+              const isActive = i === currentStep;
+              return (
+                <React.Fragment key={step.label}>
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                    <div className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500",
+                      isDone   ? "bg-felt-grad text-white shadow-btn-felt" :
+                      isActive ? "border-2 border-felt-500 text-felt-400 animate-pulse-dot" :
+                                 "bg-lift border border-edge text-mist-600",
+                    )}>
+                      {isDone ? "✓" : i + 1}
+                    </div>
+                    <span className={cn(
+                      "text-[9px] font-mono uppercase tracking-wide whitespace-nowrap",
+                      isDone || isActive ? "text-felt-400" : "text-mist-600",
+                    )}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className={cn(
+                      "flex-1 h-0.5 mx-1 mb-4 transition-colors duration-700",
+                      isDone ? "bg-felt-500/60" : "bg-edge",
+                    )} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Order more */}
+        <button
+          onClick={onOrderMore}
+          className="w-full py-4 rounded-2xl font-body font-bold text-base animate-fade-up bg-felt-grad text-white shadow-btn-felt hover:brightness-110 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+          style={{ animationDelay:"0.25s" }}
+        >
+          <RotateCcw size={16} />
+          Order More Drinks
+        </button>
+
+        <p className="text-center text-[11px] text-mist-600 font-body animate-fade-up" style={{ animationDelay:"0.3s" }}>
+          A server will bring your order directly to your seat.
+          <br />No need to wait at the bar.
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-syne:       "Syne",          Georgia,    serif;
+  --font-outfit:     "Outfit",        system-ui,  sans-serif;
+  --font-jetbrains:  "JetBrains Mono",monospace;
+}
+
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+
+::-webkit-scrollbar       { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: #030508; }
+::-webkit-scrollbar-thumb { background: #162030; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #10b981; }
+
+::selection { background: rgba(16,185,129,0.2); color: white; }
+
+*:focus-visible       { outline: 2px solid #10b981; outline-offset: 3px; border-radius: 8px; }
+*:focus:not(:focus-visible) { outline: none; }
+
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  select, textarea, input { font-size: 16px; }
+}
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+.pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+/* KanbanColumn new-order pulsing dot */
+@keyframes ping-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.5); }
+}
+.animate-ping-slow { animation: ping-slow 1.6s ease-in-out infinite; }

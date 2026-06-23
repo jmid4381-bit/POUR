@@ -1,0 +1,15 @@
+# local Node.js installation — not part of the project
+/node.exe
+/node_modules
+/npm
+/npm.cmd
+/npm.ps1
+/npx
+/npx.cmd
+/npx.ps1
+/nodevars.bat
+/install_tools.bat
+
+# build artifacts / local tooling — not project source
+**/tsconfig.tsbuildinfo
+**/.claude/settings.local.json
