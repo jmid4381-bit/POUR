@@ -98,7 +98,7 @@ function bubbles(cx, cy, color) {
 // height fraction of the frame, with consistent breathing room above and
 // below, regardless of its native size.
 
-const TARGET_TOP = 120, TARGET_BOTTOM = 560; // 440px tall = ~65% of the 680 canvas
+const TARGET_TOP = 230, TARGET_BOTTOM = 450; // 220px tall = ~32% of the 680 canvas
 const CENTER_X = 340; // every shape below is hand-centered on this x already
 
 function recenter(markup, yMin, yMax) {

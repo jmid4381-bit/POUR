@@ -25,7 +25,7 @@
 <rect x="0" y="0" width="680" height="680" fill="url(#bgGrad)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#patrioticBand)"/>
 <rect x="0" y="0" width="680" height="680" fill="url(#spot)"/>
-<g transform="translate(-265.67,-314.66) scale(1.7814)"><path d="M255 255 L425 255 L348 415 L332 415 Z" fill="#160b06" opacity="0.92"/>
+<g transform="translate(37.17,12.67) scale(0.8907)"><path d="M255 255 L425 255 L348 415 L332 415 Z" fill="#160b06" opacity="0.92"/>
 <path d="M268 262 L412 262 L344 400 L336 400 Z" fill="#8a5a22"/>
 <ellipse cx="340" cy="270" rx="72" ry="10" fill="#8a5a22" opacity="0.55"/>
 <rect x="336" y="415" width="8" height="62" fill="#26160c"/>
