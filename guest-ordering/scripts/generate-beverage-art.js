@@ -135,6 +135,23 @@ ${iceCubes(316, 260)}
 <ellipse cx="340" cy="201" rx="50" ry="8" fill="#ffffff" opacity="0.07"/>`;
 }
 
+function sodaCan(labelText) {
+  return `<rect x="288" y="170" width="104" height="250" rx="14" fill="#a9aeb2"/>
+<rect x="288" y="170" width="104" height="46" rx="14" fill="#0a0a0a" opacity="0.85"/>
+<rect x="288" y="270" width="104" height="58" fill="#c0273a"/>
+<text x="340" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="20" fill="#ffffff" letter-spacing="1">${labelText}</text>
+<ellipse cx="340" cy="170" rx="52" ry="9" fill="#c7cbce"/>
+<circle cx="320" cy="200" r="3" fill="#ffffff" opacity="0.55"/>
+<circle cx="365" cy="230" r="2.4" fill="#ffffff" opacity="0.5"/>
+<circle cx="305" cy="350" r="2.6" fill="#ffffff" opacity="0.5"/>
+<circle cx="372" cy="380" r="2.2" fill="#ffffff" opacity="0.45"/>`;
+}
+
+function limeOnNeck(cx, cy) {
+  return `<path d="M${cx} ${cy} q15 5 14 22 q-1 15 -16 14" fill="#9fb83a" opacity="0.92"/>
+<path d="M${cx} ${cy} q15 5 14 22 q-1 15 -16 14" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/>`;
+}
+
 function sparklingBottle(liquid) {
   return `<rect x="305" y="150" width="70" height="270" rx="18" fill="#0a1418" opacity="0.45"/>
 <rect x="313" y="190" width="54" height="222" rx="16" fill="${liquid}"/>
@@ -192,6 +209,10 @@ const beverages = [
     inner: rocksGlass("#d8c39a", true) },
   { id: "bev-22", file: "spicy-martini",         name: "Spicy Martini",
     inner: martiniGlass("#9fb83a", citrusWheel(380, 268, "#7a9c2a")) },
+  { id: "bev-MQPY4GLG-OLT2", file: "corona",      name: "Corona",
+    inner: beerBottle("#e3c878", "#e9c25a") + limeOnNeck(372, 230) },
+  { id: "bev-MQPY62Q2-XKIS", file: "diet-coke",   name: "Diet Coke",
+    inner: sodaCan("DIET") },
 ];
 
 for (const b of beverages) {
