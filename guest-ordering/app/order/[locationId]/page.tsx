@@ -103,11 +103,13 @@ export default function GuestOrderPage({ params }: Props) {
   // Age gate state (client-only, SSR-safe).
   const [ageState, setAgeState] = useState<"checking" | "verified" | "declined">("checking");
   const [isUnderage, setIsUnderage] = useState(false);
+  const [guestDisplayName, setGuestDisplayName] = useState<string | null>(null);
   useEffect(() => {
     if (hasDeclinedAge())      setAgeState("declined");
     else if (hasVerifiedAge()) setAgeState("verified");
     else                       setAgeState("checking");
     setIsUnderage(isUnderageSession());
+    setGuestDisplayName(getGuestName());
   }, []);
 
   // Persistent cart (sessionStorage)
@@ -497,6 +499,11 @@ export default function GuestOrderPage({ params }: Props) {
 
         {/* ── LOCATION BANNER ── */}
         <div className="px-4 pt-8 pb-6 text-center">
+          {guestDisplayName && (
+            <p className="text-mist-400 text-sm font-body mb-1.5 animate-fade-up">
+              Welcome, {guestDisplayName}
+            </p>
+          )}
           {HOLIDAY_THEME_ACTIVE ? (
             <h1 className="font-display text-[2.6rem] font-semibold leading-tight mb-2 animate-fade-up">
               <span className="text-white">POUR</span>
