@@ -349,7 +349,7 @@ export default function GuestOrderPage({ params }: Props) {
   if (ageState === "checking") {
     return (
       <AgeGate
-        onConfirm={() => { setIsUnderage(isUnderageSession()); setAgeState("verified"); }}
+        onConfirm={() => { setIsUnderage(isUnderageSession()); setGuestDisplayName(getGuestName()); setAgeState("verified"); }}
         onDecline={() => setAgeState("declined")}
       />
     );
