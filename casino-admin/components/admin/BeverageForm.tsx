@@ -38,10 +38,16 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
     setForm(f => ({ ...f, [k]: v }));
 
   const handleCategory = (cat: BeverageCategory) => {
-    set("category", cat);
-    set("emoji", EMOJI_DEFAULTS[cat]);
-    if (cat === "non-alcoholic") set("isAlcoholic", false);
-    else set("isAlcoholic", true);
+    if (cat === form.category) return; // re-clicking the active category must not touch the emoji
+    setForm(f => ({
+      ...f,
+      category: cat,
+      // Only swap in the new category's default emoji if the admin hasn't
+      // already customized it away from the previous category's default —
+      // otherwise a custom emoji (e.g. Diet Coke's 🥤) gets silently wiped.
+      emoji: f.emoji === EMOJI_DEFAULTS[f.category] ? EMOJI_DEFAULTS[cat] : f.emoji,
+      isAlcoholic: cat === "non-alcoholic" ? false : true,
+    }));
   };
 
   const addTag = () => {
@@ -149,8 +155,9 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
           <input
             value={form.emoji}
             onChange={e => set("emoji", e.target.value)}
+            onBlur={() => set("emoji", form.emoji.trim())}
             className="field-input text-2xl text-center"
-            maxLength={2}
+            maxLength={8}
           />
         </div>
       </div>
