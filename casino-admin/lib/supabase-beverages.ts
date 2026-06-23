@@ -19,6 +19,7 @@ export interface BeverageRow {
   prep_minutes: number;
   tags:         string[] | null;
   pairs_with:   string | null;
+  image_url:    string | null;
   created_at:   string;
   updated_at:   string;
 }
@@ -43,6 +44,7 @@ export function rowToBeverage(row: BeverageRow, ordersTotal = 0): Beverage {
     prepMinutes: row.prep_minutes,
     tags:        row.tags ?? [],
     pairsWith:   row.pairs_with,
+    imageUrl:    row.image_url,
     ordersTotal,
     createdAt:   row.created_at,
     updatedAt:   row.updated_at,
@@ -68,5 +70,6 @@ export function beverageToRow(b: Omit<Beverage, "id" | "ordersTotal" | "createdA
     prep_minutes: b.prepMinutes,
     tags:         b.tags,
     pairs_with:   b.pairsWith ?? null,
+    image_url:    b.imageUrl ?? null,
   };
 }

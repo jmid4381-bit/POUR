@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { cn, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { BeverageImage } from "./BeverageImage";
 import type { Beverage } from "@/lib/data";
 
 interface BeverageModalProps {
@@ -118,9 +119,12 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
               <div className={cn("absolute inset-0", isGold
                 ? "bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,rgba(212,150,10,0.25),transparent)]"
                 : "bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,rgba(16,185,129,0.18),transparent)]")} />
-              <span className="relative text-[52px] drop-shadow-2xl select-none animate-scale-in">
-                {beverage.emoji}
-              </span>
+              <BeverageImage
+                imageUrl={beverage.imageUrl}
+                emoji={beverage.emoji}
+                name={beverage.name}
+                emojiClassName="text-[52px] animate-scale-in"
+              />
               {/* Available pill */}
               <div className="absolute top-3.5 left-4 flex items-center gap-1.5 bg-void/60 backdrop-blur-sm rounded-full px-2.5 py-1">
                 <span className="relative flex h-2 w-2">

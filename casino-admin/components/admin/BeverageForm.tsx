@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ALL_CATEGORIES, CATEGORY_META, type Beverage, type BeverageCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { uploadBeverageImage } from "@/lib/storage";
 
 interface BeverageFormProps {
   initial?: Beverage;
@@ -13,6 +15,7 @@ interface BeverageFormProps {
 
 const EMPTY: Omit<Beverage, "id" | "ordersTotal" | "createdAt"> = {
   name: "", description: "", category: "cocktail", emoji: "🍸",
+  imageUrl: null,
   price: 0, isAlcoholic: true, isAvailable: true, isFeatured: false,
   prepMinutes: 5, tags: [],
 };
@@ -26,13 +29,32 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
   const [form,     setForm]     = useState<Omit<Beverage, "id" | "ordersTotal" | "createdAt">>(
     initial
       ? { name: initial.name, description: initial.description, category: initial.category,
-          emoji: initial.emoji, price: initial.price, isAlcoholic: initial.isAlcoholic,
+          emoji: initial.emoji, imageUrl: initial.imageUrl ?? null, price: initial.price,
+          isAlcoholic: initial.isAlcoholic,
           isAvailable: initial.isAvailable, isFeatured: initial.isFeatured,
           prepMinutes: initial.prepMinutes, tags: [...initial.tags] }
       : { ...EMPTY }
   );
   const [tagInput, setTagInput] = useState("");
   const [errors,   setErrors]   = useState<Partial<Record<keyof typeof form, string>>>({});
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const url = await uploadBeverageImage(file);
+      set("imageUrl", url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -162,6 +184,49 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
         </div>
       </div>
 
+      {/* Photo */}
+      <div>
+        <label className="field-label">Photo</label>
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 rounded-xl overflow-hidden bg-raised border border-edge flex items-center justify-center flex-shrink-0">
+            {form.imageUrl
+              ? <img src={form.imageUrl} alt={form.name || "Beverage preview"} className="w-full h-full object-cover" />
+              : <span className="text-3xl select-none">{form.emoji}</span>}
+          </div>
+          <div className="flex-1 min-w-0">
+            <label className={cn(
+              "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-body font-medium border cursor-pointer transition-all",
+              uploading
+                ? "bg-raised border-edge text-ink-600 cursor-not-allowed"
+                : "bg-surface border-edge text-ink-300 hover:text-white hover:border-rim",
+            )}>
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />}
+              {uploading ? "Uploading…" : form.imageUrl ? "Replace photo" : "Upload photo"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+            {form.imageUrl && !uploading && (
+              <button
+                type="button"
+                onClick={() => set("imageUrl", null)}
+                className="ml-2 text-xs font-body text-ink-500 hover:text-red-400 transition-colors"
+              >
+                Remove
+              </button>
+            )}
+            <p className="text-[11px] text-ink-600 font-body mt-1.5">
+              Falls back to the emoji above when no photo is set.
+            </p>
+            {uploadError && <p className="text-red-400 text-xs font-body mt-1">{uploadError}</p>}
+          </div>
+        </div>
+      </div>
+
       {/* Toggles */}
       <div className="grid grid-cols-3 gap-3">
         {([
@@ -222,8 +287,8 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2 border-t border-edge">
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button variant="gold" onClick={handleSubmit} icon={<span>{initial ? "💾" : "✦"}</span>}>
-          {initial ? "Save Changes" : "Add Beverage"}
+        <Button variant="gold" onClick={handleSubmit} disabled={uploading} icon={<span>{initial ? "💾" : "✦"}</span>}>
+          {uploading ? "Uploading photo…" : initial ? "Save Changes" : "Add Beverage"}
         </Button>
       </div>
     </div>

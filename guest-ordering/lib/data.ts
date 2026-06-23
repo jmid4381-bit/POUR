@@ -13,6 +13,7 @@ export interface Beverage {
   ingredients:  string[];      // bullet list in modal
   category:     BeverageCategory;
   emoji:        string;
+  imageUrl?:    string | null; // photo, when set — falls back to emoji when null
   price:        number;
   isAlcoholic:  boolean;
   isAvailable:  boolean;

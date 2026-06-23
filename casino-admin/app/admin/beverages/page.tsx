@@ -298,7 +298,11 @@ export default function BeveragesPage() {
                   >
                     {/* Name */}
                     <div className="px-4 py-3.5 flex items-center gap-3">
-                      <span className="text-2xl flex-shrink-0">{bev.emoji}</span>
+                      <div className="w-9 h-9 rounded-lg overflow-hidden bg-raised flex items-center justify-center flex-shrink-0">
+                        {bev.imageUrl
+                          ? <img src={bev.imageUrl} alt={bev.name} loading="lazy" className="w-full h-full object-cover" />
+                          : <span className="text-2xl select-none">{bev.emoji}</span>}
+                      </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-white font-body font-medium text-sm leading-tight truncate">{bev.name}</p>

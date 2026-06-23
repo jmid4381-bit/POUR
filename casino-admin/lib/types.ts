@@ -17,6 +17,7 @@ export interface Beverage {
   ingredients?:string[];
   category:    BeverageCategory;
   emoji:       string;
+  imageUrl?:   string | null;    // photo, when set — falls back to emoji when null
   price:       number;           // USD — e.g. 18.00
   isAlcoholic: boolean;
   isAvailable: boolean;

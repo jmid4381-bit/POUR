@@ -5,6 +5,7 @@ import {
   MapPin, ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock,
 } from "lucide-react";
 import { BeverageCard }      from "@/components/BeverageCard";
+import { BeverageImage }     from "@/components/BeverageImage";
 import { BeverageModal }     from "@/components/BeverageModal";
 import { OrderConfirmation } from "@/components/OrderConfirmation";
 import { OrderReviewModal }  from "@/components/OrderReviewModal";
@@ -565,7 +566,12 @@ export default function GuestOrderPage({ params }: Props) {
                 >
                   <div className="h-20 flex items-center justify-center bg-gradient-to-b from-gold-700/12 to-card relative overflow-hidden">
                     <div className="absolute inset-0 bg-gold-glow" />
-                    <span className="text-4xl relative" aria-hidden>{bev.emoji}</span>
+                    <BeverageImage
+                      imageUrl={bev.imageUrl}
+                      emoji={bev.emoji}
+                      name={bev.name}
+                      emojiClassName="text-4xl"
+                    />
                     {/* In-cart badge on featured cards */}
                     {(cartQuantityMap.get(bev.id) ?? 0) > 0 && (
                       <div className="absolute top-1.5 left-1.5 bg-felt-500/90 rounded-full px-1.5 py-0.5">

@@ -51,6 +51,7 @@ async function mergedBeverages(): Promise<Beverage[]> {
         // fall back to the static seed content only if Supabase has none.
         emoji:       liveBev.emoji || staticBev.emoji,
         description: liveBev.description || staticBev.description,
+        imageUrl:    liveBev.imageUrl ?? staticBev.imageUrl ?? null,
       };
     }
     // No static content yet — show with what Supabase has, gracefully
@@ -62,6 +63,7 @@ async function mergedBeverages(): Promise<Beverage[]> {
       ingredients:  [],
       category:     liveBev.category as Beverage["category"],
       emoji:        liveBev.emoji || "🍸",
+      imageUrl:     liveBev.imageUrl ?? null,
       price:        liveBev.price,
       isAlcoholic:  liveBev.isAlcoholic,
       isAvailable:  liveBev.isAvailable,

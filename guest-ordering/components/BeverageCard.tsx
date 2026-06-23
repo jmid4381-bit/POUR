@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Clock, Star, Plus, Check, Info } from "lucide-react";
 import { cn, fmtUSD } from "@/lib/utils";
+import { BeverageImage } from "./BeverageImage";
 import type { Beverage } from "@/lib/data";
 
 interface BeverageCardProps {
@@ -72,7 +73,12 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
               : "bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(16,185,129,0.13),transparent)]",
           )} />
 
-          <span className="text-5xl drop-shadow-lg select-none">{beverage.emoji}</span>
+          <BeverageImage
+            imageUrl={beverage.imageUrl}
+            emoji={beverage.emoji}
+            name={beverage.name}
+            emojiClassName="text-5xl"
+          />
 
           {/* In-cart quantity badge — Fix 8 */}
           {cartQuantity > 0 && (
