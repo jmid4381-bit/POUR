@@ -15,7 +15,7 @@ import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerific
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
 import { useCart }           from "@/hooks/useCart";
-import { useOrderHistory, type HistoryOrder } from "@/hooks/useOrderHistory";
+import { useOrderHistory } from "@/hooks/useOrderHistory";
 import {
   submitOrder, calculateETA, getQueueDepth, readAlcoholCooldownMs, readAlcoholRoom,
   type QueuedOrder,
@@ -349,7 +349,7 @@ export default function GuestOrderPage({ params }: Props) {
   const [reorderCandidate, setReorderCandidate] = useState<CartItem[] | null>(null);
   const [reorderNote,      setReorderNote]      = useState<string | null>(null);
 
-  const handleReorder = useCallback(async (order: HistoryOrder) => {
+  const handleReorder = useCallback(async (order: { items: CartItem[] }) => {
     const nonAlcoholic: CartItem[] = [];
     const alcoholic:    CartItem[] = [];
     let unavailableCount = 0;
@@ -440,7 +440,33 @@ export default function GuestOrderPage({ params }: Props) {
   }
 
   if (placedOrder) {
-    return <OrderConfirmation order={placedOrder} onOrderMore={handleOrderMore} />;
+    return (
+      <>
+        <OrderConfirmation
+          order={placedOrder}
+          onOrderMore={handleOrderMore}
+          onReorder={() => handleReorder(placedOrder)}
+          onViewOrders={() => setShowOrders(true)}
+        />
+        {showOrders && (
+          <MyOrdersPanel
+            orders={sessionOrders}
+            onClose={() => setShowOrders(false)}
+            cooldownMs={cooldownMs}
+            onReorder={handleReorder}
+          />
+        )}
+        {reorderCandidate && (
+          <ReorderConfirmDialog
+            items={reorderCandidate}
+            note={reorderNote}
+            onConfirm={confirmReorder}
+            onCancel={cancelReorder}
+            isPlacing={placingOrder}
+          />
+        )}
+      </>
+    );
   }
 
   // Location not found — bad or stale QR code
@@ -539,13 +565,14 @@ export default function GuestOrderPage({ params }: Props) {
                 <button
                   onClick={() => { setShowOrders(true); refreshNow(); }}
                   aria-label={`My Orders${activeCount > 0 ? ` — ${activeCount} in progress` : ""}`}
-                  className="relative w-10 h-10 rounded-xl bg-lift border border-rim flex items-center justify-center text-mist-200 hover:border-gold-600/50 transition-colors"
+                  className="relative h-10 pl-3 pr-3.5 rounded-xl bg-lift border border-rim flex items-center gap-1.5 text-mist-200 hover:border-gold-600/50 transition-colors"
                 >
                   {/* Receipt icon — three lines */}
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
                     <path d="M16 8H8M16 12H8M12 16H8"/>
                   </svg>
+                  <span className="text-xs font-body font-semibold">Orders</span>
                   {/* Active order count badge */}
                   {activeCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-gold-500 text-void text-[10px] font-bold font-mono rounded-full flex items-center justify-center px-1">

@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle, Clock, MapPin, RotateCcw, UserRound } from "lucide-react";
+import { CheckCircle, Clock, MapPin, RotateCcw, UserRound, Receipt } from "lucide-react";
 import { cn, fmtUSD, fmtTime } from "@/lib/utils";
 import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/lib/queue";
 import { Fireworks } from "./Fireworks";
@@ -25,8 +25,10 @@ import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { PlacedOrder } from "@/lib/data";
 
 interface OrderConfirmationProps {
-  order:       PlacedOrder;
-  onOrderMore: () => void;
+  order:        PlacedOrder;
+  onOrderMore:  () => void;
+  onReorder:    () => void;
+  onViewOrders: () => void;
 }
 
 // Step unlocks at this fraction of estimatedMinutes elapsed
@@ -51,7 +53,7 @@ function statusToStep(status: QueuedOrderStatus): number {
   }
 }
 
-export function OrderConfirmation({ order, onOrderMore }: OrderConfirmationProps) {
+export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders }: OrderConfirmationProps) {
   const total = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
 
   // ── Live step tracking ───────────────────────────────────────────────────
@@ -279,6 +281,26 @@ export function OrderConfirmation({ order, onOrderMore }: OrderConfirmationProps
           <RotateCcw size={16} />
           Order More Drinks
         </button>
+
+        {/* Secondary actions — quick reorder of this exact order, and a
+            clear, explicit path to My Orders right when a guest would most
+            want to know it exists */}
+        <div className="grid grid-cols-2 gap-3 animate-fade-up" style={{ animationDelay:"0.27s" }}>
+          <button
+            onClick={onReorder}
+            className="py-3 rounded-2xl font-body font-semibold text-sm bg-lift border border-edge text-mist-200 hover:border-felt-600/40 hover:text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          >
+            <RotateCcw size={14} />
+            Reorder
+          </button>
+          <button
+            onClick={onViewOrders}
+            className="py-3 rounded-2xl font-body font-semibold text-sm bg-lift border border-edge text-mist-200 hover:border-gold-600/40 hover:text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          >
+            <Receipt size={14} />
+            View My Orders
+          </button>
+        </div>
 
         <p className="text-center text-[11px] text-mist-600 font-body animate-fade-up" style={{ animationDelay:"0.3s" }}>
           A server will bring your order directly to your seat.
