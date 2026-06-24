@@ -98,7 +98,14 @@ function bubbles(cx, cy, color) {
 // height fraction of the frame, with consistent breathing room above and
 // below, regardless of its native size.
 
-const TARGET_TOP = 230, TARGET_BOTTOM = 450; // 220px tall = ~32% of the 680 canvas
+// The card image container is h-28 (112px) at full card width. On mobile
+// single-column layout (grid-cols-1 below the sm: breakpoint) that's the
+// worst-case aspect ratio app-wide -- as narrow as ~199px of vertical
+// slice visible through object-fit: cover on a 414px-wide phone. The old
+// 220px-tall band (230-450) was wider than that, clipping the top/bottom
+// on the narrowest phones. 160px leaves ~20px of margin under the 199px
+// worst case.
+const TARGET_TOP = 260, TARGET_BOTTOM = 420; // 160px tall = ~23.5% of the 680 canvas
 const CENTER_X = 340; // every shape below is hand-centered on this x already
 
 function recenter(markup, yMin, yMax) {
