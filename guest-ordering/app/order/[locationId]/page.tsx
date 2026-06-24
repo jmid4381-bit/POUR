@@ -130,14 +130,21 @@ export default function GuestOrderPage({ params }: Props) {
   // Toast on meaningful order-status transitions — staff first assigned, or
   // status first reaching "ready" — each fires once per order via a
   // last-seen snapshot, not on every 5s poll tick.
+  //
+  // The snapshot only lives in memory (a ref), so it's empty again after any
+  // page refresh — with no prior record, an order that already has a staff
+  // name or is already "ready" would otherwise look like a fresh transition
+  // and re-fire the toast. Requiring `prev` to actually exist before firing
+  // means the first observation of any order this page load just seeds the
+  // snapshot silently instead of treating it as a change.
   const orderSnapshotRef = useRef<Map<string, { status: string; staffName?: string }>>(new Map());
   useEffect(() => {
     for (const o of sessionOrders) {
       const prev = orderSnapshotRef.current.get(o.id);
-      if (o.staffName && !prev?.staffName) {
+      if (prev && o.staffName && !prev.staffName) {
         setBigToast(`${o.staffName} is preparing your order`);
         setTimeout(() => setBigToast(null), 3000);
-      } else if (o.status === "ready" && prev?.status !== "ready") {
+      } else if (prev && o.status === "ready" && prev.status !== "ready") {
         setBigToast(o.staffName ? `${o.staffName} is bringing your order!` : "Your order is on the way!");
         setTimeout(() => setBigToast(null), 3000);
       }
