@@ -14,6 +14,22 @@ const DECLINED_KEY  = "age_gate_declined";
 const META_KEY      = "age_gate_meta";
 const UNDERAGE_KEY  = "is_underage_session";
 
+// "Remember me" — localStorage, not sessionStorage, so it survives a closed
+// tab. Deliberately stores only the same minimal bracket+flag already kept
+// per-session, NEVER the actual birthdate entered — this is a convenience
+// pre-fill for the "Welcome back" prompt, not a stored credential. The real
+// security boundary is unchanged: applying it still requires an explicit
+// tap in the UI (see applyRememberedVerification), and a fresh birthdate
+// entry is always one tap away via "Not me."
+const REMEMBER_KEY     = "age_gate_remember";
+const REMEMBER_TTL_MS  = 24 * 60 * 60 * 1000; // matches the guest-ID cookie window
+
+export interface RememberedVerification {
+  ageBracket: string;
+  isUnderage: boolean;
+  expiresAt:  number;
+}
+
 export interface AgeVerificationMeta {
   ageBracket: string;
   verifiedAt: string;
@@ -53,6 +69,36 @@ function markVerified(meta: AgeVerificationMeta): void {
     sessionStorage.setItem(VERIFIED_KEY, "true");
     sessionStorage.setItem(META_KEY, JSON.stringify(meta));
   } catch { /* storage unavailable — gate will simply re-show */ }
+}
+
+// The remembered copy a returning guest's "Welcome back" prompt reads —
+// or null if there's none, or it's expired (and cleans up the expired
+// entry rather than leaving stale data behind).
+export function getRememberedVerification(): RememberedVerification | null {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return null;
+    const rv = JSON.parse(raw) as RememberedVerification;
+    if (!rv.expiresAt || rv.expiresAt < Date.now()) {
+      localStorage.removeItem(REMEMBER_KEY);
+      return null;
+    }
+    return rv;
+  } catch {
+    return null;
+  }
+}
+
+export function clearRememberedVerification(): void {
+  try { localStorage.removeItem(REMEMBER_KEY); } catch { /* ignore */ }
+}
+
+// Applies a remembered bracket/flag to THIS session — equivalent to what
+// recordVerification() would set, but without re-asking for a birthdate.
+// Still only reachable via an explicit "Yes, that's me" tap in the UI.
+export function applyRememberedVerification(rv: RememberedVerification): void {
+  markVerified({ ageBracket: rv.ageBracket, verifiedAt: new Date().toISOString() });
+  markUnderageSession(rv.isUnderage);
 }
 
 function markUnderageSession(isUnderage: boolean): void {
@@ -114,6 +160,14 @@ export function recordVerification(
 
   markVerified(meta);
   markUnderageSession(isUnderage);
+
+  // Mirror into the longer-lived "remember me" slot too, so a returning
+  // guest gets the "Welcome back" prompt instead of retyping their
+  // birthdate — still only the bracket/flag, never the actual birthdate.
+  try {
+    const rv: RememberedVerification = { ageBracket: bracket, isUnderage, expiresAt: Date.now() + REMEMBER_TTL_MS };
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify(rv));
+  } catch { /* storage unavailable — next visit just starts fresh */ }
 
   return { isUnderage, meta };
 }

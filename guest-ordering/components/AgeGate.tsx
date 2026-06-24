@@ -21,8 +21,10 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   LEGAL_DRINKING_AGE, DEFAULT_VENUE_NAME,
   isValidBirthdate, calculateAge, recordVerification,
+  getRememberedVerification, clearRememberedVerification, applyRememberedVerification,
+  type RememberedVerification,
 } from "@/lib/ageGate";
-import { setGuestName } from "@/lib/guestName";
+import { setGuestName, getRememberedGuestName, clearRememberedGuestName } from "@/lib/guestName";
 
 export { hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession } from "@/lib/ageGate";
 export { getGuestName } from "@/lib/guestName";
@@ -44,7 +46,15 @@ export function AgeGate({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
-  const [step,  setStep]  = useState<"birthdate" | "name">("birthdate");
+  // A returning guest (same device, within the remembered window) sees a
+  // "Welcome back" reconfirmation instead of retyping their birthdate —
+  // computed once via lazy init, which safely returns null under SSR.
+  const [remembered] = useState<RememberedVerification | null>(() => getRememberedVerification());
+  const [rememberedName] = useState<string | null>(() => getRememberedGuestName());
+
+  const [step,  setStep]  = useState<"welcome-back" | "birthdate" | "name">(
+    () => (getRememberedVerification() && getRememberedGuestName()) ? "welcome-back" : "birthdate",
+  );
   const [month, setMonth] = useState("");
   const [day,   setDay]   = useState("");
   const [year,  setYear]  = useState("");
@@ -54,6 +64,19 @@ export function AgeGate({
   const dayRef  = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const handleConfirmReturning = () => {
+    if (!remembered || !rememberedName) return;
+    applyRememberedVerification(remembered);
+    setGuestName(rememberedName);
+    onConfirm();
+  };
+
+  const handleNotMe = () => {
+    clearRememberedVerification();
+    clearRememberedGuestName();
+    setStep("birthdate");
+  };
 
   const digitsOnly = (s: string) => s.replace(/\D/g, "");
 
@@ -123,7 +146,41 @@ export function AgeGate({
         <div className="bg-card border border-edge rounded-3xl overflow-hidden shadow-modal">
           <div className="h-[2px] bg-gold-grad" />
 
-          {step === "birthdate" ? (
+          {step === "welcome-back" ? (
+            <div className="p-7 text-center space-y-5">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-felt-grad mx-auto flex items-center justify-center shadow-btn-felt">
+                <UserRound size={30} className="text-white" strokeWidth={1.8} />
+              </div>
+
+              {/* Title */}
+              <div>
+                <h2 id="age-gate-title" className="font-display text-2xl font-semibold text-white mb-2">
+                  Welcome back, {rememberedName}!
+                </h2>
+                <p id="age-gate-desc" className="text-mist-300 text-sm font-body leading-relaxed">
+                  Is this still you? We'll skip re-entering your birthdate.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-2.5">
+                <button
+                  onClick={handleConfirmReturning}
+                  className="w-full py-4 rounded-2xl font-body font-bold text-base transition-all active:scale-[0.98] bg-felt-grad text-white shadow-btn-felt hover:brightness-110 flex items-center justify-center gap-1.5"
+                >
+                  Yes, that's me
+                  <ChevronRight size={18} />
+                </button>
+                <button
+                  onClick={handleNotMe}
+                  className="w-full py-3 rounded-2xl font-body font-semibold text-sm text-mist-400 hover:text-white transition-colors"
+                >
+                  Not me — use a different name
+                </button>
+              </div>
+            </div>
+          ) : step === "birthdate" ? (
             <div className="p-7 text-center space-y-5">
               {/* Icon */}
               <div className="w-16 h-16 rounded-2xl bg-gold-grad mx-auto flex items-center justify-center shadow-btn-gold">
