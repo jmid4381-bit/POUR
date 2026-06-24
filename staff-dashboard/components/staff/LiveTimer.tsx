@@ -25,9 +25,14 @@ interface LiveTimerProps {
 function formatDuration(seconds: number): string {
   if (seconds < 0)  return "0s";
   if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}m ${s.toString().padStart(2, "0")}s`;
+  const totalMinutes = Math.floor(seconds / 60);
+  if (totalMinutes < 60) {
+    const s = seconds % 60;
+    return `${totalMinutes}m ${s.toString().padStart(2, "0")}s`;
+  }
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}h ${m}m`;
 }
 
 export function LiveTimer({ placedAt, status, size = "md" }: LiveTimerProps) {

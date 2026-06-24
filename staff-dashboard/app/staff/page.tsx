@@ -49,7 +49,9 @@ const COL_TABS: { key: ColKey; label: string }[] = [
 function fmtAvgWait(seconds: number): string {
   if (seconds === 0) return "—";
   if (seconds < 60)  return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  const totalMinutes = Math.floor(seconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes}m ${seconds % 60}s`;
+  return `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
