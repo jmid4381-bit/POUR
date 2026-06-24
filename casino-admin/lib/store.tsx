@@ -143,10 +143,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Realtime postgres_changes events were confirmed connecting (status:
   // SUBSCRIBED) but not actually arriving for any table during testing --
   // a project/Realtime-side issue, not something the app can fix directly.
-  // This guarantees the dashboard self-corrects quickly either way, without
-  // depending on push events working at all.
+  // This guarantees the dashboard self-corrects within a few seconds either
+  // way, without depending on push events working at all. 8s strikes a
+  // balance -- fast enough to feel live, slow enough not to make the UI
+  // flicker/refresh visibly underfoot.
   useEffect(() => {
-    const id = setInterval(fetchAll, 3_000);
+    const id = setInterval(fetchAll, 8_000);
     return () => clearInterval(id);
   }, [fetchAll]);
 
