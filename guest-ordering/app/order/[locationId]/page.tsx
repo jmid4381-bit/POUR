@@ -569,17 +569,7 @@ export default function GuestOrderPage({ params }: Props) {
         )}>
           <div className="px-4 h-14 flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-mono text-gold-500/80 tracking-[0.25em] uppercase leading-none">
-                The Grand Casino
-              </p>
-              {HOLIDAY_THEME_ACTIVE ? (
-                <p className="flex items-center gap-1 text-sm font-body font-bold text-white mt-0.5 leading-tight truncate">
-                  <MapPin size={12} className="text-gold-400 flex-shrink-0" />
-                  <span className="truncate">{location.name}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-mist-400 font-body mt-0.5 leading-none">Beverage Service</p>
-              )}
+              <p className="font-display text-lg font-bold text-white leading-none truncate">POUR</p>
             </div>
 
             {/* Alcohol cooldown — only rendered while a real cooldown is
@@ -707,7 +697,7 @@ export default function GuestOrderPage({ params }: Props) {
           )}
           <div className="flex items-center justify-center gap-1.5 text-mist-400 animate-fade-up" style={{ animationDelay:"0.05s" }}>
             <MapPin size={12} className="text-felt-500" />
-            <span className="text-sm font-body">{location.section} · Floor {location.floor}</span>
+            <span className="text-sm font-body">{location.name}</span>
           </div>
           {isUnderage && (
             <div className="flex justify-center mt-3 animate-fade-up" style={{ animationDelay:"0.08s" }}>
