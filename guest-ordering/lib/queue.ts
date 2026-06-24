@@ -167,6 +167,27 @@ export async function readAlcoholCooldownMs(guestId: string): Promise<number> {
   }
 }
 
+// How many more alcoholic drinks the guest can order right now (0-2) — the
+// precise count behind readAlcoholCooldownMs's binary "blocked or not".
+// Used by Reorder to trim a mixed past order down to what's actually
+// allowed instead of having the whole submission rejected by the server
+// for the alcoholic portion alone.
+export async function readAlcoholRoom(guestId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("get_guest_alcohol_status", {
+      p_guest_id: guestId,
+      p_window_minutes: ALCOHOL_WINDOW_MINUTES,
+    });
+    if (error) throw error;
+
+    const row = Array.isArray(data) ? data[0] : data;
+    const consumed: number = row?.consumed ?? 0;
+    return Math.max(0, MAX_ALCOHOLIC_PER_WINDOW - consumed);
+  } catch {
+    return MAX_ALCOHOLIC_PER_WINDOW;
+  }
+}
+
 // ─── Queue depth for ETA calculation ─────────────────────────────────────────
 
 export async function getQueueDepth(): Promise<number> {

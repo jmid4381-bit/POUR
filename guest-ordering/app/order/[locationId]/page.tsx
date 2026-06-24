@@ -10,18 +10,19 @@ import { BeverageModal }     from "@/components/BeverageModal";
 import { OrderConfirmation } from "@/components/OrderConfirmation";
 import { OrderReviewModal }  from "@/components/OrderReviewModal";
 import { MyOrdersPanel }     from "@/components/MyOrdersPanel";
+import { ReorderConfirmDialog } from "@/components/ReorderConfirmDialog";
 import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession, getGuestName } from "@/components/AgeGate";
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
 import { useCart }           from "@/hooks/useCart";
 import { useOrderHistory, type HistoryOrder } from "@/hooks/useOrderHistory";
 import {
-  submitOrder, calculateETA, getQueueDepth, readAlcoholCooldownMs,
+  submitOrder, calculateETA, getQueueDepth, readAlcoholCooldownMs, readAlcoholRoom,
   type QueuedOrder,
 } from "@/lib/queue";
 import {
   MENU_CATEGORIES, CATEGORY_META,
-  type Beverage, type BeverageCategory, type PlacedOrder,
+  type Beverage, type BeverageCategory, type PlacedOrder, type CartItem,
 } from "@/lib/data";
 import { cn, fmtUSD, generateOrderId } from "@/lib/utils";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
@@ -222,46 +223,6 @@ export default function GuestOrderPage({ params }: Props) {
     handleAddToOrder(beverage, 1, "");
   }, [handleAddToOrder]);
 
-  // Re-place a past order's items into the current cart. Each item is
-  // re-resolved against the live menu (current price/availability) rather
-  // than the snapshot stored in history, and added one at a time through
-  // the same addItem() the rest of the app uses — so the 2-drink alcoholic
-  // cap and cooldown are enforced exactly as they would be for a fresh add,
-  // and non-alcoholic items in a mixed order are never affected by either.
-  const handleReorder = useCallback((order: HistoryOrder) => {
-    let addedCount = 0;
-    let unavailableCount = 0;
-    let anyAlcoholCapped = false;
-    let alcoholCooldownMins = 0;
-
-    for (const item of order.items) {
-      const live = beverages.find(b => b.id === item.beverage.id);
-      if (!live || !live.isAvailable) { unavailableCount++; continue; }
-
-      const { added, capped, cooldownMs: itemCooldownMs } = addItem(live, item.quantity, item.note);
-      addedCount += added;
-      if (added < item.quantity) anyAlcoholCapped = true;
-      if (added === 0 && live.isAlcoholic) {
-        alcoholCooldownMins = Math.max(alcoholCooldownMins, Math.max(1, Math.ceil(itemCooldownMs / 60_000)));
-      }
-    }
-
-    setShowOrders(false);
-
-    if (addedCount === 0) {
-      setToast(
-        alcoholCooldownMins > 0
-          ? `Drink limit reached — try again in ${alcoholCooldownMins} minute${alcoholCooldownMins !== 1 ? "s" : ""}`
-          : "Those items are no longer available"
-      );
-    } else if (unavailableCount > 0 || anyAlcoholCapped) {
-      setToast(`Added ${addedCount} item${addedCount !== 1 ? "s" : ""} — some couldn't be added`);
-    } else {
-      setToast("Added to your order");
-    }
-    setTimeout(() => setToast(null), 3500);
-  }, [beverages, addItem]);
-
   const removeFromCart = useCallback((beverageId: string) => {
     removeItem(beverageId);
     if (cart.filter(i => i.beverage.id !== beverageId).length === 0) {
@@ -278,15 +239,19 @@ export default function GuestOrderPage({ params }: Props) {
     setShowReview(true);
   }, [cart.length]);
 
-  // Order submission with queue-aware ETA
-  const handleConfirmOrder = useCallback(async () => {
-    if (cart.length === 0 || isConfirming.current || !location) return;
+  // Core submission pipeline — shared by the normal cart checkout and by
+  // Reorder (which places a standalone order from a past order's items
+  // without ever touching the visible cart). Server-side validation in
+  // /api/orders is the real authority on availability and the alcohol
+  // cooldown either way; this just wires its result back into the UI.
+  const placeOrder = useCallback(async (items: CartItem[]): Promise<boolean> => {
+    if (items.length === 0 || isConfirming.current || !location) return false;
     isConfirming.current = true;
     setPlacingOrder(true);
 
     // ETA accounts for how busy the bar currently is
     const queueDepth       = await getQueueDepth();
-    const estimatedMinutes = calculateETA(cart, queueDepth);
+    const estimatedMinutes = calculateETA(items, queueDepth);
 
     const orderId = generateOrderId();
     const now     = new Date().toISOString();
@@ -299,7 +264,7 @@ export default function GuestOrderPage({ params }: Props) {
       locationName:     location.name,
       section:          location.section,
       floor:            location.floor,
-      items:            [...cart],
+      items:            [...items],
       estimatedMinutes,
       placedAt:         now,
       status:           "pending",
@@ -315,7 +280,7 @@ export default function GuestOrderPage({ params }: Props) {
       isConfirming.current = false;
       setToast("You're ordering too quickly — please wait a moment and try again");
       setTimeout(() => setToast(null), 3500);
-      return;
+      return false;
     }
 
     if (result.cooldownBlocked) {
@@ -325,7 +290,7 @@ export default function GuestOrderPage({ params }: Props) {
       const mins = Math.max(1, Math.ceil((result.cooldownMs ?? 0) / 60_000));
       setToast(`Drink limit reached — try again in ${mins} minute${mins !== 1 ? "s" : ""}`);
       setTimeout(() => setToast(null), 3500);
-      return;
+      return false;
     }
 
     await new Promise(r => setTimeout(r, 900));
@@ -333,7 +298,7 @@ export default function GuestOrderPage({ params }: Props) {
     const placed: PlacedOrder = {
       id: orderId,
       locationName:     location.name,
-      items:            [...cart],
+      items:            [...items],
       estimatedMinutes,
       placedAt:         now,
     };
@@ -342,7 +307,7 @@ export default function GuestOrderPage({ params }: Props) {
     addOrder({
       id:               orderId,
       locationName:     location.name,
-      items:            [...cart],
+      items:            [...items],
       estimatedMinutes,
       placedAt:         now,
     });
@@ -353,16 +318,92 @@ export default function GuestOrderPage({ params }: Props) {
 
     // Record alcoholic drinks just placed so the 10-minute window correctly
     // limits how much more can be ordered this session
-    const alcoholicQty = cart.reduce((s, i) => i.beverage.isAlcoholic ? s + i.quantity : s, 0);
+    const alcoholicQty = items.reduce((s, i) => i.beverage.isAlcoholic ? s + i.quantity : s, 0);
     recordAlcoholicOrder(alcoholicQty);
     if (alcoholicQty > 0) refreshCooldown();
 
-    clearItems();
-    setShowReview(false);
     setPlacingOrder(false);
     setPlacedOrder(placed);
     isConfirming.current = false;
-  }, [cart, location, locationId, activeCategory, clearItems, addOrder, recordAlcoholicOrder, refreshCooldown]);
+    return true;
+  }, [location, locationId, activeCategory, addOrder, recordAlcoholicOrder, refreshCooldown]);
+
+  const handleConfirmOrder = useCallback(async () => {
+    if (cart.length === 0) return;
+    const placed = await placeOrder(cart);
+    if (placed) {
+      clearItems();
+      setShowReview(false);
+    }
+  }, [cart, placeOrder, clearItems]);
+
+  // ── Reorder — re-place a past order's items as a standalone new order,
+  // bypassing the cart entirely. Items are re-resolved against the live
+  // menu (current price/availability) before the confirm dialog is shown.
+  //
+  // The alcoholic portion is trimmed to the guest's actual remaining room
+  // (queried fresh, not the binary cooldownMs flag) BEFORE submission —
+  // submitting the whole mixed order as one request would otherwise let
+  // the server reject it entirely over the alcoholic items alone, which
+  // would incorrectly block the non-alcoholic items in the same order.
+  const [reorderCandidate, setReorderCandidate] = useState<CartItem[] | null>(null);
+  const [reorderNote,      setReorderNote]      = useState<string | null>(null);
+
+  const handleReorder = useCallback(async (order: HistoryOrder) => {
+    const nonAlcoholic: CartItem[] = [];
+    const alcoholic:    CartItem[] = [];
+    let unavailableCount = 0;
+
+    for (const item of order.items) {
+      const live = beverages.find(b => b.id === item.beverage.id);
+      if (!live || !live.isAvailable) { unavailableCount++; continue; }
+      (live.isAlcoholic ? alcoholic : nonAlcoholic).push({ beverage: live, quantity: item.quantity, note: item.note });
+    }
+
+    let droppedAlcoholicQty = 0;
+    if (alcoholic.length > 0) {
+      const gid  = guestIdRef.current ?? getOrCreateGuestId();
+      let room   = await readAlcoholRoom(gid);
+      const kept: CartItem[] = [];
+      for (const item of alcoholic) {
+        const take = Math.min(item.quantity, room);
+        if (take > 0) kept.push({ ...item, quantity: take });
+        droppedAlcoholicQty += item.quantity - take;
+        room -= take;
+      }
+      alcoholic.length = 0;
+      alcoholic.push(...kept);
+    }
+
+    const resolved = [...nonAlcoholic, ...alcoholic];
+
+    if (resolved.length === 0) {
+      setToast(droppedAlcoholicQty > 0
+        ? "Drink limit reached for now — try again shortly"
+        : "Those items are no longer available");
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
+
+    const notes: string[] = [];
+    if (droppedAlcoholicQty > 0) notes.push(`${droppedAlcoholicQty} alcoholic drink${droppedAlcoholicQty !== 1 ? "s" : ""} skipped — limit reached for now`);
+    if (unavailableCount   > 0) notes.push(`${unavailableCount} item${unavailableCount !== 1 ? "s" : ""} no longer available`);
+    setReorderNote(notes.join(" · ") || null);
+    setReorderCandidate(resolved);
+  }, [beverages]);
+
+  const confirmReorder = useCallback(async () => {
+    if (!reorderCandidate) return;
+    const placed = await placeOrder(reorderCandidate);
+    setReorderCandidate(null);
+    setReorderNote(null);
+    if (placed) setShowOrders(false);
+  }, [reorderCandidate, placeOrder]);
+
+  const cancelReorder = useCallback(() => {
+    setReorderCandidate(null);
+    setReorderNote(null);
+  }, []);
 
   // Restore category and scroll position when returning from confirmation
   const handleOrderMore = useCallback(() => {
@@ -703,6 +744,17 @@ export default function GuestOrderPage({ params }: Props) {
           onClose={() => setShowOrders(false)}
           cooldownMs={cooldownMs}
           onReorder={handleReorder}
+        />
+      )}
+
+      {/* ── REORDER CONFIRMATION ── */}
+      {reorderCandidate && (
+        <ReorderConfirmDialog
+          items={reorderCandidate}
+          note={reorderNote}
+          onConfirm={confirmReorder}
+          onCancel={cancelReorder}
+          isPlacing={placingOrder}
         />
       )}
 
