@@ -14,7 +14,7 @@ import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerific
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
 import { useCart }           from "@/hooks/useCart";
-import { useOrderHistory }   from "@/hooks/useOrderHistory";
+import { useOrderHistory, type HistoryOrder } from "@/hooks/useOrderHistory";
 import {
   submitOrder, calculateETA, getQueueDepth, readAlcoholCooldownMs,
   type QueuedOrder,
@@ -221,6 +221,46 @@ export default function GuestOrderPage({ params }: Props) {
   const handleQuickAdd = useCallback((beverage: Beverage) => {
     handleAddToOrder(beverage, 1, "");
   }, [handleAddToOrder]);
+
+  // Re-place a past order's items into the current cart. Each item is
+  // re-resolved against the live menu (current price/availability) rather
+  // than the snapshot stored in history, and added one at a time through
+  // the same addItem() the rest of the app uses — so the 2-drink alcoholic
+  // cap and cooldown are enforced exactly as they would be for a fresh add,
+  // and non-alcoholic items in a mixed order are never affected by either.
+  const handleReorder = useCallback((order: HistoryOrder) => {
+    let addedCount = 0;
+    let unavailableCount = 0;
+    let anyAlcoholCapped = false;
+    let alcoholCooldownMins = 0;
+
+    for (const item of order.items) {
+      const live = beverages.find(b => b.id === item.beverage.id);
+      if (!live || !live.isAvailable) { unavailableCount++; continue; }
+
+      const { added, capped, cooldownMs: itemCooldownMs } = addItem(live, item.quantity, item.note);
+      addedCount += added;
+      if (added < item.quantity) anyAlcoholCapped = true;
+      if (added === 0 && live.isAlcoholic) {
+        alcoholCooldownMins = Math.max(alcoholCooldownMins, Math.max(1, Math.ceil(itemCooldownMs / 60_000)));
+      }
+    }
+
+    setShowOrders(false);
+
+    if (addedCount === 0) {
+      setToast(
+        alcoholCooldownMins > 0
+          ? `Drink limit reached — try again in ${alcoholCooldownMins} minute${alcoholCooldownMins !== 1 ? "s" : ""}`
+          : "Those items are no longer available"
+      );
+    } else if (unavailableCount > 0 || anyAlcoholCapped) {
+      setToast(`Added ${addedCount} item${addedCount !== 1 ? "s" : ""} — some couldn't be added`);
+    } else {
+      setToast("Added to your order");
+    }
+    setTimeout(() => setToast(null), 3500);
+  }, [beverages, addItem]);
 
   const removeFromCart = useCallback((beverageId: string) => {
     removeItem(beverageId);
@@ -661,6 +701,8 @@ export default function GuestOrderPage({ params }: Props) {
         <MyOrdersPanel
           orders={sessionOrders}
           onClose={() => setShowOrders(false)}
+          cooldownMs={cooldownMs}
+          onReorder={handleReorder}
         />
       )}
 

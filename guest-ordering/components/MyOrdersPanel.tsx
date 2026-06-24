@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, AlertCircle, UserRound } from "lucide-react";
+import { X, AlertCircle, UserRound, RotateCcw, Clock } from "lucide-react";
 import { cn, fmtTime, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { HistoryOrder } from "@/hooks/useOrderHistory";
 import type { QueuedOrderStatus } from "@/lib/queue";
+
+// "1:23" — same shape as the cooldown text shown elsewhere in the app
+function formatCooldown(ms: number): string {
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 // ─── Progress tracker ─────────────────────────────────────────────────────────
 // Mirrors OrderConfirmation: advances on elapsed time as well as real status,
@@ -115,10 +123,23 @@ const STATUS_DISPLAY: Record<QueuedOrderStatus, { label: string; color: string }
 
 // ─── Single order card ────────────────────────────────────────────────────────
 
-function OrderCard({ order }: { order: HistoryOrder }) {
+interface OrderCardProps {
+  order:       HistoryOrder;
+  cooldownMs:  number;
+  onReorder:   (order: HistoryOrder) => void;
+}
+
+function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
   const total   = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
   const display = STATUS_DISPLAY[order.status];
   const isActive = order.status !== "delivered" && order.status !== "cancelled";
+
+  // Only disable the whole button when EVERY item is alcoholic and the
+  // guest has zero room left — a mixed order's non-alcoholic items should
+  // never be blocked by an alcohol cooldown, so those stay reorderable;
+  // addItem() sorts out the alcoholic portion item-by-item on tap instead.
+  const isAlcoholOnly = order.items.length > 0 && order.items.every(i => i.beverage.isAlcoholic);
+  const blockedByCooldown = isAlcoholOnly && cooldownMs > 0;
 
   return (
     <div className={cn(
@@ -187,6 +208,31 @@ function OrderCard({ order }: { order: HistoryOrder }) {
           estimatedMinutes={order.estimatedMinutes}
         />
 
+        {/* Reorder — same items/quantities, added straight to the cart */}
+        <button
+          onClick={() => onReorder(order)}
+          disabled={blockedByCooldown}
+          aria-label={blockedByCooldown ? `Reorder unavailable — ${formatCooldown(cooldownMs)} remaining` : `Reorder this order`}
+          className={cn(
+            "w-full py-2.5 rounded-xl text-xs font-body font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]",
+            blockedByCooldown
+              ? "bg-lift border border-edge text-mist-600 cursor-not-allowed"
+              : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
+          )}
+        >
+          {blockedByCooldown ? (
+            <>
+              <Clock size={12} />
+              Reorder in {formatCooldown(cooldownMs)}
+            </>
+          ) : (
+            <>
+              <RotateCcw size={13} />
+              Reorder
+            </>
+          )}
+        </button>
+
       </div>
     </div>
   );
@@ -195,11 +241,13 @@ function OrderCard({ order }: { order: HistoryOrder }) {
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 interface MyOrdersPanelProps {
-  orders:  HistoryOrder[];
-  onClose: () => void;
+  orders:     HistoryOrder[];
+  onClose:    () => void;
+  cooldownMs: number;
+  onReorder:  (order: HistoryOrder) => void;
 }
 
-export function MyOrdersPanel({ orders, onClose }: MyOrdersPanelProps) {
+export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrdersPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
@@ -270,7 +318,9 @@ export function MyOrdersPanel({ orders, onClose }: MyOrdersPanelProps) {
               <p className="text-mist-600 text-xs font-body mt-1">Your orders will appear here after you place them</p>
             </div>
           ) : (
-            orders.map(order => <OrderCard key={order.id} order={order} />)
+            orders.map(order => (
+              <OrderCard key={order.id} order={order} cooldownMs={cooldownMs} onReorder={onReorder} />
+            ))
           )}
         </div>
       </div>
