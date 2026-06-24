@@ -20,6 +20,8 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle, Clock, MapPin, RotateCcw, UserRound } from "lucide-react";
 import { cn, fmtUSD, fmtTime } from "@/lib/utils";
 import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/lib/queue";
+import { Fireworks } from "./Fireworks";
+import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { PlacedOrder } from "@/lib/data";
 
 interface OrderConfirmationProps {
@@ -56,6 +58,17 @@ export function OrderConfirmation({ order, onOrderMore }: OrderConfirmationProps
   const [currentStep, setCurrentStep] = useState(0);
   const [elapsedSecs, setElapsedSecs] = useState(0);
   const [staffName,   setStaffName]   = useState<string | null>(null);
+
+  // Fireworks — only on the initial mount of this screen (this effect's
+  // empty deps array guarantees that), only during the holiday event, and
+  // never if the guest's device has reduced motion enabled.
+  const [showFireworks, setShowFireworks] = useState(false);
+  useEffect(() => {
+    if (!HOLIDAY_THEME_ACTIVE) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+    setShowFireworks(true);
+  }, []);
 
   // Local clock tick — pure math, no network — ticks every second so the
   // visible step advances at the same real-world instant regardless of when
@@ -106,6 +119,7 @@ export function OrderConfirmation({ order, onOrderMore }: OrderConfirmationProps
 
   return (
     <div className="min-h-screen bg-base flex flex-col items-center justify-start pt-12 pb-32 px-4 animate-fade-in">
+      {showFireworks && <Fireworks />}
       <div className="fixed inset-0 bg-hero-glow pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-sm space-y-6">

@@ -88,6 +88,16 @@ const config: Config = {
         "toast-up":     { from:{ opacity:"0", transform:"translateY(10px) scale(0.96)" }, to:{ opacity:"1", transform:"translateY(0) scale(1)" } },
         // Hint chevron — gentle horizontal nudge
         "bounce-x":     { "0%,100%":{ transform:"translateX(0)"    }, "50%":{ transform:"translateX(3px)" } },
+        // Fireworks — order confirmation celebration
+        "firework-particle": {
+          "0%":   { transform: "translate(0,0) scale(1)",   opacity: "1" },
+          "65%":  { opacity: "1" },
+          "100%": { transform: "translate(var(--dx,0px), var(--dy,0px)) scale(0.25)", opacity: "0" },
+        },
+        "firework-flash": {
+          "0%":   { transform: "scale(0)",   opacity: "0.9" },
+          "100%": { transform: "scale(1)",   opacity: "0"   },
+        },
       },
       animation: {
         "fade-up":   "fade-up  0.45s cubic-bezier(0.16,1,0.3,1) both",
@@ -101,6 +111,8 @@ const config: Config = {
         "row-in":    "row-in   0.3s  cubic-bezier(0.16,1,0.3,1) both",
         "toast-up":  "toast-up 0.4s  cubic-bezier(0.16,1,0.3,1) both",
         "bounce-x":  "bounce-x 1.4s  ease-in-out infinite",
+        "firework-particle": "firework-particle 0.9s cubic-bezier(0.2,0.7,0.3,1) both",
+        "firework-flash":    "firework-flash 0.5s ease-out both",
       },
     },
   },
