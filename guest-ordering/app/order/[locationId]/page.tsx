@@ -101,6 +101,45 @@ export default function GuestOrderPage({ params }: Props) {
   // Session order history — persisted in sessionStorage, polled for live status
   const { orders: sessionOrders, addOrder, activeCount, refreshNow } = useOrderHistory(locationId);
 
+  // Furthest-along active order — drives the persistent header status label.
+  // Same step ranking/wording as the My Orders panel's progress tracker.
+  const ACTIVE_STEPS = ["Received", "Preparing…", "On the way"];
+  const orderStep = (status: string) =>
+    status === "ready" ? 2 : (status === "accepted" || status === "preparing") ? 1 : 0;
+  const furthestActiveOrder = sessionOrders
+    .filter(o => o.status !== "delivered" && o.status !== "cancelled")
+    .sort((a, b) => orderStep(b.status) - orderStep(a.status))[0];
+  const headerStatusLabel = furthestActiveOrder ? ACTIVE_STEPS[orderStep(furthestActiveOrder.status)] : null;
+
+  // Toast when the cooldown clears — fires exactly once on the >0 → 0
+  // transition, never on a render that's already at 0.
+  const prevCooldownMs = useRef(0);
+  useEffect(() => {
+    if (prevCooldownMs.current > 0 && cooldownMs === 0) {
+      setToast("You can now order another drink!");
+      setTimeout(() => setToast(null), 3500);
+    }
+    prevCooldownMs.current = cooldownMs;
+  }, [cooldownMs]);
+
+  // Toast on meaningful order-status transitions — staff first assigned, or
+  // status first reaching "ready" — each fires once per order via a
+  // last-seen snapshot, not on every 5s poll tick.
+  const orderSnapshotRef = useRef<Map<string, { status: string; staffName?: string }>>(new Map());
+  useEffect(() => {
+    for (const o of sessionOrders) {
+      const prev = orderSnapshotRef.current.get(o.id);
+      if (o.staffName && !prev?.staffName) {
+        setToast(`${o.staffName} is preparing your order`);
+        setTimeout(() => setToast(null), 3000);
+      } else if (o.status === "ready" && prev?.status !== "ready") {
+        setToast(o.staffName ? `${o.staffName} is bringing your order!` : "Your order is on the way!");
+        setTimeout(() => setToast(null), 3000);
+      }
+      orderSnapshotRef.current.set(o.id, { status: o.status, staffName: o.staffName });
+    }
+  }, [sessionOrders]);
+
   // Age gate state (client-only, SSR-safe).
   const [ageState, setAgeState] = useState<"checking" | "verified" | "declined">("checking");
   const [isUnderage, setIsUnderage] = useState(false);
@@ -567,14 +606,28 @@ export default function GuestOrderPage({ params }: Props) {
                   aria-label={`My Orders${activeCount > 0 ? ` — ${activeCount} in progress` : ""}`}
                   className="relative h-10 pl-3 pr-3.5 rounded-xl bg-lift border border-rim flex items-center gap-1.5 text-mist-200 hover:border-gold-600/50 transition-colors"
                 >
+                  {/* Pulsing live dot — only while something is actually active */}
+                  {headerStatusLabel && (
+                    <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
+                      <span className="animate-pulse-dot absolute h-full w-full rounded-full bg-gold-400 opacity-75" />
+                      <span className="relative h-1.5 w-1.5 rounded-full bg-gold-500 inline-flex" />
+                    </span>
+                  )}
                   {/* Receipt icon — three lines */}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
                     <path d="M16 8H8M16 12H8M12 16H8"/>
                   </svg>
-                  <span className="text-xs font-body font-semibold">Orders</span>
-                  {/* Active order count badge */}
-                  {activeCount > 0 && (
+                  {/* Label swaps to the live order status while one's active —
+                      key={headerStatusLabel} remounts the span on change so
+                      the pop animation replays, catching the eye even out of
+                      the corner of the guest's vision while browsing */}
+                  <span key={headerStatusLabel ?? "orders"} className="text-xs font-body font-semibold animate-scale-in whitespace-nowrap">
+                    {headerStatusLabel ?? "Orders"}
+                  </span>
+                  {/* Active order count badge — only when more than one, since
+                      the status label already conveys "something's active" */}
+                  {activeCount > 1 && (
                     <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-gold-500 text-void text-[10px] font-bold font-mono rounded-full flex items-center justify-center px-1">
                       {activeCount}
                     </span>
