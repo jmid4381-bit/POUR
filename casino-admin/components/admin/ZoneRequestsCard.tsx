@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Check, X, ArrowRight, Users } from "lucide-react";
+import { MapPin, Check, X, ArrowRight, Users, UserMinus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { ZoneRequest } from "@/lib/types";
@@ -9,7 +9,7 @@ import type { ZoneRequest } from "@/lib/types";
 const ACTIVE_STATUSES = ["pending", "accepted", "preparing", "ready"];
 
 export function ZoneRequestsCard() {
-  const { state, approveZoneRequest, denyZoneRequest } = useStore();
+  const { state, approveZoneRequest, denyZoneRequest, removeStaffZone } = useStore();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const activeLocations = state.locations.filter(l => l.isActive);
@@ -28,6 +28,9 @@ export function ZoneRequestsCard() {
     .filter(r => r.status === "pending")
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
+  // Group current assignments by staff member, for the "done helping" remove control
+  const staffNames = [...new Set(state.staffZones.map(z => z.staffName))].sort();
+
   const handleApprove = async (req: ZoneRequest) => {
     setBusyId(req.id);
     await approveZoneRequest(req);
@@ -36,6 +39,12 @@ export function ZoneRequestsCard() {
   const handleDeny = async (id: string) => {
     setBusyId(id);
     await denyZoneRequest(id);
+    setBusyId(null);
+  };
+  const handleRemove = async (staffName: string, locationId: string) => {
+    const key = `${staffName}:${locationId}`;
+    setBusyId(key);
+    await removeStaffZone(staffName, locationId);
     setBusyId(null);
   };
 
@@ -117,6 +126,45 @@ export function ZoneRequestsCard() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Current assignments — pull a staff member off a zone once they're
+          done helping, no request/approval needed for this direction */}
+      <div className="px-5 pb-5 pt-1 border-t border-edge">
+        <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-3">Current Assignments</p>
+        {staffNames.length === 0 ? (
+          <p className="text-ink-600 text-xs font-body">No zones assigned</p>
+        ) : (
+          <div className="space-y-2">
+            {staffNames.map(staffName => (
+              <div key={staffName} className="flex items-start gap-2.5">
+                <span className="text-white font-body font-medium text-sm flex-shrink-0 pt-0.5">{staffName}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {state.staffZones.filter(z => z.staffName === staffName).map(z => {
+                    const key = `${staffName}:${z.locationId}`;
+                    return (
+                      <span
+                        key={z.locationId}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-ink-300 bg-raised border border-edge rounded-full pl-2.5 pr-1.5 py-1"
+                      >
+                        {zoneName(z.locationId)}
+                        <button
+                          onClick={() => handleRemove(staffName, z.locationId)}
+                          disabled={busyId === key}
+                          aria-label={`Remove ${staffName} from ${zoneName(z.locationId)}`}
+                          title="Remove from this zone"
+                          className="w-4 h-4 rounded-full bg-red-500/15 text-red-400 hover:bg-red-500/25 flex items-center justify-center transition-all disabled:opacity-50"
+                        >
+                          <UserMinus size={9} />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

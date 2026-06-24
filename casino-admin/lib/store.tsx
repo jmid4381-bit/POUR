@@ -53,6 +53,7 @@ interface StoreCtx {
   toggleAvailable:(id: string) => Promise<void>;
   approveZoneRequest: (req: ZoneRequest) => Promise<void>;
   denyZoneRequest:    (id: string) => Promise<void>;
+  removeStaffZone:    (staffName: string, locationId: string) => Promise<void>;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -218,11 +219,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await fetchAll();
   }, [fetchAll]);
 
+  // Admin can unilaterally pull a staff member off a zone once they're done
+  // helping out — no request/approval needed for this direction, since the
+  // admin is the one initiating it.
+  const removeStaffZone = useCallback(async (staffName: string, locationId: string) => {
+    const { error: err } = await supabase
+      .from("staff_zones")
+      .delete()
+      .eq("staff_name", staffName)
+      .eq("location_id", locationId);
+    if (!err) logAudit("remove_staff_zone", "staff_zones", `${staffName}:${locationId}`, { staffName, locationId });
+    await fetchAll();
+  }, [fetchAll]);
+
   return (
     <Ctx.Provider value={{
       state, loading, error, refresh: fetchAll,
       addBeverage, updateBeverage, deleteBeverage, updatePrice, toggleAvailable,
-      approveZoneRequest, denyZoneRequest,
+      approveZoneRequest, denyZoneRequest, removeStaffZone,
     }}>
       {children}
     </Ctx.Provider>
