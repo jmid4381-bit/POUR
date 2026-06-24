@@ -569,7 +569,9 @@ export default function GuestOrderPage({ params }: Props) {
         )}>
           <div className="px-4 h-14 flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="font-display text-lg font-bold text-white leading-none truncate">POUR</p>
+              <p className="font-display text-2xl font-bold leading-none truncate bg-gradient-to-r from-red-400 via-mist-50 to-blue-400 bg-clip-text text-transparent">
+                POUR
+              </p>
             </div>
 
             {/* Alcohol cooldown — only rendered while a real cooldown is
@@ -684,8 +686,6 @@ export default function GuestOrderPage({ params }: Props) {
           )}
           {HOLIDAY_THEME_ACTIVE ? (
             <h1 className="font-display text-[2.6rem] font-semibold leading-tight mb-2 animate-fade-up">
-              <span className="text-white">POUR</span>
-              <span className="text-mist-500"> — </span>
               <span className="bg-gradient-to-r from-red-400 via-mist-50 to-blue-400 bg-clip-text text-transparent">
                 Happy 4th of July
               </span>
