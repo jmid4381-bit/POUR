@@ -259,7 +259,14 @@ export default function BeveragesPage() {
         </div>
 
         {/* ── Table ── */}
+        {/* This is a CSS grid, not a <table> -- grid items default to
+            min-width: auto, which refuses to shrink below content's
+            intrinsic width. On a narrow phone that pushed the row (and the
+            page) wider than the viewport. overflow-x-auto contains the
+            scroll to this card instead of letting it leak into the page. */}
         <div className="rounded-2xl border border-edge overflow-hidden bg-surface shadow-card">
+        <div className="overflow-x-auto">
+        <div className="min-w-[760px]">
           {/* Table header */}
           <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-0 border-b border-edge bg-raised/50">
             {[
@@ -350,7 +357,7 @@ export default function BeveragesPage() {
 
                     {/* Actions */}
                     <div className="px-4 py-3.5">
-                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="surface"
                           size="xs"
@@ -385,6 +392,8 @@ export default function BeveragesPage() {
               )}
             </div>
           )}
+        </div>
+        </div>
         </div>
 
         {/* Price edit hint */}

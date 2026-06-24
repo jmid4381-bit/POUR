@@ -157,6 +157,102 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
   );
 }
 
+// ─── Mobile card (replaces the table below the sm: breakpoint) ────────────────
+//
+// The table uses table-layout: auto, which lets a row grow wider than its
+// container when cell content can't shrink below its intrinsic minimum
+// width -- on a narrow phone that pushed the table (and the page) wider
+// than the viewport, which is what was breaking portrait scrolling. This
+// stacks the same fields vertically instead of relying on horizontal space.
+
+function OrderCardMobile({ order, index }: { order: Order; index: number }) {
+  const [open, setOpen] = useState(false);
+  const meta = STATUS_META[order.status];
+  const waitMin = order.deliveredAt
+    ? minutesBetween(order.placedAt, order.deliveredAt)
+    : null;
+
+  return (
+    <div
+      className="border-b border-edge/60 animate-row-in"
+      style={{ animationDelay: `${index * 20}ms` }}
+    >
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={cn(
+          "w-full text-left px-4 py-3.5 flex items-start gap-3 transition-colors",
+          open ? "bg-raised/70" : "active:bg-raised/40",
+        )}
+      >
+        <ChevronRight
+          size={13}
+          className={cn("text-ink-600 transition-transform flex-shrink-0 mt-1", open && "rotate-90 text-gold-400")}
+        />
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-[11px] text-ink-400 truncate">{order.id}</span>
+            <span className={cn("flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border", meta.color)}>
+              <span className={cn("w-1 h-1 rounded-full", meta.dot)} />
+              {meta.label}
+            </span>
+          </div>
+          <p className="text-white text-sm font-body font-medium leading-tight truncate">{order.locationName}</p>
+          {order.guestName && (
+            <p className="text-gold-400/80 text-[11px] font-mono">For {order.guestName}</p>
+          )}
+          <p className="text-ink-200 text-xs font-body truncate">
+            {order.items.map(i => `${i.quantity}× ${i.beverageName}`).join(", ")}
+          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-ink-500 text-[11px] font-mono">{fmtDateTime(order.placedAt)}</p>
+            {order.status === "cancelled" ? (
+              <span className="text-ink-600 font-mono text-sm">—</span>
+            ) : (
+              <span className={cn("font-mono font-semibold text-sm", order.revenue >= 100 ? "text-gold-300" : "text-white")}>
+                {fmtUSD(order.revenue)}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 pt-1">
+          <div className="rounded-xl border border-edge bg-surface/50 p-4 space-y-3">
+            <div>
+              <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-2">Items</p>
+              <div className="space-y-1.5">
+                {order.items.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-mono text-ink-500 w-5 text-right flex-shrink-0">×{item.quantity}</span>
+                      <span className="text-ink-200 font-body truncate">{item.beverageName}</span>
+                    </div>
+                    <span className="font-mono text-ink-300 flex-shrink-0">{fmtUSD(item.unitPrice * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between pt-2 mt-2 border-t border-edge/60">
+                <span className="text-xs font-mono text-ink-500">Order Total</span>
+                <span className="font-mono font-bold text-white">{fmtUSD(order.revenue)}</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 text-xs font-mono text-ink-500 pt-1 border-t border-edge/60">
+              <span>Placed: {fmtDateTime(order.placedAt)}</span>
+              {order.acceptedAt  && <span>Accepted: {fmtDateTime(order.acceptedAt)}</span>}
+              {order.deliveredAt && <span>Delivered: {fmtDateTime(order.deliveredAt)}</span>}
+              {waitMin !== null  && <span>Delivery time: {waitMin}m</span>}
+              {order.staffName   && <span>Staff: {order.staffName}</span>}
+              {order.guestName   && <span className="text-gold-400/80">Guest: {order.guestName}</span>}
+              {order.guestNote   && <span className="text-amber-400/80">Note: {order.guestNote}</span>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
@@ -304,48 +400,56 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* ── Orders Table ── */}
-        <div className="rounded-2xl border border-edge overflow-hidden bg-surface shadow-card">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-edge bg-raised/50">
-                {["Order ID", "Location", "Items", "Status", "Date & Time", "Revenue"].map((h, i) => (
-                  <th
-                    key={h}
-                    className={cn(
-                      "px-4 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest text-left",
-                      i === 5 && "text-right",
-                    )}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length > 0 ? (
-                filtered.map((order, i) => (
-                  <OrderRow key={order.id} order={order} index={i} />
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="py-20 text-center">
-                    <BarChart3 size={32} className="text-ink-700 mx-auto mb-3" />
-                    <p className="text-ink-500 font-body text-sm">
-                      {search.trim() ? `No orders found for "${search.trim()}"` : "No orders match your filters"}
-                    </p>
-                    <button
-                      onClick={() => { setSearch(""); setStatusFilter("all"); setDateRange("all"); }}
-                      className="mt-2 text-gold-400 text-xs font-body hover:text-gold-300"
-                    >
-                      Clear all filters
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* ── Orders — table on tablet/desktop, stacked cards on mobile ── */}
+        {filtered.length > 0 ? (
+          <>
+            {/* Desktop/tablet table */}
+            <div className="hidden sm:block rounded-2xl border border-edge overflow-hidden bg-surface shadow-card">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-edge bg-raised/50">
+                    {["Order ID", "Location", "Items", "Status", "Date & Time", "Revenue"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={cn(
+                          "px-4 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest text-left",
+                          i === 5 && "text-right",
+                        )}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((order, i) => (
+                    <OrderRow key={order.id} order={order} index={i} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile stacked cards */}
+            <div className="sm:hidden rounded-2xl border border-edge overflow-hidden bg-surface shadow-card">
+              {filtered.map((order, i) => (
+                <OrderCardMobile key={order.id} order={order} index={i} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="rounded-2xl border border-edge bg-surface shadow-card py-20 text-center">
+            <BarChart3 size={32} className="text-ink-700 mx-auto mb-3" />
+            <p className="text-ink-500 font-body text-sm">
+              {search.trim() ? `No orders found for "${search.trim()}"` : "No orders match your filters"}
+            </p>
+            <button
+              onClick={() => { setSearch(""); setStatusFilter("all"); setDateRange("all"); }}
+              className="mt-2 text-gold-400 text-xs font-body hover:text-gold-300"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
 
         {/* Row count */}
         {filtered.length > 0 && (
