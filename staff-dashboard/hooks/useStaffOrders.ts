@@ -287,7 +287,12 @@ export function useStaffOrders(staffName = "Staff") {
   }, [orders]);
 
   return {
-    orders, stats,
+    orders,
+    // Unfiltered, all-locations list — used only by name search, which is
+    // meant to find a guest's order regardless of zone assignment. The
+    // normal Kanban view always uses the filtered `orders` above.
+    allOrders: rawOrders,
+    stats,
     loading, loadError,
     newOrderAlert, actionFeedback,
     notifications, unreadCount,

@@ -32,6 +32,7 @@ import { StatCard }             from "@/components/staff/StatCard";
 import { StaffLogin }           from "@/components/staff/StaffLogin";
 import { NotificationCenter }   from "@/components/staff/NotificationCenter";
 import { cn }                   from "@/lib/utils";
+import { isVisibleToStaff }     from "@/lib/staffLocations";
 import type { OrderStatus }     from "@/lib/types";
 
 // ─── Mobile tab config ────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ export default function StaffDashboard() {
 
   // Hooks
   const {
-    orders, stats,
+    orders, allOrders, stats,
     loading, loadError,
     newOrderAlert, actionFeedback,
     notifications, unreadCount,
@@ -133,15 +134,33 @@ export default function StaffDashboard() {
       return new Date(a.placedAt).getTime() - new Date(b.placedAt).getTime();
     });
     const q = guestSearch.trim().toLowerCase();
+    // Search looks across every location, not just this staff member's
+    // assigned zones — a guest's order should be findable by whichever
+    // staff member they happen to walk up to. The normal (no-search) view
+    // still only ever uses the zone-filtered `orders`.
+    const source = q ? allOrders : orders;
     const matchesSearch = (o: typeof orders[number]) =>
       !q || (o.guestName ?? "").toLowerCase().includes(q);
     return {
-      pending:   sort(orders.filter(o => o.status === "pending" && matchesSearch(o))),
-      accepted:  sort(orders.filter(o => (o.status === "accepted" || o.status === "preparing") && matchesSearch(o))),
-      ready:     sort(orders.filter(o => o.status === "ready" && matchesSearch(o))),
-      delivered: sort(orders.filter(o => o.status === "delivered" && matchesSearch(o))),
+      pending:   sort(source.filter(o => o.status === "pending" && matchesSearch(o))),
+      accepted:  sort(source.filter(o => (o.status === "accepted" || o.status === "preparing") && matchesSearch(o))),
+      ready:     sort(source.filter(o => o.status === "ready" && matchesSearch(o))),
+      delivered: sort(source.filter(o => o.status === "delivered" && matchesSearch(o))),
     };
-  }, [orders, guestSearch]);
+  }, [orders, allOrders, guestSearch]);
+
+  // Orders visible only because of a cross-location search — flagged with
+  // a "Not your zone" badge so staff know it's outside their normal queue.
+  const crossZoneOrderIds = useMemo(() => {
+    if (!guestSearch.trim()) return undefined;
+    const ids = new Set<string>();
+    for (const list of Object.values(columns)) {
+      for (const o of list) {
+        if (!isVisibleToStaff(o.locationId, staffName ?? "")) ids.add(o.id);
+      }
+    }
+    return ids;
+  }, [columns, guestSearch, staffName]);
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -175,6 +194,7 @@ export default function StaffDashboard() {
     feedback:  actionFeedback,
     newOrderId: newOrderAlert?.id ?? null,
     guestCooldowns,
+    crossZoneOrderIds,
   };
 
   return (

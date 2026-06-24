@@ -31,6 +31,7 @@ interface KanbanCardProps {
   feedback?:       string;
   isNewArrival?:   boolean; // briefly highlighted when it just arrived via realtime
   cooldownExpiry?: number;  // epoch ms when this guest's alcohol cooldown clears
+  isOutsideZone?:  boolean; // surfaced only via cross-location name search
 }
 
 // "2m 15s" / "45s" — same shape as the existing toast/header cooldown text
@@ -48,7 +49,7 @@ function fmtTime(iso: string) {
 }
 
 export function KanbanCard({
-  order, onAccept, onReady, onDeliver, onCancel, feedback, isNewArrival, cooldownExpiry,
+  order, onAccept, onReady, onDeliver, onCancel, feedback, isNewArrival, cooldownExpiry, isOutsideZone,
 }: KanbanCardProps) {
   const [busy,         setBusy]         = useState(false);
   const [showCancelDlg,setShowCancelDlg]= useState(false);
@@ -154,9 +155,16 @@ export function KanbanCard({
             {/* Fix 10 — zone badge is the first thing a runner sees */}
             <ZoneBadge section={order.section} floor={order.floor} size="sm" />
             <div className="min-w-0 flex-1">
-              <p className="text-white font-display font-semibold text-sm leading-tight truncate">
-                {order.locationName}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-white font-display font-semibold text-sm leading-tight truncate">
+                  {order.locationName}
+                </p>
+                {isOutsideZone && (
+                  <span className="flex-shrink-0 inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border text-amber-400 bg-amber-400/10 border-amber-400/30">
+                    Not your zone
+                  </span>
+                )}
+              </div>
               {order.guestName && (
                 <p className="flex items-center gap-1 text-[10px] font-mono text-gold-400/90 mt-0.5">
                   <User size={9} className="flex-shrink-0" />

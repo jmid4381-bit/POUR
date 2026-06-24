@@ -30,11 +30,12 @@ interface KanbanColumnProps {
   isActive?:   boolean;  // mobile single-column mode
   newOrderId?: string | null; // briefly highlights the card that just arrived
   guestCooldowns?: Map<string, number>; // guestId -> cooldown expiry (epoch ms)
+  crossZoneOrderIds?: Set<string>; // order ids only visible because of a cross-location search
 }
 
 export function KanbanColumn({
   title, status, orders, count, accentColor, headerBg, emptyLabel,
-  onAccept, onReady, onDeliver, onCancel, feedback, newOrderId, guestCooldowns,
+  onAccept, onReady, onDeliver, onCancel, feedback, newOrderId, guestCooldowns, crossZoneOrderIds,
 }: KanbanColumnProps) {
   const isDelivered = status === "delivered";
   const isNew       = status === "pending";
@@ -106,6 +107,7 @@ export function KanbanColumn({
                 feedback={feedback?.id === order.id ? feedback.msg : undefined}
                 isNewArrival={order.id === newOrderId}
                 cooldownExpiry={order.guestId ? guestCooldowns?.get(order.guestId) : undefined}
+                isOutsideZone={crossZoneOrderIds?.has(order.id)}
               />
             ))}
 
