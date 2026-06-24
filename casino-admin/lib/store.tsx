@@ -124,14 +124,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── Realtime — refetch on any order / item / beverage / zone change ───────
   useEffect(() => {
+    const log = (table: string) => (payload: unknown) => {
+      // eslint-disable-next-line no-console
+      console.log("[admin-realtime]", table, payload);
+      fetchAll();
+    };
     const channel = supabase
       .channel("admin-dashboard-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" },      () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones" },   () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "zone_requests" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "beverages" },   () => fetchAll())
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" },        log("orders"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones" },   log("staff_zones"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "zone_requests" }, log("zone_requests"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" },   log("order_items"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "beverages" },     log("beverages"))
+      .subscribe((status, err) => {
+        // eslint-disable-next-line no-console
+        console.log("[admin-realtime] subscription status:", status, err ?? "");
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchAll]);
