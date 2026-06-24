@@ -97,6 +97,11 @@ export default function GuestOrderPage({ params }: Props) {
   const [placedOrder,      setPlacedOrder]= useState<PlacedOrder | null>(null);
   const [placingOrder,     setPlacingOrder]= useState(false);
   const [toast,            setToast]      = useState<string | null>(null);
+  // Separate from `toast` — these are the passive status notifications
+  // (cooldown cleared, staff assigned, order ready), which need to be hard
+  // to miss while a guest is scrolling the menu, unlike the small bottom
+  // confirmations like "added to your order".
+  const [bigToast,         setBigToast]    = useState<string | null>(null);
 
   // Session order history — persisted in sessionStorage, polled for live status
   const { orders: sessionOrders, addOrder, activeCount, refreshNow } = useOrderHistory(locationId);
@@ -116,8 +121,8 @@ export default function GuestOrderPage({ params }: Props) {
   const prevCooldownMs = useRef(0);
   useEffect(() => {
     if (prevCooldownMs.current > 0 && cooldownMs === 0) {
-      setToast("You can now order another drink!");
-      setTimeout(() => setToast(null), 3500);
+      setBigToast("You can now order another drink!");
+      setTimeout(() => setBigToast(null), 3500);
     }
     prevCooldownMs.current = cooldownMs;
   }, [cooldownMs]);
@@ -130,11 +135,11 @@ export default function GuestOrderPage({ params }: Props) {
     for (const o of sessionOrders) {
       const prev = orderSnapshotRef.current.get(o.id);
       if (o.staffName && !prev?.staffName) {
-        setToast(`${o.staffName} is preparing your order`);
-        setTimeout(() => setToast(null), 3000);
+        setBigToast(`${o.staffName} is preparing your order`);
+        setTimeout(() => setBigToast(null), 3000);
       } else if (o.status === "ready" && prev?.status !== "ready") {
-        setToast(o.staffName ? `${o.staffName} is bringing your order!` : "Your order is on the way!");
-        setTimeout(() => setToast(null), 3000);
+        setBigToast(o.staffName ? `${o.staffName} is bringing your order!` : "Your order is on the way!");
+        setTimeout(() => setBigToast(null), 3000);
       }
       orderSnapshotRef.current.set(o.id, { status: o.status, staffName: o.staffName });
     }
@@ -657,6 +662,21 @@ export default function GuestOrderPage({ params }: Props) {
             <div className="h-[2px] bg-gradient-to-r from-red-500 via-mist-50 to-blue-500" aria-hidden />
           )}
         </header>
+
+        {/* ── Prominent passive status notification — cooldown cleared, staff
+              assigned, order ready. Pinned just under the header so it's hard
+              to miss even mid-scroll, unlike the small bottom toast used for
+              quick action confirmations. ── */}
+        {bigToast && (
+          <div className="sticky top-14 z-40 px-4 pt-3 pointer-events-none animate-fade-up">
+            <div className="flex items-center gap-3 bg-gold-grad rounded-2xl px-4 py-3.5 shadow-[0_8px_32px_rgba(201,160,48,0.35)] animate-scale-in">
+              <div className="w-8 h-8 bg-void/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Check size={16} className="text-void" strokeWidth={2.5} />
+              </div>
+              <p className="text-void font-body font-bold text-sm leading-tight">{bigToast}</p>
+            </div>
+          </div>
+        )}
 
         {/* ── LOCATION BANNER ── */}
         <div className="px-4 pt-8 pb-6 text-center">
