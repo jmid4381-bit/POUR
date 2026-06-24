@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle, Clock, MapPin, RotateCcw, UserRound, Receipt } from "lucide-react";
+import { CheckCircle, Clock, MapPin, RotateCcw, UserRound, Receipt, X } from "lucide-react";
 import { cn, fmtUSD, fmtTime } from "@/lib/utils";
 import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/lib/queue";
 import { Fireworks } from "./Fireworks";
@@ -123,6 +123,16 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
     <div className="min-h-screen bg-base flex flex-col items-center justify-start pt-12 pb-32 px-4 animate-fade-in">
       {showFireworks && <Fireworks />}
       <div className="fixed inset-0 bg-hero-glow pointer-events-none" />
+
+      {/* Quick exit — same destination as "Order More Drinks", for a guest
+          who just wants back to the menu without reading this screen */}
+      <button
+        onClick={onOrderMore}
+        aria-label="Close and return to menu"
+        className="fixed top-4 right-4 z-20 w-9 h-9 rounded-full bg-lift/90 backdrop-blur-sm border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all"
+      >
+        <X size={16} />
+      </button>
 
       <div className="relative z-10 w-full max-w-sm space-y-6">
 
