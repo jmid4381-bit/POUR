@@ -44,6 +44,7 @@ export interface OrderItem {
 
 export interface Order {
   id:           string;
+  locationId?:  string;
   guestName?:   string;
   locationName: string;
   section:      string;
@@ -58,6 +59,34 @@ export interface Order {
   deliveredAt?: string;
   staffName?:   string;
   cancelReason?:string;
+}
+
+// ─── Locations & zone requests ─────────────────────────────────────────────────
+
+export interface Location {
+  id:       string;
+  name:     string;
+  section:  string;
+  floor:    number;
+  isActive: boolean;
+}
+
+export interface StaffZone {
+  staffName:  string;
+  locationId: string;
+}
+
+export type ZoneRequestType   = "switch" | "add";
+export type ZoneRequestStatus = "pending" | "approved" | "denied";
+
+export interface ZoneRequest {
+  id:               string;
+  staffName:        string;
+  requestType:      ZoneRequestType;
+  requestedZoneId:  string;
+  status:           ZoneRequestStatus;
+  createdAt:        string;
+  resolvedAt?:       string;
 }
 
 // ─── Category display ─────────────────────────────────────────────────────────

@@ -21,19 +21,24 @@ import {
   Zap, WifiOff, Wifi, AlertTriangle,
   Bell, X, Package, CheckCircle2,
   TrendingUp, ClipboardList, LayoutGrid, Volume2, VolumeX,
-  Truck, RefreshCw, Search,
+  Truck, RefreshCw, Search, MapPin, Clock,
 } from "lucide-react";
 import { useStaffOrders }       from "@/hooks/useStaffOrders";
 import { useAudio }             from "@/hooks/useAudio";
 import { useOnlineStatus }      from "@/hooks/useOnlineStatus";
 import { useGuestCooldowns }    from "@/hooks/useGuestCooldowns";
+import { useStaffZones }        from "@/hooks/useStaffZones";
+import { useZoneRequests }      from "@/hooks/useZoneRequests";
 import { KanbanColumn }         from "@/components/staff/KanbanColumn";
 import { StatCard }             from "@/components/staff/StatCard";
 import { StaffLogin }           from "@/components/staff/StaffLogin";
 import { NotificationCenter }   from "@/components/staff/NotificationCenter";
+import { ZonePicker }           from "@/components/staff/ZonePicker";
 import { cn }                   from "@/lib/utils";
-import { isVisibleToStaff }     from "@/lib/staffLocations";
+import { fetchActiveLocations, type StaffLocation } from "@/lib/locations";
 import type { OrderStatus }     from "@/lib/types";
+
+const ACTIVE_ORDER_STATUSES = ["pending", "accepted", "preparing", "ready"];
 
 // ─── Mobile tab config ────────────────────────────────────────────────────────
 
@@ -62,6 +67,13 @@ export default function StaffDashboard() {
   const [mobileCol,  setMobileCol]  = useState<ColKey>("pending");
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
+  const [zonePickerOpen, setZonePickerOpen] = useState(false);
+  const [zoneToast, setZoneToast] = useState<string | null>(null);
+
+  // Live (Supabase-backed) zone assignment — replaces the old static config
+  // so an admin-approved switch takes effect immediately, no redeploy.
+  const zones = useStaffZones();
+  const zoneRequests = useZoneRequests(staffName ?? "Staff");
 
   // Hooks
   const {
@@ -73,7 +85,40 @@ export default function StaffDashboard() {
     dismissAlert, markNotificationsRead,
     registerSyncCallback,
     refreshOrders,
-  } = useStaffOrders(staffName ?? "Staff");
+  } = useStaffOrders(staffName ?? "Staff", zones.isVisible);
+
+  // All active locations, for the zone picker — fetched once, doesn't need
+  // to be realtime itself (locations rarely change mid-event).
+  const [allLocations, setAllLocations] = useState<StaffLocation[]>([]);
+  useEffect(() => { fetchActiveLocations().then(setAllLocations); }, []);
+
+  // Live order-pressure count per zone, across ALL locations (not just this
+  // staff member's), so the picker can show where help is actually needed.
+  const orderCountByZone = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const o of allOrders) {
+      if (!o.locationId || !ACTIVE_ORDER_STATUSES.includes(o.status)) continue;
+      map.set(o.locationId, (map.get(o.locationId) ?? 0) + 1);
+    }
+    return map;
+  }, [allOrders]);
+
+  // Surface the admin's decision once, then auto-clear.
+  useEffect(() => {
+    if (!zoneRequests.latest || zoneRequests.latest.status === "pending") return;
+    setZoneToast(
+      zoneRequests.latest.status === "approved"
+        ? "Your zone request was approved"
+        : "Your zone request wasn't approved",
+    );
+    const id = setTimeout(() => { setZoneToast(null); zoneRequests.acknowledge(); }, 4000);
+    return () => clearTimeout(id);
+  }, [zoneRequests.latest, zoneRequests.acknowledge]);
+
+  const handleZoneSubmit = (type: "switch" | "add", zoneId: string) => {
+    zoneRequests.submitRequest(type, zoneId);
+    setZonePickerOpen(false);
+  };
 
   // Read-only context: the SAME server-enforced cooldown the guest app
   // shows and enforces — not a second cooldown concept. Fetched per unique
@@ -158,11 +203,11 @@ export default function StaffDashboard() {
     const ids = new Set<string>();
     for (const list of Object.values(columns)) {
       for (const o of list) {
-        if (!isVisibleToStaff(o.locationId, staffName ?? "")) ids.add(o.id);
+        if (!zones.isVisible(o.locationId, staffName ?? "")) ids.add(o.id);
       }
     }
     return ids;
-  }, [columns, guestSearch, staffName]);
+  }, [columns, guestSearch, staffName, zones.isVisible]);
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -294,6 +339,23 @@ export default function StaffDashboard() {
               </span>
               {connLabel}
             </div>
+
+            {/* Zones — request a switch/add, with a pending-request indicator */}
+            <button
+              onClick={() => setZonePickerOpen(true)}
+              title="Request a zone change"
+              className={cn(
+                "relative w-8 h-8 rounded-xl flex items-center justify-center transition-all border",
+                "bg-surface border-border text-slate-400 hover:text-white",
+              )}
+            >
+              <MapPin size={13} />
+              {zoneRequests.latest?.status === "pending" && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-base flex items-center justify-center">
+                  <Clock size={6} className="text-void" />
+                </span>
+              )}
+            </button>
 
             {/* Manual refresh — re-fetches orders from Supabase */}
             <button
@@ -546,6 +608,33 @@ export default function StaffDashboard() {
         </div>
 
       </main>
+
+      {/* ── Zone request result toast ── */}
+      {zoneToast && (
+        <div className="fixed bottom-4 inset-x-4 z-50 flex justify-center animate-fade-up">
+          <div className={cn(
+            "px-4 py-2.5 rounded-xl border text-sm font-body shadow-[0_8px_32px_rgba(0,0,0,0.6)]",
+            zoneToast.includes("approved")
+              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+              : "bg-surface border-border text-slate-200",
+          )}>
+            {zoneToast}
+          </div>
+        </div>
+      )}
+
+      {/* ── Zone picker sheet ── */}
+      {zonePickerOpen && (
+        <ZonePicker
+          locations={allLocations}
+          myZoneIds={zones.zonesFor(staffName)}
+          orderCountByZone={orderCountByZone}
+          pending={zoneRequests.latest}
+          submitting={zoneRequests.submitting}
+          onSubmit={handleZoneSubmit}
+          onClose={() => setZonePickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -6,7 +6,6 @@ import { OVERDUE_THRESHOLD_MINUTES } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { rowToOrder, type OrderRow } from "@/lib/supabase-orders";
 import { logAudit } from "@/lib/audit";
-import { isVisibleToStaff } from "@/lib/staffLocations";
 
 // ─── Notification type (Fix 4) ────────────────────────────────────────────────
 
@@ -32,14 +31,18 @@ export interface OrderStats {
   avgWaitSeconds: number;
 }
 
-export function useStaffOrders(staffName = "Staff") {
+// isVisible mirrors the old static isVisibleToStaff(locationId, staffName)
+// signature, but now backed by the live staff_zones table via
+// useStaffZones() — an admin-approved zone switch takes effect on the next
+// realtime tick, no redeploy.
+export function useStaffOrders(staffName = "Staff", isVisible: (locationId: string | undefined, staffName: string) => boolean) {
   const [rawOrders,     setOrders]       = useState<StaffOrder[]>([]);
 
   // Only orders from this staff member's assigned locations — plus any
   // location nobody has claimed, so an order never goes unseen.
   const orders = useMemo(
-    () => rawOrders.filter(o => isVisibleToStaff(o.locationId, staffName)),
-    [rawOrders, staffName],
+    () => rawOrders.filter(o => isVisible(o.locationId, staffName)),
+    [rawOrders, staffName, isVisible],
   );
   const [loading,       setLoading]      = useState(true);
   const [loadError,     setLoadError]    = useState<string | null>(null);

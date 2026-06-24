@@ -52,6 +52,7 @@ export function rowToOrder(row: OrderRow): Order {
 
   return {
     id:           row.id,
+    locationId:   row.location_id ?? undefined,
     guestName:    row.guest_name ?? undefined,
     locationName: row.location_name,
     section:      row.section,

@@ -4,11 +4,15 @@ import {
   createContext, useContext, useState,
   useEffect, useCallback, useMemo, type ReactNode,
 } from "react";
-import type { Beverage, Order } from "./types";
+import type { Beverage, Order, Location, StaffZone, ZoneRequest } from "./types";
 import { uid } from "./utils";
 import { supabase } from "./supabase";
 import { rowToOrder, type OrderRow } from "./supabase-orders";
 import { rowToBeverage, beverageToRow, type BeverageRow } from "./supabase-beverages";
+import {
+  rowToLocation, rowToStaffZone, rowToZoneRequest,
+  type LocationRow, type StaffZoneRow, type ZoneRequestRow,
+} from "./supabase-zones";
 import { logAudit } from "./audit";
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -16,8 +20,11 @@ import { logAudit } from "./audit";
 const ORDER_WINDOW_DAYS = 30;
 
 interface AppState {
-  beverages: Beverage[];
-  orders:    Order[];
+  beverages:    Beverage[];
+  orders:       Order[];
+  locations:    Location[];
+  staffZones:   StaffZone[];
+  zoneRequests: ZoneRequest[];
 }
 
 // Derive lifetime order counts per beverage from the loaded order window.
@@ -44,6 +51,8 @@ interface StoreCtx {
   deleteBeverage: (id: string) => Promise<void>;
   updatePrice:    (id: string, price: number) => Promise<void>;
   toggleAvailable:(id: string) => Promise<void>;
+  approveZoneRequest: (req: ZoneRequest) => Promise<void>;
+  denyZoneRequest:    (id: string) => Promise<void>;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -53,19 +62,22 @@ const Ctx = createContext<StoreCtx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [orders,       setOrders]       = useState<Order[]>([]);
   const [rawBeverages, setRawBeverages] = useState<Beverage[]>([]);
+  const [locations,    setLocations]    = useState<Location[]>([]);
+  const [staffZones,   setStaffZones]   = useState<StaffZone[]>([]);
+  const [zoneRequests, setZoneRequests] = useState<ZoneRequest[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState<string | null>(null);
 
-  // ── Load orders (rolling window) + beverages from Supabase ────────────────
+  // ── Load orders (rolling window) + beverages + zones from Supabase ────────
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const since = new Date(Date.now() - ORDER_WINDOW_DAYS * 86_400_000).toISOString();
 
-    const [ordersRes, beveragesRes] = await Promise.all([
+    const [ordersRes, beveragesRes, locationsRes, staffZonesRes, zoneRequestsRes] = await Promise.all([
       supabase
         .from("orders")
         .select(`
-          id, section, floor, status, guest_note,
+          id, location_id, section, floor, status, guest_note,
           placed_at, accepted_at, ready_at, delivered_at, staff_name, cancel_reason,
           guest_name, location_name,
           order_items ( beverage_id, beverage_name, unit_price, quantity, note )
@@ -77,6 +89,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase
         .from("beverages")
         .select("*"),
+      supabase
+        .from("locations")
+        .select("id, name, section, floor, is_active")
+        .order("id"),
+      supabase
+        .from("staff_zones")
+        .select("staff_name, location_id"),
+      supabase
+        .from("zone_requests")
+        .select("id, staff_name, request_type, requested_zone_id, status, created_at, resolved_at")
+        .order("created_at", { ascending: false }),
     ]);
 
     if (ordersRes.error || beveragesRes.error) {
@@ -88,16 +111,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setOrders((ordersRes.data as OrderRow[]).map(rowToOrder));
       setRawBeverages((beveragesRes.data as BeverageRow[]).map(r => rowToBeverage(r)));
     }
+
+    if (!locationsRes.error)    setLocations((locationsRes.data as LocationRow[] ?? []).map(rowToLocation));
+    if (!staffZonesRes.error)   setStaffZones((staffZonesRes.data as StaffZoneRow[] ?? []).map(rowToStaffZone));
+    if (!zoneRequestsRes.error) setZoneRequests((zoneRequestsRes.data as ZoneRequestRow[] ?? []).map(rowToZoneRequest));
+
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // ── Realtime — refetch on any order / item / beverage change ──────────────
+  // ── Realtime — refetch on any order / item / beverage / zone change ───────
   useEffect(() => {
     const channel = supabase
       .channel("admin-dashboard-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" },      () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones" },   () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "zone_requests" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "beverages" },   () => fetchAll())
       .subscribe();
@@ -106,7 +136,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [fetchAll]);
 
   const beverages = useMemo(() => withOrdersTotal(rawBeverages, orders), [rawBeverages, orders]);
-  const state: AppState = { beverages, orders };
+  const state: AppState = { beverages, orders, locations, staffZones, zoneRequests };
 
   // ── Beverage CRUD ───────────────────────────────────────────────────────────
 
@@ -155,10 +185,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     else logAudit("toggle_available", "beverages", id, { isAvailable });
   }, [rawBeverages, fetchAll]);
 
+  // ── Zone requests ────────────────────────────────────────────────────────────
+
+  // "switch" drops every zone the staff member currently has and replaces it
+  // with the requested one; "add" just adds the new zone alongside whatever
+  // they already have. Either way the request itself is marked resolved in
+  // the same action so it disappears from the pending list immediately.
+  const approveZoneRequest = useCallback(async (req: ZoneRequest) => {
+    if (req.requestType === "switch") {
+      const { error: delErr } = await supabase.from("staff_zones").delete().eq("staff_name", req.staffName);
+      if (delErr) { console.error("Failed to clear existing zones:", delErr.message); return; }
+    }
+    const { error: insErr } = await supabase
+      .from("staff_zones")
+      .upsert({ staff_name: req.staffName, location_id: req.requestedZoneId }, { onConflict: "staff_name,location_id" });
+    if (insErr) { console.error("Failed to assign new zone:", insErr.message); return; }
+
+    const { error: updErr } = await supabase
+      .from("zone_requests")
+      .update({ status: "approved", resolved_at: new Date().toISOString() })
+      .eq("id", req.id);
+    if (!updErr) logAudit("approve_zone_request", "zone_requests", req.id, { staffName: req.staffName, zone: req.requestedZoneId });
+    await fetchAll();
+  }, [fetchAll]);
+
+  const denyZoneRequest = useCallback(async (id: string) => {
+    const { error: err } = await supabase
+      .from("zone_requests")
+      .update({ status: "denied", resolved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (!err) logAudit("deny_zone_request", "zone_requests", id);
+    await fetchAll();
+  }, [fetchAll]);
+
   return (
     <Ctx.Provider value={{
       state, loading, error, refresh: fetchAll,
       addBeverage, updateBeverage, deleteBeverage, updatePrice, toggleAvailable,
+      approveZoneRequest, denyZoneRequest,
     }}>
       {children}
     </Ctx.Provider>
