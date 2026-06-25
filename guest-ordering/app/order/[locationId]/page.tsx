@@ -569,7 +569,7 @@ export default function GuestOrderPage({ params }: Props) {
         )}>
           <div className="px-4 h-14 flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="font-display text-2xl font-bold leading-none truncate bg-gradient-to-r from-red-400 via-mist-50 to-blue-400 bg-clip-text text-transparent">
+              <p className="font-display text-2xl font-bold leading-none truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
                 POUR
               </p>
             </div>
