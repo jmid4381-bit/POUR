@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { LoginScreen } from "./LoginScreen";
 
@@ -68,16 +67,5 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return (
-    <>
-      {children}
-      <button
-        onClick={() => supabase.auth.signOut()}
-        aria-label="Sign out"
-        className="fixed bottom-3 right-3 z-50 w-9 h-9 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-500 hover:text-white hover:border-rim transition-colors shadow-card"
-      >
-        <LogOut size={14} />
-      </button>
-    </>
-  );
+  return <>{children}</>;
 }

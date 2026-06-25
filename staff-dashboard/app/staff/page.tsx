@@ -21,8 +21,9 @@ import {
   Zap, WifiOff, Wifi, AlertTriangle,
   Bell, X, Package, CheckCircle2,
   TrendingUp, ClipboardList, LayoutGrid, Volume2, VolumeX,
-  Truck, RefreshCw, Search, MapPin, Clock,
+  Truck, RefreshCw, Search, MapPin, Clock, LogOut,
 } from "lucide-react";
+import { supabase }             from "@/lib/supabase";
 import { useStaffOrders }       from "@/hooks/useStaffOrders";
 import { useAudio }             from "@/hooks/useAudio";
 import { useOnlineStatus }      from "@/hooks/useOnlineStatus";
@@ -402,6 +403,15 @@ export default function StaffDashboard() {
             >
               <Wifi size={11} />
               On Duty
+            </button>
+
+            <button
+              onClick={() => supabase.auth.signOut()}
+              aria-label="Sign out"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all bg-raised border-border text-slate-400 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400"
+            >
+              <LogOut size={11} />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
 
           </div>
