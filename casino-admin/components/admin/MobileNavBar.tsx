@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Wine, ClipboardList, Users,
-  Zap, X, ChevronRight, Menu,
+  Zap, X, ChevronRight, Menu, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 const NAV = [
   { href: "/admin/overview",  icon: LayoutDashboard, label: "Overview"      },
@@ -114,6 +115,13 @@ export function MobileNavBar() {
                   </Link>
                 );
               })}
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all w-full text-red-400 hover:bg-red-500/10"
+              >
+                <LogOut size={16} strokeWidth={1.5} />
+                <span className="text-sm font-body font-medium flex-1 text-left">Sign Out</span>
+              </button>
             </nav>
           </div>
         </>

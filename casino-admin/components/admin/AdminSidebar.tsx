@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Wine, ClipboardList, Users,
-  Zap, ChevronRight, Activity, AlertTriangle,
+  Zap, ChevronRight, Activity, AlertTriangle, LogOut,
 } from "lucide-react";
 import { cn, fmtUSD } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { supabase } from "@/lib/supabase";
 
 const NAV = [
   { href: "/admin/overview",  icon: LayoutDashboard, label: "Overview",       sub: "Executive dashboard"   },
@@ -113,10 +114,17 @@ export function AdminSidebar() {
           <div className="w-8 h-8 bg-gold-gradient rounded-full flex items-center justify-center text-void font-bold text-xs flex-shrink-0">
             A
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-white font-body font-medium leading-none">Administrator</p>
             <p className="text-[10px] font-mono text-ink-500 mt-0.5">Full access</p>
           </div>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            aria-label="Sign out"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+          >
+            <LogOut size={15} />
+          </button>
         </div>
       </div>
     </aside>
