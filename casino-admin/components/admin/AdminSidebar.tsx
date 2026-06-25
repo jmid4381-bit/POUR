@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,6 +10,7 @@ import {
 import { cn, fmtUSD } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { supabase } from "@/lib/supabase";
+import { ConfirmDialog } from "@/components/ui/Modal";
 
 const NAV = [
   { href: "/admin/overview",  icon: LayoutDashboard, label: "Overview",       sub: "Executive dashboard"   },
@@ -20,6 +22,7 @@ const NAV = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const a = useAnalytics();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   return (
     <aside className="hidden lg:flex flex-col w-64 flex-shrink-0 bg-sidebar-surface border-r border-edge min-h-screen shadow-[1px_0_0_rgba(255,255,255,0.03)]">
@@ -119,7 +122,7 @@ export function AdminSidebar() {
             <p className="text-[10px] font-mono text-ink-500 mt-0.5">Full access</p>
           </div>
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => setConfirmSignOut(true)}
             aria-label="Sign out"
             className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
           >
@@ -127,6 +130,15 @@ export function AdminSidebar() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmSignOut}
+        title="Sign out?"
+        message="You'll need to log in again to access the admin console."
+        confirmLabel="Sign Out"
+        onConfirm={() => supabase.auth.signOut()}
+        onCancel={() => setConfirmSignOut(false)}
+      />
     </aside>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { ConfirmDialog } from "@/components/ui/Modal";
 
 const NAV = [
   { href: "/admin/overview",  icon: LayoutDashboard, label: "Overview"      },
@@ -20,6 +21,7 @@ const NAV = [
 export function MobileNavBar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   return (
     <>
@@ -116,7 +118,7 @@ export function MobileNavBar() {
                 );
               })}
               <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => setConfirmSignOut(true)}
                 className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all w-full text-red-400 hover:bg-red-500/10"
               >
                 <LogOut size={16} strokeWidth={1.5} />
@@ -126,6 +128,15 @@ export function MobileNavBar() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmSignOut}
+        title="Sign out?"
+        message="You'll need to log in again to access the admin console."
+        confirmLabel="Sign Out"
+        onConfirm={() => supabase.auth.signOut()}
+        onCancel={() => setConfirmSignOut(false)}
+      />
     </>
   );
 }
