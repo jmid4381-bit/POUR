@@ -70,6 +70,7 @@ export default function StaffDashboard() {
   const [guestSearch, setGuestSearch] = useState("");
   const [zonePickerOpen, setZonePickerOpen] = useState(false);
   const [zoneToast, setZoneToast] = useState<string | null>(null);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   // Live (Supabase-backed) zone assignment — replaces the old static config
   // so an admin-approved switch takes effect immediately, no redeploy.
@@ -406,7 +407,7 @@ export default function StaffDashboard() {
             </button>
 
             <button
-              onClick={() => supabase.auth.signOut()}
+              onClick={() => setConfirmSignOut(true)}
               aria-label="Sign out"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all bg-raised border-border text-slate-400 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400"
             >
@@ -644,6 +645,38 @@ export default function StaffDashboard() {
           onSubmit={handleZoneSubmit}
           onClose={() => setZonePickerOpen(false)}
         />
+      )}
+
+      {/* ── Sign-out confirmation ── */}
+      {confirmSignOut && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-fade-in"
+            onClick={() => setConfirmSignOut(false)}
+          />
+          <div className="relative w-full max-w-sm bg-surface border border-border rounded-2xl shadow-card overflow-hidden animate-scale-in">
+            <div className="p-6">
+              <h3 className="font-display text-lg font-semibold text-white mb-2">Sign out?</h3>
+              <p className="text-slate-400 text-sm font-body leading-relaxed mb-6">
+                You&apos;ll need to log in again to access the dashboard.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmSignOut(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-body font-semibold text-slate-300 bg-raised border border-border hover:bg-rim transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="px-4 py-2 rounded-xl text-sm font-body font-semibold bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition-all"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
