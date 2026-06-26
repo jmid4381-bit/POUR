@@ -336,8 +336,9 @@ export function KanbanCard({
                   onClick={() => onConfirmDelivered(order.id)}
                   aria-label="Confirm and clear from board"
                   title="Confirm — removes from board (still searchable by name)"
-                  className="flex-shrink-0 px-2.5 py-2 rounded-lg bg-raised border border-border text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all text-[11px] font-body font-semibold"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white shadow-btn-accept transition-all active:scale-[0.96] text-[11px] font-body font-bold"
                 >
+                  <CheckCircle2 size={12} />
                   Confirm
                 </button>
               )}
