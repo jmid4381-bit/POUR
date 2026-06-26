@@ -352,6 +352,8 @@ export default function GuestOrderPage({ params }: Props) {
       items:            [...items],
       estimatedMinutes,
       placedAt:         now,
+      surchargeAmount:  result.surchargeAmount ?? 0,
+      surchargeLabel:   result.surchargeLabel ?? null,
     };
 
     // Save to session history before switching to confirmation screen
@@ -361,6 +363,8 @@ export default function GuestOrderPage({ params }: Props) {
       items:            [...items],
       estimatedMinutes,
       placedAt:         now,
+      surchargeAmount:  result.surchargeAmount ?? 0,
+      surchargeLabel:   result.surchargeLabel ?? null,
     });
 
     // Save scroll position before switching to confirmation screen

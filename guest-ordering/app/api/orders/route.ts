@@ -30,6 +30,12 @@ const MAX_ITEMS     = 20;
 const MAX_ALCOHOLIC_PER_WINDOW = 2;
 const ALCOHOL_WINDOW_MINUTES   = 10;
 
+// 4th of July event — flat surcharge on any order containing alcohol,
+// once the admin-triggered event has been running for an hour.
+const JULY4_SURCHARGE_AMOUNT       = 3;
+const JULY4_SURCHARGE_LABEL        = "4th of July Hour Surcharge";
+const JULY4_SURCHARGE_DELAY_MS     = 60 * 60_000;
+
 interface OrderPayload {
   id:               string;
   locationId:       string;
@@ -121,6 +127,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 4th of July surcharge — flat fee, applied once per order, only if the
+  // event has been started and an hour has elapsed, and only if any item
+  // in this order is alcoholic.
+  let surchargeAmount = 0;
+  let surchargeLabel: string | null = null;
+  if (alcoholicQtyThisOrder > 0) {
+    const { data: eventRow } = await supabase
+      .from("event_settings")
+      .select("july4_started_at, july4_surcharge_enabled")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (
+      eventRow?.july4_surcharge_enabled &&
+      eventRow.july4_started_at &&
+      Date.now() - new Date(eventRow.july4_started_at).getTime() >= JULY4_SURCHARGE_DELAY_MS
+    ) {
+      surchargeAmount = JULY4_SURCHARGE_AMOUNT;
+      surchargeLabel = JULY4_SURCHARGE_LABEL;
+    }
+  }
+
   const rows = order.items.map(item => {
     const bev = beverageMap.get(String(item.beverage.id))!;
     return {
@@ -149,11 +177,13 @@ export async function POST(req: NextRequest) {
     p_items:             rows,
     p_guest_id:          order.guestId ? String(order.guestId) : null,
     p_guest_name:        (order.guestName ? String(order.guestName).trim() : "").slice(0, 30) || "Guest",
+    p_surcharge_amount:  surchargeAmount,
+    p_surcharge_label:   surchargeLabel,
   });
 
   if (submitErr) {
     return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, surchargeAmount, surchargeLabel });
 }

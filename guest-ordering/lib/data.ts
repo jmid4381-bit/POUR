@@ -45,6 +45,8 @@ export interface PlacedOrder {
   items:             CartItem[];
   estimatedMinutes:  number;
   placedAt:          string;
+  surchargeAmount?:  number;
+  surchargeLabel?:   string | null;
 }
 
 // ─── Category display config ──────────────────────────────────────────────────

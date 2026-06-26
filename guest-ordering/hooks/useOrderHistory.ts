@@ -12,6 +12,8 @@ export interface HistoryOrder {
   placedAt:         string;
   status:           QueuedOrderStatus;
   staffName?:       string;
+  surchargeAmount?: number;
+  surchargeLabel?:  string | null;
 }
 
 const HISTORY_KEY_PREFIX = "casino_orders_v1_";

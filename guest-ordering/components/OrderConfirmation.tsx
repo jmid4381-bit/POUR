@@ -54,7 +54,9 @@ function statusToStep(status: QueuedOrderStatus): number {
 }
 
 export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders }: OrderConfirmationProps) {
-  const total = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal  = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const surcharge = order.surchargeAmount ?? 0;
+  const total     = subtotal + surcharge;
 
   // ── Live step tracking ───────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState(0);
@@ -201,6 +203,13 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
                 </div>
               )}
             </div>
+
+            {surcharge > 0 && (
+              <div className="flex items-center justify-between bg-amber-400/8 border border-amber-400/20 rounded-xl px-3 py-2">
+                <span className="text-amber-300 text-xs font-body">{order.surchargeLabel}</span>
+                <span className="font-mono text-xs font-semibold text-amber-300">{fmtUSD(surcharge)}</span>
+              </div>
+            )}
 
             <div className="flex justify-between pt-3 border-t border-edge">
               <span className="text-sm text-mist-400 font-body">Total</span>

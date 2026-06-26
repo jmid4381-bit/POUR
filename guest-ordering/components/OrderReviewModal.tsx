@@ -1,9 +1,10 @@
 "use client";
 
-import { X, MapPin, Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ChevronDown } from "lucide-react";
+import { X, MapPin, Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ChevronDown, Sparkles } from "lucide-react";
 import { useState, useRef } from "react";
 import { cn, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useJuly4Surcharge, JULY4_SURCHARGE_AMOUNT, JULY4_SURCHARGE_LABEL } from "@/hooks/useJuly4Surcharge";
 import type { CartItem } from "@/lib/data";
 
 interface OrderReviewModalProps {
@@ -24,9 +25,14 @@ export function OrderReviewModal({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
-  const total       = cart.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal    = cart.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
   const itemCount   = cart.reduce((s, i) => s + i.quantity, 0);
   const uniqueCount = cart.length;
+
+  const surchargeActive = useJuly4Surcharge();
+  const hasAlcohol  = cart.some(i => i.beverage.isAlcoholic);
+  const surcharge   = surchargeActive && hasAlcohol ? JULY4_SURCHARGE_AMOUNT : 0;
+  const total       = subtotal + surcharge;
 
   return (
     <>
@@ -93,6 +99,16 @@ export function OrderReviewModal({
                 <p className="text-white font-mono font-bold text-base mt-0.5">{fmtUSD(total)}</p>
               </div>
             </div>
+
+            {/* 4th of July surcharge notice — live, appears/disappears as the
+                guest's last alcoholic item is added/removed */}
+            {surcharge > 0 && (
+              <div className="flex items-center gap-2 bg-amber-400/8 border border-amber-400/20 rounded-xl px-3 py-2 animate-fade-in">
+                <Sparkles size={13} className="text-amber-400 flex-shrink-0" />
+                <span className="flex-1 text-amber-300 text-xs font-body">{JULY4_SURCHARGE_LABEL}</span>
+                <span className="font-mono text-xs font-semibold text-amber-300">{fmtUSD(surcharge)}</span>
+              </div>
+            )}
 
             {/* Place Order button — large, impossible to miss */}
             <button
@@ -200,9 +216,21 @@ export function OrderReviewModal({
 
                 {/* Repeat confirm at bottom after scrolling through items */}
                 <div className="pt-2 pb-1 space-y-2">
-                  <div className="flex justify-between text-sm pt-2 border-t border-edge">
-                    <span className="text-mist-400 font-body">{itemCount} drink{itemCount !== 1 ? "s" : ""}</span>
-                    <span className="font-mono font-bold text-white">{fmtUSD(total)}</span>
+                  <div className="space-y-1 pt-2 border-t border-edge">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-mist-400 font-body">{itemCount} drink{itemCount !== 1 ? "s" : ""}</span>
+                      <span className="font-mono text-mist-300">{fmtUSD(subtotal)}</span>
+                    </div>
+                    {surcharge > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-amber-400 font-body">{JULY4_SURCHARGE_LABEL}</span>
+                        <span className="font-mono text-amber-300">{fmtUSD(surcharge)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm pt-1">
+                      <span className="text-white font-body font-semibold">Total</span>
+                      <span className="font-mono font-bold text-white">{fmtUSD(total)}</span>
+                    </div>
                   </div>
                   <button
                     onClick={onConfirm}

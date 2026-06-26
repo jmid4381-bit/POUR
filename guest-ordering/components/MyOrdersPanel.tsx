@@ -130,7 +130,9 @@ interface OrderCardProps {
 }
 
 function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
-  const total   = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal  = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const surcharge = order.surchargeAmount ?? 0;
+  const total     = subtotal + surcharge;
   const display = STATUS_DISPLAY[order.status];
   const isActive = order.status !== "delivered" && order.status !== "cancelled";
 
@@ -182,6 +184,13 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
             </div>
           ))}
         </div>
+
+        {surcharge > 0 && (
+          <div className="flex items-center justify-between bg-amber-400/8 border border-amber-400/20 rounded-lg px-2.5 py-1.5">
+            <span className="text-amber-300 text-[11px] font-body">{order.surchargeLabel}</span>
+            <span className="font-mono text-[11px] font-semibold text-amber-300">{fmtUSD(surcharge)}</span>
+          </div>
+        )}
 
         {/* Total */}
         <div className="flex justify-between pt-2.5 border-t border-edge/60">

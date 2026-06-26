@@ -75,6 +75,8 @@ export interface SubmitOrderResult {
   rateLimited?:    boolean;
   cooldownBlocked?: boolean;
   cooldownMs?:     number;
+  surchargeAmount?: number;
+  surchargeLabel?:  string | null;
 }
 
 // Order submission goes through our own API route (not directly to Supabase)
@@ -100,7 +102,8 @@ export async function submitOrder(order: QueuedOrder): Promise<SubmitOrderResult
     }
     if (!res.ok) throw new Error(`Order submission failed: ${res.status}`);
 
-    return { ok: true };
+    const body = await res.json().catch(() => ({}));
+    return { ok: true, surchargeAmount: body.surchargeAmount ?? 0, surchargeLabel: body.surchargeLabel ?? null };
 
   } catch (err) {
     // API route unreachable — fall back to localStorage so the guest still
