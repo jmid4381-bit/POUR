@@ -41,3 +41,14 @@ export function getOrCreateGuestId(): string {
   writeCookie(GUEST_ID_COOKIE, id, MAX_AGE_SECONDS);
   return id;
 }
+
+// Mints a brand-new ID and overwrites the cookie unconditionally — used
+// when a guest explicitly says "Not me" on a shared device, so the next
+// person doesn't inherit the previous guest's restored order history
+// (purely informational state; this never touches the cooldown's own
+// enforcement, which already passes through this same cookie value).
+export function resetGuestId(): string {
+  const id = crypto.randomUUID();
+  writeCookie(GUEST_ID_COOKIE, id, MAX_AGE_SECONDS);
+  return id;
+}

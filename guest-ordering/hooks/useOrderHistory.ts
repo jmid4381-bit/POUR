@@ -118,5 +118,13 @@ export function useOrderHistory(locationId: string) {
 
   const activeCount = orders.filter(o => !isTerminal(o.status)).length;
 
-  return { orders, addOrder, restoreOrders, activeCount, refreshNow: poll };
+  // Wipes this tab's history outright — used when a guest explicitly says
+  // "Not me," so the next person on a shared device starts with a clean
+  // slate instead of seeing the previous guest's orders until restoreOrders
+  // runs again under their own (freshly reset) guest ID.
+  const clearOrders = useCallback(() => {
+    setOrders([]);
+  }, []);
+
+  return { orders, addOrder, restoreOrders, clearOrders, activeCount, refreshNow: poll };
 }

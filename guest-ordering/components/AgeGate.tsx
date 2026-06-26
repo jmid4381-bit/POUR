@@ -25,6 +25,7 @@ import {
   type RememberedVerification,
 } from "@/lib/ageGate";
 import { setGuestName, getRememberedGuestName, clearRememberedGuestName } from "@/lib/guestName";
+import { resetGuestId } from "@/lib/guestSession";
 
 export { hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession } from "@/lib/ageGate";
 export { getGuestName } from "@/lib/guestName";
@@ -34,12 +35,13 @@ const NAME_MAX_LEN = 30;
 interface AgeGateProps {
   onConfirm:  () => void;
   onDecline:  () => void;
+  onResetIdentity?: () => void; // called when the guest says "Not me"
   legalAge?:  number;
   venueName?: string;
 }
 
 export function AgeGate({
-  onConfirm, onDecline,
+  onConfirm, onDecline, onResetIdentity,
   legalAge = LEGAL_DRINKING_AGE,
   venueName = DEFAULT_VENUE_NAME,
 }: AgeGateProps) {
@@ -75,6 +77,8 @@ export function AgeGate({
   const handleNotMe = () => {
     clearRememberedVerification();
     clearRememberedGuestName();
+    resetGuestId();
+    onResetIdentity?.();
     setStep("birthdate");
   };
 

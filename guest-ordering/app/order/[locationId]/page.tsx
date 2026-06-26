@@ -105,7 +105,7 @@ export default function GuestOrderPage({ params }: Props) {
   const [bigToast,         setBigToast]    = useState<string | null>(null);
 
   // Session order history — persisted in sessionStorage, polled for live status
-  const { orders: sessionOrders, addOrder, restoreOrders, activeCount, refreshNow } = useOrderHistory(locationId);
+  const { orders: sessionOrders, addOrder, restoreOrders, clearOrders, activeCount, refreshNow } = useOrderHistory(locationId);
 
   // Restore a returning guest's order history (any location, last 24h) from
   // Supabase by their persistent guest-ID cookie — the same identifier and
@@ -503,6 +503,21 @@ export default function GuestOrderPage({ params }: Props) {
       <AgeGate
         onConfirm={() => { setIsUnderage(isUnderageSession()); setGuestDisplayName(getGuestName()); setAgeState("verified"); }}
         onDecline={() => setAgeState("declined")}
+        onResetIdentity={() => {
+          // "Not me" already minted a fresh guest-ID cookie — pick it up
+          // here too so cooldown reads and order placement use the new
+          // identity, and drop the previous guest's restored history so
+          // it doesn't carry over to whoever's actually using the device
+          // now. Re-fetches under the new ID in case it somehow matches
+          // existing rows (e.g. a UUID collision) — in practice this will
+          // just come back empty for a genuinely new identity.
+          const newGid = getOrCreateGuestId();
+          guestIdRef.current = newGid;
+          clearOrders();
+          if (beverages.length > 0) {
+            fetchGuestOrderHistory(newGid, beverages).then(restoreOrders);
+          }
+        }}
       />
     );
   }
