@@ -28,6 +28,7 @@ interface KanbanCardProps {
   onReady:         (id: string) => void;
   onDeliver:       (id: string) => void;
   onCancel:        (id: string, reason: string) => void;
+  onConfirmDelivered?: (id: string) => void;
   feedback?:       string;
   isNewArrival?:   boolean; // briefly highlighted when it just arrived via realtime
   cooldownExpiry?: number;  // epoch ms when this guest's alcohol cooldown clears
@@ -49,7 +50,7 @@ function fmtTime(iso: string) {
 }
 
 export function KanbanCard({
-  order, onAccept, onReady, onDeliver, onCancel, feedback, isNewArrival, cooldownExpiry, isOutsideZone,
+  order, onAccept, onReady, onDeliver, onCancel, onConfirmDelivered, feedback, isNewArrival, cooldownExpiry, isOutsideZone,
 }: KanbanCardProps) {
   const [busy,         setBusy]         = useState(false);
   const [showCancelDlg,setShowCancelDlg]= useState(false);
@@ -322,12 +323,24 @@ export function KanbanCard({
           )}
 
           {order.status === "delivered" && (
-            <div className="flex items-center gap-1.5 bg-emerald-500/8 border border-emerald-500/15 rounded-lg px-2.5 py-2">
-              <CheckCircle2 size={12} className="text-emerald-400" />
-              <span className="text-[11px] text-emerald-300/80 font-body">
-                Delivered {order.deliveredAt ? `at ${fmtTime(order.deliveredAt)}` : ""}
-                {order.staffName ? ` · ${order.staffName}` : ""}
-              </span>
+            <div className="flex items-center gap-1.5">
+              <div className="flex-1 flex items-center gap-1.5 bg-emerald-500/8 border border-emerald-500/15 rounded-lg px-2.5 py-2 min-w-0">
+                <CheckCircle2 size={12} className="text-emerald-400 flex-shrink-0" />
+                <span className="text-[11px] text-emerald-300/80 font-body truncate">
+                  Delivered {order.deliveredAt ? `at ${fmtTime(order.deliveredAt)}` : ""}
+                  {order.staffName ? ` · ${order.staffName}` : ""}
+                </span>
+              </div>
+              {onConfirmDelivered && (
+                <button
+                  onClick={() => onConfirmDelivered(order.id)}
+                  aria-label="Confirm and clear from board"
+                  title="Confirm — removes from board (still searchable by name)"
+                  className="flex-shrink-0 px-2.5 py-2 rounded-lg bg-raised border border-border text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all text-[11px] font-body font-semibold"
+                >
+                  Confirm
+                </button>
+              )}
             </div>
           )}
 

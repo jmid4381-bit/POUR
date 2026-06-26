@@ -26,6 +26,7 @@ interface KanbanColumnProps {
   onReady:     (id: string) => void;
   onDeliver:   (id: string) => void;
   onCancel:    (id: string, reason: string) => void;
+  onConfirmDelivered?: (id: string) => void;
   feedback?:   { id: string; msg: string } | null;
   isActive?:   boolean;  // mobile single-column mode
   newOrderId?: string | null; // briefly highlights the card that just arrived
@@ -35,7 +36,7 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({
   title, status, orders, count, accentColor, headerBg, emptyLabel,
-  onAccept, onReady, onDeliver, onCancel, feedback, newOrderId, guestCooldowns, crossZoneOrderIds,
+  onAccept, onReady, onDeliver, onCancel, onConfirmDelivered, feedback, newOrderId, guestCooldowns, crossZoneOrderIds,
 }: KanbanColumnProps) {
   const isDelivered = status === "delivered";
   const isNew       = status === "pending";
@@ -104,6 +105,7 @@ export function KanbanColumn({
                 onReady={onReady}
                 onDeliver={onDeliver}
                 onCancel={onCancel}
+                onConfirmDelivered={onConfirmDelivered}
                 feedback={feedback?.id === order.id ? feedback.msg : undefined}
                 isNewArrival={order.id === newOrderId}
                 cooldownExpiry={order.guestId ? guestCooldowns?.get(order.guestId) : undefined}

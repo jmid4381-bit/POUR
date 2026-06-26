@@ -16,7 +16,7 @@
  *  Fixes 2, 7 resolved in ClockContext / KanbanCard respectively.
  */
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   Zap, WifiOff, Wifi, AlertTriangle,
   Bell, X, Package, CheckCircle2,
@@ -71,6 +71,26 @@ export default function StaffDashboard() {
   const [zonePickerOpen, setZonePickerOpen] = useState(false);
   const [zoneToast, setZoneToast] = useState<string | null>(null);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  // Delivered orders the staff has explicitly cleared from the board —
+  // purely a local declutter step. The order itself is untouched in
+  // Supabase, so it's still fully searchable by guest name within the
+  // normal 24h window; this only hides it from the default Delivered view.
+  const [dismissedDelivered, setDismissedDelivered] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = sessionStorage.getItem("staff_dismissed_delivered_v1");
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    } catch { return new Set(); }
+  });
+  const confirmDelivered = useCallback((id: string) => {
+    setDismissedDelivered(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try { sessionStorage.setItem("staff_dismissed_delivered_v1", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, []);
 
   // Live (Supabase-backed) zone assignment — replaces the old static config
   // so an admin-approved switch takes effect immediately, no redeploy.
@@ -194,9 +214,14 @@ export default function StaffDashboard() {
       pending:   sort(source.filter(o => o.status === "pending" && matchesSearch(o))),
       accepted:  sort(source.filter(o => (o.status === "accepted" || o.status === "preparing") && matchesSearch(o))),
       ready:     sort(source.filter(o => o.status === "ready" && matchesSearch(o))),
-      delivered: sort(source.filter(o => o.status === "delivered" && matchesSearch(o))),
+      // Dismissed cards stay hidden from the normal board view, but a
+      // guest-name search still searches the full set — dismissal is just
+      // a local declutter step, not a real filter on the underlying data.
+      delivered: sort(source.filter(o =>
+        o.status === "delivered" && matchesSearch(o) && (q || !dismissedDelivered.has(o.id))
+      )),
     };
-  }, [orders, allOrders, guestSearch]);
+  }, [orders, allOrders, guestSearch, dismissedDelivered]);
 
   // Orders visible only because of a cross-location search — flagged with
   // a "Not your zone" badge so staff know it's outside their normal queue.
@@ -240,6 +265,7 @@ export default function StaffDashboard() {
     onReady:   markReady,
     onDeliver: deliverOrder,
     onCancel:  cancelOrder,
+    onConfirmDelivered: confirmDelivered,
     feedback:  actionFeedback,
     newOrderId: newOrderAlert?.id ?? null,
     guestCooldowns,
