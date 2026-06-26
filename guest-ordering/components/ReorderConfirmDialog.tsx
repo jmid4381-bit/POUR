@@ -1,21 +1,25 @@
 "use client";
 
 import { useRef } from "react";
-import { RotateCcw, AlertCircle, Sparkles } from "lucide-react";
-import { fmtUSD } from "@/lib/utils";
+import { RotateCcw, AlertCircle, Sparkles, Minus, Plus } from "lucide-react";
+import { cn, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useJuly4Surcharge, JULY4_SURCHARGE_AMOUNT, JULY4_SURCHARGE_LABEL } from "@/hooks/useJuly4Surcharge";
 import type { CartItem } from "@/lib/data";
 
 interface ReorderConfirmDialogProps {
-  items:     CartItem[];
-  note?:     string | null; // e.g. "1 alcoholic drink skipped — limit reached for now"
-  onConfirm: () => void;
-  onCancel:  () => void;
-  isPlacing: boolean;
+  items:           CartItem[];
+  note?:           string | null; // e.g. "1 alcoholic drink skipped — limit reached for now"
+  alcoholRoomLeft?: number;       // how many more alcoholic drinks can still be added
+  onUpdateQty?:    (beverageId: string, delta: number) => void;
+  onConfirm:       () => void;
+  onCancel:        () => void;
+  isPlacing:       boolean;
 }
 
-export function ReorderConfirmDialog({ items, note, onConfirm, onCancel, isPlacing }: ReorderConfirmDialogProps) {
+export function ReorderConfirmDialog({
+  items, note, alcoholRoomLeft = 0, onUpdateQty, onConfirm, onCancel, isPlacing,
+}: ReorderConfirmDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
@@ -50,16 +54,45 @@ export function ReorderConfirmDialog({ items, note, onConfirm, onCancel, isPlaci
               </p>
             </div>
 
-            <div className="bg-lift/60 border border-edge rounded-2xl p-3.5 space-y-1.5 max-h-40 overflow-y-auto">
-              {items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-mist-200 font-body">
-                    {item.beverage.name}
-                    {item.quantity > 1 && <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>}
-                  </span>
-                  <span className="font-mono text-mist-400">{fmtUSD(item.beverage.price * item.quantity)}</span>
-                </div>
-              ))}
+            <div className="bg-lift/60 border border-edge rounded-2xl p-3.5 space-y-2 max-h-52 overflow-y-auto">
+              {items.map((item, i) => {
+                const atAlcoholLimit = item.beverage.isAlcoholic && alcoholRoomLeft <= 0;
+                return (
+                  <div key={i} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-mist-200 font-body min-w-0 truncate">{item.beverage.name}</span>
+                    {onUpdateQty ? (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => onUpdateQty(item.beverage.id, -1)}
+                          disabled={item.quantity <= 1}
+                          aria-label={`Decrease ${item.beverage.name} quantity`}
+                          className="w-6 h-6 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Minus size={10} />
+                        </button>
+                        <span className="w-4 text-center font-mono text-white font-bold text-xs">{item.quantity}</span>
+                        <button
+                          onClick={() => onUpdateQty(item.beverage.id, 1)}
+                          disabled={atAlcoholLimit || item.quantity >= 8}
+                          aria-label={`Increase ${item.beverage.name} quantity`}
+                          title={atAlcoholLimit ? "Drink limit reached for now" : undefined}
+                          className="w-6 h-6 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Plus size={10} />
+                        </button>
+                        <span className={cn("font-mono text-xs w-12 text-right", item.quantity > 1 ? "text-mist-300" : "text-mist-500")}>
+                          {fmtUSD(item.beverage.price * item.quantity)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-mono text-mist-400 flex-shrink-0">
+                        {item.quantity > 1 && <span className="text-mist-500 mr-1">×{item.quantity}</span>}
+                        {fmtUSD(item.beverage.price * item.quantity)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {surcharge > 0 && (

@@ -419,6 +419,11 @@ export default function GuestOrderPage({ params }: Props) {
   // would incorrectly block the non-alcoholic items in the same order.
   const [reorderCandidate, setReorderCandidate] = useState<CartItem[] | null>(null);
   const [reorderNote,      setReorderNote]      = useState<string | null>(null);
+  // How many more alcoholic drinks could still be added to this reorder
+  // without exceeding the guest's real cooldown room — computed once when
+  // the dialog opens, then adjusted live as the guest taps +/- on an
+  // alcoholic item so the limit can never be exceeded from this dialog.
+  const [reorderRoomLeft, setReorderRoomLeft]  = useState(0);
 
   const handleReorder = useCallback(async (order: { items: CartItem[] }) => {
     const nonAlcoholic: CartItem[] = [];
@@ -432,6 +437,7 @@ export default function GuestOrderPage({ params }: Props) {
     }
 
     let droppedAlcoholicQty = 0;
+    let leftoverRoom = 0;
     if (alcoholic.length > 0) {
       const gid  = guestIdRef.current ?? getOrCreateGuestId();
       let room   = await readAlcoholRoom(gid);
@@ -444,6 +450,7 @@ export default function GuestOrderPage({ params }: Props) {
       }
       alcoholic.length = 0;
       alcoholic.push(...kept);
+      leftoverRoom = room;
     }
 
     const resolved = [...nonAlcoholic, ...alcoholic];
@@ -460,20 +467,48 @@ export default function GuestOrderPage({ params }: Props) {
     if (droppedAlcoholicQty > 0) notes.push(`${droppedAlcoholicQty} alcoholic drink${droppedAlcoholicQty !== 1 ? "s" : ""} skipped — limit reached for now`);
     if (unavailableCount   > 0) notes.push(`${unavailableCount} item${unavailableCount !== 1 ? "s" : ""} no longer available`);
     setReorderNote(notes.join(" · ") || null);
+    setReorderRoomLeft(leftoverRoom);
     setReorderCandidate(resolved);
   }, [beverages]);
+
+  // Lets the guest bump quantities up/down right in the confirm dialog
+  // instead of re-placing the same reorder multiple times. Alcoholic items
+  // are still capped by the guest's real remaining cooldown room; non-
+  // alcoholic items just respect the same 8-per-item ceiling the cart uses.
+  const updateReorderQty = useCallback((beverageId: string, delta: number) => {
+    setReorderCandidate(prev => {
+      if (!prev) return prev;
+      return prev.map(item => {
+        if (item.beverage.id !== beverageId) return item;
+        if (delta > 0) {
+          if (item.beverage.isAlcoholic) {
+            if (reorderRoomLeft <= 0) return item;
+            setReorderRoomLeft(r => Math.max(0, r - 1));
+          }
+          const nextQty = Math.min(8, item.quantity + 1);
+          return nextQty === item.quantity ? item : { ...item, quantity: nextQty };
+        } else {
+          if (item.quantity <= 1) return item;
+          if (item.beverage.isAlcoholic) setReorderRoomLeft(r => r + 1);
+          return { ...item, quantity: item.quantity - 1 };
+        }
+      });
+    });
+  }, [reorderRoomLeft]);
 
   const confirmReorder = useCallback(async () => {
     if (!reorderCandidate) return;
     const placed = await placeOrder(reorderCandidate);
     setReorderCandidate(null);
     setReorderNote(null);
+    setReorderRoomLeft(0);
     if (placed) setShowOrders(false);
   }, [reorderCandidate, placeOrder]);
 
   const cancelReorder = useCallback(() => {
     setReorderCandidate(null);
     setReorderNote(null);
+    setReorderRoomLeft(0);
   }, []);
 
   // Restore category and scroll position when returning from confirmation
@@ -547,6 +582,8 @@ export default function GuestOrderPage({ params }: Props) {
           <ReorderConfirmDialog
             items={reorderCandidate}
             note={reorderNote}
+            alcoholRoomLeft={reorderRoomLeft}
+            onUpdateQty={updateReorderQty}
             onConfirm={confirmReorder}
             onCancel={cancelReorder}
             isPlacing={placingOrder}
@@ -885,6 +922,8 @@ export default function GuestOrderPage({ params }: Props) {
         <ReorderConfirmDialog
           items={reorderCandidate}
           note={reorderNote}
+          alcoholRoomLeft={reorderRoomLeft}
+          onUpdateQty={updateReorderQty}
           onConfirm={confirmReorder}
           onCancel={cancelReorder}
           isPlacing={placingOrder}
