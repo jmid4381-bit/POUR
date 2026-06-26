@@ -410,10 +410,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
         )}
 
         {/* Order list */}
-        <div className={cn(
-          "flex-1 overflow-y-auto overscroll-contain px-4 py-4",
-          tab === "summary" ? "flex flex-col" : "space-y-3",
-        )}>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
           {orders.length === 0 ? (
             <div className="py-16 text-center">
               <p className="text-4xl mb-3" aria-hidden>🍹</p>
@@ -473,10 +470,10 @@ function SummaryView({ orders, totalSpend, filterQuery }: SummaryViewProps) {
   const surchargeLabel  = surchargeOrders[0]?.surchargeLabel ?? "Event Surcharge";
 
   return (
-    <div className="flex-1 flex flex-col bg-card border border-edge rounded-2xl overflow-hidden shadow-card">
+    <div className="flex flex-col min-h-[60vh] bg-card border border-edge rounded-2xl overflow-hidden shadow-card">
       <div className="h-[3px] bg-gold-grad flex-shrink-0" />
       <div className="flex-1 flex flex-col p-5 sm:p-6">
-        <div className="flex-1 space-y-4 overflow-y-auto">
+        <div className="flex-1 space-y-4">
           {drinks.map(d => (
             <div key={d.name} className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
