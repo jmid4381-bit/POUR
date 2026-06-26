@@ -410,7 +410,10 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
         )}
 
         {/* Order list */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
+        <div className={cn(
+          "flex-1 overflow-y-auto overscroll-contain px-4 py-4",
+          tab === "summary" ? "flex flex-col" : "space-y-3",
+        )}>
           {orders.length === 0 ? (
             <div className="py-16 text-center">
               <p className="text-4xl mb-3" aria-hidden>🍹</p>
@@ -470,33 +473,35 @@ function SummaryView({ orders, totalSpend, filterQuery }: SummaryViewProps) {
   const surchargeLabel  = surchargeOrders[0]?.surchargeLabel ?? "Event Surcharge";
 
   return (
-    <div className="bg-card border border-edge rounded-2xl overflow-hidden shadow-card">
-      <div className="h-[2px] bg-gold-grad" />
-      <div className="p-4 space-y-2.5">
-        {drinks.map(d => (
-          <div key={d.name} className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-lg flex-shrink-0" aria-hidden>{d.emoji}</span>
-              <span className="text-mist-100 font-body text-sm truncate">
-                <span className="font-mono text-mist-400">{d.quantity}×</span> {d.name}
-              </span>
+    <div className="flex-1 flex flex-col bg-card border border-edge rounded-2xl overflow-hidden shadow-card">
+      <div className="h-[3px] bg-gold-grad flex-shrink-0" />
+      <div className="flex-1 flex flex-col p-5 sm:p-6">
+        <div className="flex-1 space-y-4 overflow-y-auto">
+          {drinks.map(d => (
+            <div key={d.name} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-2xl flex-shrink-0" aria-hidden>{d.emoji}</span>
+                <span className="text-mist-100 font-body text-base truncate">
+                  <span className="font-mono text-mist-400">{d.quantity}×</span> {d.name}
+                </span>
+              </div>
+              <span className="font-mono text-base text-white font-semibold flex-shrink-0">{fmtUSD(d.revenue)}</span>
             </div>
-            <span className="font-mono text-sm text-white font-semibold flex-shrink-0">{fmtUSD(d.revenue)}</span>
-          </div>
-        ))}
+          ))}
 
-        {surchargeTotal > 0 && (
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-edge/60">
-            <span className="text-amber-400 font-body text-xs truncate">
-              {surchargeLabel}{surchargeOrders.length > 1 ? ` ×${surchargeOrders.length} orders` : ""}
-            </span>
-            <span className="font-mono text-xs text-amber-300 font-semibold flex-shrink-0">{fmtUSD(surchargeTotal)}</span>
-          </div>
-        )}
+          {surchargeTotal > 0 && (
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-edge/60">
+              <span className="text-amber-400 font-body text-sm truncate">
+                {surchargeLabel}{surchargeOrders.length > 1 ? ` ×${surchargeOrders.length} orders` : ""}
+              </span>
+              <span className="font-mono text-sm text-amber-300 font-semibold flex-shrink-0">{fmtUSD(surchargeTotal)}</span>
+            </div>
+          )}
+        </div>
 
-        <div className="flex items-center justify-between pt-2.5 border-t border-edge">
-          <span className="text-mist-300 font-body text-sm font-semibold">Total</span>
-          <span className="font-mono text-base text-white font-bold">{fmtUSD(totalSpend)}</span>
+        <div className="flex items-center justify-between pt-4 mt-4 border-t border-edge flex-shrink-0">
+          <span className="text-mist-300 font-body text-lg font-semibold">Total</span>
+          <span className="font-mono text-2xl text-white font-bold">{fmtUSD(totalSpend)}</span>
         </div>
       </div>
     </div>
