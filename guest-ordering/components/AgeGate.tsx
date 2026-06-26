@@ -315,7 +315,10 @@ export function AgeGate({
         </div>
 
         <p className="text-center text-[10px] text-mist-700 font-mono mt-4 px-4">
-          {venueName} — Licensed beverage service.
+          <span className="font-display font-bold text-xs bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+            POUR
+          </span>
+          <br />Your night, delivered.
           <br />Please drink responsibly.
         </p>
       </div>
