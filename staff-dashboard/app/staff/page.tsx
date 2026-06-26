@@ -366,15 +366,15 @@ export default function StaffDashboard() {
 
       {/* ── HEADER ── */}
       <header className="relative z-30 flex-shrink-0 bg-base/96 backdrop-blur-xl border-b border-border">
-        <div className="px-4 flex items-center justify-between gap-2" style={{ height: "52px" }}>
+        <div className="px-4 flex items-center justify-between gap-2" style={{ height: "64px" }}>
 
           {/* Brand + staff identity */}
           <div className="min-w-0">
-            <p className="font-display font-bold text-base leading-none truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+            <p className="font-display font-bold text-2xl leading-none tracking-wide truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
               POUR
             </p>
             {/* Fix 6 — staffName shown in header */}
-            <p className="text-[11px] font-body text-slate-300 mt-0.5 truncate">
+            <p className="text-sm font-body font-medium text-slate-200 mt-1 truncate">
               {showGreeting ? `${greeting()}, ${staffName}` : staffName}
             </p>
           </div>
