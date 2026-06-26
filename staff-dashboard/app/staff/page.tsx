@@ -18,7 +18,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
-  Zap, WifiOff, Wifi, AlertTriangle,
+  WifiOff, Wifi, AlertTriangle,
   Bell, X, Package, CheckCircle2,
   TrendingUp, ClipboardList, LayoutGrid, Volume2, VolumeX,
   Truck, RefreshCw, Search, MapPin, Clock, LogOut,
@@ -57,6 +57,13 @@ const COL_TABS: { key: ColKey; label: string }[] = [
   { key: "ready",     label: "Ready" },
   { key: "delivered", label: "Done"  },
 ];
+
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+}
 
 function fmtAvgWait(seconds: number): string {
   if (seconds === 0) return "—";
@@ -352,19 +359,14 @@ export default function StaffDashboard() {
         <div className="px-4 flex items-center justify-between gap-2" style={{ height: "52px" }}>
 
           {/* Brand + staff identity */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gold-grad rounded-lg flex items-center justify-center flex-shrink-0 shadow-[0_2px_12px_rgba(201,160,48,0.3)]">
-              <Zap size={14} className="text-void" strokeWidth={2.5} />
-            </div>
-            <div className="min-w-0">
-              <p className="font-display font-bold text-white text-sm leading-none truncate">
-                Staff Operations
-              </p>
-              {/* Fix 6 — staffName shown in header */}
-              <p className="text-[10px] font-mono text-gold-500/70 tracking-wider mt-0.5 truncate">
-                {staffName} · The Grand Casino
-              </p>
-            </div>
+          <div className="min-w-0">
+            <p className="font-display font-bold text-base leading-none truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+              POUR
+            </p>
+            {/* Fix 6 — staffName shown in header */}
+            <p className="text-[11px] font-body text-slate-300 mt-0.5 truncate">
+              {greeting()}, {staffName}
+            </p>
           </div>
 
           {/* Right cluster */}
