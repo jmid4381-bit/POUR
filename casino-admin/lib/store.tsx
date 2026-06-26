@@ -80,7 +80,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .select(`
           id, location_id, section, floor, status, guest_note,
           placed_at, accepted_at, ready_at, delivered_at, staff_name, cancel_reason,
-          guest_name, location_name,
+          guest_name, location_name, surcharge_amount, surcharge_label,
           order_items ( beverage_id, beverage_name, unit_price, quantity, note )
         `)
         .gte("placed_at", since)

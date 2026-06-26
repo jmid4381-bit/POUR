@@ -81,15 +81,16 @@ export function useAnalytics() {
     );
 
     // ── KPI figures ───────────────────────────────────────────────────────
-    const todayRevenue  = todayDelivered.reduce((s, o) => s + o.revenue, 0);
+    // Order-level totals (includes any surcharge) — what guests actually paid.
+    const todayRevenue  = todayDelivered.reduce((s, o) => s + o.total, 0);
     const weekRevenue   = orders
       .filter(o => o.status === "delivered" && isWithinDays(o.placedAt, 7))
-      .reduce((s, o) => s + o.revenue, 0);
+      .reduce((s, o) => s + o.total, 0);
     const monthRevenue  = orders
       .filter(o => o.status === "delivered" && isWithinDays(o.placedAt, 30))
-      .reduce((s, o) => s + o.revenue, 0);
+      .reduce((s, o) => s + o.total, 0);
     const avgOrderValue = allDelivered.length
-      ? allDelivered.reduce((s,o) => s+o.revenue, 0) / allDelivered.length
+      ? allDelivered.reduce((s,o) => s+o.total, 0) / allDelivered.length
       : 0;
 
     // Avg wait today
@@ -112,7 +113,7 @@ export function useAnalytics() {
       });
       revenueByDay.push({
         label:   i === 0 ? "Today" : i === 1 ? "Yest" : d.toLocaleDateString("en-US", { weekday: "short" }),
-        revenue: dayOrders.reduce((s,o) => s+o.revenue, 0),
+        revenue: dayOrders.reduce((s,o) => s+o.total, 0),
         orders:  dayOrders.length,
       });
     }
@@ -165,7 +166,7 @@ export function useAnalytics() {
       const wait = order.deliveredAt ? minutesBetween(order.placedAt, order.deliveredAt) : 0;
       staffMap.set(order.staffName, {
         orders:    cur.orders + 1,
-        revenue:   cur.revenue + order.revenue,
+        revenue:   cur.revenue + order.total,
         totalWait: cur.totalWait + wait,
         waitCount: cur.waitCount + (order.deliveredAt ? 1 : 0),
       });
@@ -186,7 +187,7 @@ export function useAnalytics() {
       secMap.set(order.section, {
         ...cur,
         orders:    cur.orders + 1,
-        revenue:   cur.revenue + order.revenue,
+        revenue:   cur.revenue + order.total,
         activeNow: cur.activeNow + (["pending","accepted","preparing","ready"].includes(order.status) ? 1 : 0),
       });
     }
@@ -209,11 +210,11 @@ export function useAnalytics() {
     }
     // High-value active orders
     for (const order of activeOrders) {
-      if (order.revenue >= 150) {
+      if (order.total >= 150) {
         alerts.push({
           id: `vip-${order.id}`,
           type: "priority",
-          message: `VIP order $${order.revenue} active at ${order.locationName}`,
+          message: `VIP order $${order.total} active at ${order.locationName}`,
           severity: "medium",
           orderId: order.id,
         });

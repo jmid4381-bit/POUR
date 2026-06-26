@@ -31,6 +31,8 @@ export interface OrderRow {
   delivered_at:      string | null;
   staff_name:        string | null;
   cancel_reason:     string | null;
+  surcharge_amount:  number | null;
+  surcharge_label:   string | null;
   order_items?:      OrderItemRow[];
 }
 
@@ -49,6 +51,7 @@ function itemRowToOrderItem(row: OrderItemRow): OrderItem {
 export function rowToOrder(row: OrderRow): Order {
   const items = (row.order_items ?? []).map(itemRowToOrderItem);
   const revenue = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const surchargeAmount = row.surcharge_amount ?? 0;
 
   return {
     id:           row.id,
@@ -61,6 +64,9 @@ export function rowToOrder(row: OrderRow): Order {
     status:       row.status,
     guestNote:    row.guest_note ?? undefined,
     revenue,
+    surchargeAmount,
+    surchargeLabel: row.surcharge_label ?? undefined,
+    total:        revenue + surchargeAmount,
     placedAt:     row.placed_at,
     acceptedAt:   row.accepted_at ?? undefined,
     readyAt:      row.ready_at ?? undefined,

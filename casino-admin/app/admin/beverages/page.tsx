@@ -143,7 +143,7 @@ export default function BeveragesPage() {
 
   // Stats
   const totalRevenue = useMemo(() =>
-    state.orders.filter(o => o.status === "delivered").reduce((s, o) => s + o.revenue, 0),
+    state.orders.filter(o => o.status === "delivered").reduce((s, o) => s + o.total, 0),
     [state.orders]
   );
   const availableCount   = state.beverages.filter(b => b.isAvailable).length;

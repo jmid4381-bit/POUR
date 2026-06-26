@@ -52,7 +52,10 @@ export interface Order {
   items:        OrderItem[];
   status:       OrderStatus;
   guestNote?:   string;
-  revenue:      number;          // derived — sum of item unitPrice * quantity
+  revenue:      number;          // derived — sum of item unitPrice * quantity (item-level only, excludes surcharge)
+  surchargeAmount: number;       // flat order-level fee (e.g. July 4th surcharge), not part of item revenue
+  surchargeLabel?: string;
+  total:        number;          // revenue + surchargeAmount — what the guest actually paid
   placedAt:     string;
   acceptedAt?:  string;
   readyAt?:     string;

@@ -107,8 +107,8 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
           {order.status === "cancelled" ? (
             <span className="text-ink-600 font-mono text-sm">—</span>
           ) : (
-            <span className={cn("font-mono font-semibold text-sm", order.revenue >= 100 ? "text-gold-300" : "text-white")}>
-              {fmtUSD(order.revenue)}
+            <span className={cn("font-mono font-semibold text-sm", order.total >= 100 ? "text-gold-300" : "text-white")}>
+              {fmtUSD(order.total)}
             </span>
           )}
         </td>
@@ -134,9 +134,15 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between pt-2 mt-2 border-t border-edge/60">
+                {order.surchargeAmount > 0 && (
+                  <div className="flex justify-between pt-2 mt-2 border-t border-edge/60">
+                    <span className="text-xs font-mono text-amber-400">{order.surchargeLabel ?? "Surcharge"}</span>
+                    <span className="font-mono text-amber-300">{fmtUSD(order.surchargeAmount)}</span>
+                  </div>
+                )}
+                <div className={cn("flex justify-between pt-2", order.surchargeAmount > 0 ? "" : "mt-2 border-t border-edge/60")}>
                   <span className="text-xs font-mono text-ink-500">Order Total</span>
-                  <span className="font-mono font-bold text-white">{fmtUSD(order.revenue)}</span>
+                  <span className="font-mono font-bold text-white">{fmtUSD(order.total)}</span>
                 </div>
               </div>
 
@@ -208,8 +214,8 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
             {order.status === "cancelled" ? (
               <span className="text-ink-600 font-mono text-sm">—</span>
             ) : (
-              <span className={cn("font-mono font-semibold text-sm", order.revenue >= 100 ? "text-gold-300" : "text-white")}>
-                {fmtUSD(order.revenue)}
+              <span className={cn("font-mono font-semibold text-sm", order.total >= 100 ? "text-gold-300" : "text-white")}>
+                {fmtUSD(order.total)}
               </span>
             )}
           </div>
@@ -232,9 +238,15 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between pt-2 mt-2 border-t border-edge/60">
+              {order.surchargeAmount > 0 && (
+                <div className="flex justify-between pt-2 mt-2 border-t border-edge/60">
+                  <span className="text-xs font-mono text-amber-400">{order.surchargeLabel ?? "Surcharge"}</span>
+                  <span className="font-mono text-amber-300">{fmtUSD(order.surchargeAmount)}</span>
+                </div>
+              )}
+              <div className={cn("flex justify-between pt-2", order.surchargeAmount > 0 ? "" : "mt-2 border-t border-edge/60")}>
                 <span className="text-xs font-mono text-ink-500">Order Total</span>
-                <span className="font-mono font-bold text-white">{fmtUSD(order.revenue)}</span>
+                <span className="font-mono font-bold text-white">{fmtUSD(order.total)}</span>
               </div>
             </div>
             <div className="flex flex-col gap-1.5 text-xs font-mono text-ink-500 pt-1 border-t border-edge/60">
@@ -282,7 +294,7 @@ export default function OrdersPage() {
   // Analytics
   const analytics = useMemo(() => {
     const delivered   = filtered.filter(o => o.status === "delivered");
-    const totalRev    = delivered.reduce((s, o) => s + o.revenue, 0);
+    const totalRev    = delivered.reduce((s, o) => s + o.total, 0);
     const avgOrderVal = delivered.length ? totalRev / delivered.length : 0;
     const deliveryRate= filtered.length  ? (delivered.length / filtered.filter(o => o.status !== "cancelled").length) * 100 : 0;
     const avgWait     = delivered

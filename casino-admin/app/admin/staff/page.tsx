@@ -181,7 +181,7 @@ export default function StaffPage() {
                           {wait !== null ? `${wait}m` : "—"}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-sm text-white font-semibold">
-                          {order.status === "cancelled" ? <span className="text-ink-600">—</span> : fmtUSD(order.revenue)}
+                          {order.status === "cancelled" ? <span className="text-ink-600">—</span> : fmtUSD(order.total)}
                         </td>
                       </tr>
                     );
