@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, AlertCircle, UserRound, RotateCcw, Clock, CheckCircle } from "lucide-react";
+import { X, AlertCircle, UserRound, RotateCcw, Clock, CheckCircle, Search } from "lucide-react";
 import { cn, fmtTime, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { HistoryOrder } from "@/hooks/useOrderHistory";
@@ -277,6 +277,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
   const [tab, setTab] = useState<"history" | "summary">("history");
+  const [drinkSearch, setDrinkSearch] = useState("");
 
   // Lock body scroll while panel is open
   useEffect(() => {
@@ -300,6 +301,17 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
     const itemsTotal = o.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
     return sum + itemsTotal + (o.surchargeAmount ?? 0);
   }, 0);
+
+  // Finds a past drink fast without scrolling through a long day's worth
+  // of orders — matches if ANY item in the order shares the typed name,
+  // so the whole order (with its existing Reorder button) surfaces.
+  const q = drinkSearch.trim().toLowerCase();
+  const visibleOrders = q
+    ? orders.filter(o => o.items.some(i => i.beverage.name.toLowerCase().includes(q)))
+    : orders;
+  const visibleBillableOrders = q
+    ? billableOrders.filter(o => o.items.some(i => i.beverage.name.toLowerCase().includes(q)))
+    : billableOrders;
 
   return (
     <>
@@ -349,25 +361,52 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
 
         {/* Tab toggle — Order History (detailed, unchanged) vs Summary (condensed) */}
         {orders.length > 0 && (
-          <div className="flex gap-1.5 px-4 pt-3 pb-1 flex-shrink-0">
-            {([
-              { id: "history", label: "Order History" },
-              { id: "summary", label: "Summary" },
-            ] as const).map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex-1 py-2 rounded-xl text-xs font-body font-bold transition-all",
-                  tab === t.id
-                    ? "bg-felt-grad text-white shadow-btn-felt"
-                    : "bg-lift border border-edge text-mist-400 hover:text-white",
+          <>
+            <div className="flex gap-1.5 px-4 pt-3 pb-1 flex-shrink-0">
+              {([
+                { id: "history", label: "Order History" },
+                { id: "summary", label: "Summary" },
+              ] as const).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "flex-1 py-2 rounded-xl text-xs font-body font-bold transition-all",
+                    tab === t.id
+                      ? "bg-felt-grad text-white shadow-btn-felt"
+                      : "bg-lift border border-edge text-mist-400 hover:text-white",
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Find a past drink fast — useful once the list gets long
+                enough that scrolling to find one drink is a real chore */}
+            <div className="px-4 pt-2.5 pb-1 flex-shrink-0">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mist-500" />
+                <input
+                  type="text"
+                  value={drinkSearch}
+                  onChange={e => setDrinkSearch(e.target.value)}
+                  placeholder="Search a drink you ordered…"
+                  aria-label="Search past orders by drink name"
+                  className="w-full bg-lift border border-edge rounded-xl pl-9 pr-9 py-2.5 text-sm text-white font-body placeholder-mist-600 focus:outline-none focus:border-felt-500/40 transition-colors"
+                />
+                {drinkSearch && (
+                  <button
+                    onClick={() => setDrinkSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mist-500 hover:text-white transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
                 )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+              </div>
+            </div>
+          </>
         )}
 
         {/* Order list */}
@@ -378,10 +417,15 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
               <p className="text-mist-400 text-sm font-body">No orders yet this session</p>
               <p className="text-mist-600 text-xs font-body mt-1">Your orders will appear here after you place them</p>
             </div>
+          ) : q && (tab === "summary" ? visibleBillableOrders : visibleOrders).length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-4xl mb-3" aria-hidden>🔍</p>
+              <p className="text-mist-400 text-sm font-body">No drinks matching "{drinkSearch.trim()}"</p>
+            </div>
           ) : tab === "summary" ? (
-            <SummaryView orders={billableOrders} totalSpend={totalSpend} />
+            <SummaryView orders={visibleBillableOrders} totalSpend={totalSpend} filterQuery={q} />
           ) : (
-            orders.map(order => (
+            visibleOrders.map(order => (
               <OrderCard key={order.id} order={order} cooldownMs={cooldownMs} onReorder={onReorder} />
             ))
           )}
@@ -394,11 +438,12 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
 // ─── Summary view ───────────────────────────────────────────────────────────
 
 interface SummaryViewProps {
-  orders:     HistoryOrder[];
-  totalSpend: number;
+  orders:      HistoryOrder[];
+  totalSpend:  number;
+  filterQuery?: string; // lowercased drink-name search — narrows rows shown
 }
 
-function SummaryView({ orders, totalSpend }: SummaryViewProps) {
+function SummaryView({ orders, totalSpend, filterQuery }: SummaryViewProps) {
   const drinkMap = new Map<string, { name: string; emoji: string; quantity: number; revenue: number }>();
   for (const order of orders) {
     for (const item of order.items) {
@@ -415,7 +460,10 @@ function SummaryView({ orders, totalSpend }: SummaryViewProps) {
       });
     }
   }
-  const drinks = [...drinkMap.values()].sort((a, b) => b.revenue - a.revenue);
+  let drinks = [...drinkMap.values()].sort((a, b) => b.revenue - a.revenue);
+  if (filterQuery) {
+    drinks = drinks.filter(d => d.name.toLowerCase().includes(filterQuery));
+  }
 
   const surchargeOrders = orders.filter(o => (o.surchargeAmount ?? 0) > 0);
   const surchargeTotal  = surchargeOrders.reduce((s, o) => s + (o.surchargeAmount ?? 0), 0);
