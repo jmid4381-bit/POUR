@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 export const JULY4_SURCHARGE_AMOUNT = 3;
-export const JULY4_SURCHARGE_LABEL  = "4th of July Hour Surcharge";
+export const JULY4_SURCHARGE_LABEL  = "4th of July Post Hour Surcharge";
 const JULY4_SURCHARGE_DELAY_MS      = 2 * 60_000; // TESTING — revert to 60 * 60_000 before the event starts
 const POLL_MS                       = 15_000;
 
