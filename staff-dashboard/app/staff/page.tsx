@@ -78,27 +78,43 @@ export default function StaffDashboard() {
   const [zoneToast, setZoneToast] = useState<string | null>(null);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
-  // Delivered orders the staff has explicitly cleared from the board —
-  // purely a local declutter step. The order itself is untouched in
+  // Delivered orders this staff member has explicitly cleared from the
+  // board — purely a declutter step. The order itself is untouched in
   // Supabase, so it's still fully searchable by guest name within the
   // normal 24h window; this only hides it from the default Delivered view.
-  // localStorage (not sessionStorage) so a confirmed order stays hidden
-  // across sign-out/sign-in and new tabs on this device, not just this tab.
-  const [dismissedDelivered, setDismissedDelivered] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = localStorage.getItem("staff_dismissed_delivered_v1");
-      return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-    } catch { return new Set(); }
-  });
+  // Stored in Supabase keyed by staff_name (not device-local), so it
+  // follows the staff member across sign-out/sign-in and any device —
+  // Evan's confirms stay hidden for Evan everywhere, independent of
+  // whichever browser/device he's signed in on.
+  const [dismissedDelivered, setDismissedDelivered] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!staffName) return;
+    supabase
+      .from("staff_dismissed_orders")
+      .select("order_id")
+      .eq("staff_name", staffName)
+      .then(({ data }) => {
+        if (data) setDismissedDelivered(new Set(data.map(r => r.order_id as string)));
+      });
+  }, [staffName]);
+
   const confirmDelivered = useCallback((id: string) => {
-    setDismissedDelivered(prev => {
-      const next = new Set(prev);
-      next.add(id);
-      try { localStorage.setItem("staff_dismissed_delivered_v1", JSON.stringify([...next])); } catch {}
-      return next;
-    });
-  }, []);
+    if (!staffName) return;
+    setDismissedDelivered(prev => new Set(prev).add(id));
+    supabase
+      .from("staff_dismissed_orders")
+      .upsert({ staff_name: staffName, order_id: id }, { onConflict: "staff_name,order_id" })
+      .then(({ error }) => {
+        // Insert failed (e.g. offline) — undo the optimistic hide so the
+        // card doesn't silently vanish from a confirm that didn't stick.
+        if (error) setDismissedDelivered(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      });
+  }, [staffName]);
 
   // Live (Supabase-backed) zone assignment — replaces the old static config
   // so an admin-approved switch takes effect immediately, no redeploy.
@@ -121,19 +137,6 @@ export default function StaffDashboard() {
   // to be realtime itself (locations rarely change mid-event).
   const [allLocations, setAllLocations] = useState<StaffLocation[]>([]);
   useEffect(() => { fetchActiveLocations().then(setAllLocations); }, []);
-
-  // Prune dismissed IDs once their order has aged out of the 24h fetch
-  // window entirely — otherwise this localStorage set would grow forever
-  // across shifts instead of naturally shrinking as old orders drop off.
-  useEffect(() => {
-    if (allOrders.length === 0 || dismissedDelivered.size === 0) return;
-    const liveIds = new Set(allOrders.map(o => o.id));
-    const stillLive = [...dismissedDelivered].filter(id => liveIds.has(id));
-    if (stillLive.length === dismissedDelivered.size) return;
-    const next = new Set(stillLive);
-    setDismissedDelivered(next);
-    try { localStorage.setItem("staff_dismissed_delivered_v1", JSON.stringify([...next])); } catch {}
-  }, [allOrders, dismissedDelivered]);
 
   // Live order-pressure count per zone, across ALL locations (not just this
   // staff member's), so the picker can show where help is actually needed.
