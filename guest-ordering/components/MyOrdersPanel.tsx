@@ -76,9 +76,12 @@ function ProgressTracker({ status, placedAt, estimatedMinutes }: ProgressTracker
   // which statusToStep alone can never express since it returns the last
   // valid index (3), not "one past the end."
   const currentStep = status === "delivered" ? STEPS.length : Math.max(timeStep, statusToStep(status));
+  // currentStep can be STEPS.length (4) to mark every step done — clamp
+  // before indexing STEPS with it, or STEPS[4] is undefined and crashes.
+  const displayStep = Math.min(currentStep, STEPS.length - 1);
 
   return (
-    <div className="flex items-center mt-3" role="status" aria-label={`Order progress: ${STEPS[currentStep]}`}>
+    <div className="flex items-center mt-3" role="status" aria-label={`Order progress: ${STEPS[displayStep]}`}>
       {STEPS.map((step, i) => {
         const isDone   = i < currentStep;
         const isActive = i === currentStep;

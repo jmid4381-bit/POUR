@@ -121,6 +121,9 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
   }, [order.id]);
 
   const isDelivered     = currentStep >= 3;
+  // currentStep can be STEPS.length (4) to mark every step done — clamp
+  // before indexing STEPS with it, or STEPS[4] is undefined and crashes.
+  const displayStep     = Math.min(currentStep, STEPS.length - 1);
   const remainingSecs   = Math.max(0, order.estimatedMinutes * 60 - elapsedSecs);
   const remainingMins   = Math.ceil(remainingSecs / 60);
 
@@ -256,7 +259,7 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
           className="bg-card border border-edge rounded-2xl p-5 animate-fade-up"
           style={{ animationDelay:"0.2s" }}
           role="status"
-          aria-label={`Order status: ${STEPS[currentStep].ariaLabel}`}
+          aria-label={`Order status: ${STEPS[displayStep].ariaLabel}`}
           aria-live="polite"
         >
           <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest mb-4">Order Progress</p>
