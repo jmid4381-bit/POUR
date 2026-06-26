@@ -41,6 +41,12 @@ import type { OrderStatus }     from "@/lib/types";
 
 const ACTIVE_ORDER_STATUSES = ["pending", "accepted", "preparing", "ready"];
 
+// How long a delivered order stays in the default (non-search) board view —
+// a fresh login has no record of what staff already dealt with, so this is
+// the only thing keeping the Delivered column from re-filling with the
+// entire day's completed orders every time someone opens a new session.
+const DEFAULT_DELIVERED_WINDOW_MIN = 20;
+
 // ─── Mobile tab config ────────────────────────────────────────────────────────
 
 type ColKey = "pending" | "accepted" | "ready" | "delivered";
@@ -214,12 +220,19 @@ export default function StaffDashboard() {
       pending:   sort(source.filter(o => o.status === "pending" && matchesSearch(o))),
       accepted:  sort(source.filter(o => (o.status === "accepted" || o.status === "preparing") && matchesSearch(o))),
       ready:     sort(source.filter(o => o.status === "ready" && matchesSearch(o))),
-      // Dismissed cards stay hidden from the normal board view, but a
-      // guest-name search still searches the full set — dismissal is just
-      // a local declutter step, not a real filter on the underlying data.
-      delivered: sort(source.filter(o =>
-        o.status === "delivered" && matchesSearch(o) && (q || !dismissedDelivered.has(o.id))
-      )),
+      // Default view only shows orders delivered in the last 20 minutes —
+      // a fresh login/new tab has no session state to know what's already
+      // been dealt with, so without a time floor every order delivered
+      // earlier that day would reappear and clutter the board. Manually
+      // dismissed cards stay hidden sooner than that. Neither restriction
+      // applies once searching — search still reaches the full 24h window.
+      delivered: sort(source.filter(o => {
+        if (o.status !== "delivered" || !matchesSearch(o)) return false;
+        if (q) return true;
+        if (dismissedDelivered.has(o.id)) return false;
+        const deliveredMinutesAgo = (Date.now() - new Date(o.deliveredAt ?? o.placedAt).getTime()) / 60_000;
+        return deliveredMinutesAgo <= DEFAULT_DELIVERED_WINDOW_MIN;
+      })),
     };
   }, [orders, allOrders, guestSearch, dismissedDelivered]);
 
