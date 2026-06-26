@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { RotateCcw, AlertCircle } from "lucide-react";
+import { RotateCcw, AlertCircle, Sparkles } from "lucide-react";
 import { fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useJuly4Surcharge, JULY4_SURCHARGE_AMOUNT, JULY4_SURCHARGE_LABEL } from "@/hooks/useJuly4Surcharge";
 import type { CartItem } from "@/lib/data";
 
 interface ReorderConfirmDialogProps {
@@ -18,7 +19,12 @@ export function ReorderConfirmDialog({ items, note, onConfirm, onCancel, isPlaci
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
-  const total = items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+
+  const surchargeActive = useJuly4Surcharge();
+  const hasAlcohol = items.some(i => i.beverage.isAlcoholic);
+  const surcharge  = surchargeActive && hasAlcohol ? JULY4_SURCHARGE_AMOUNT : 0;
+  const total      = subtotal + surcharge;
 
   return (
     <>
@@ -55,6 +61,14 @@ export function ReorderConfirmDialog({ items, note, onConfirm, onCancel, isPlaci
                 </div>
               ))}
             </div>
+
+            {surcharge > 0 && (
+              <div className="flex items-center gap-2 bg-amber-400/8 border border-amber-400/20 rounded-xl px-3 py-2">
+                <Sparkles size={13} className="text-amber-400 flex-shrink-0" />
+                <span className="flex-1 text-amber-300 text-xs font-body">{JULY4_SURCHARGE_LABEL}</span>
+                <span className="font-mono text-xs font-semibold text-amber-300">{fmtUSD(surcharge)}</span>
+              </div>
+            )}
 
             <div className="flex justify-between px-1">
               <span className="text-sm text-mist-400 font-body">Total</span>
