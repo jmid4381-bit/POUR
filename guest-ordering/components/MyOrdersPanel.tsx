@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, AlertCircle, UserRound, RotateCcw, Clock } from "lucide-react";
+import { X, AlertCircle, UserRound, RotateCcw, Clock, CheckCircle } from "lucide-react";
 import { cn, fmtTime, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { HistoryOrder } from "@/hooks/useOrderHistory";
@@ -72,7 +72,10 @@ function ProgressTracker({ status, placedAt, estimatedMinutes }: ProgressTracker
     );
   }
 
-  const currentStep = Math.max(timeStep, statusToStep(status));
+  // "delivered" means fully complete — including the 4th step itself,
+  // which statusToStep alone can never express since it returns the last
+  // valid index (3), not "one past the end."
+  const currentStep = status === "delivered" ? STEPS.length : Math.max(timeStep, statusToStep(status));
 
   return (
     <div className="flex items-center mt-3" role="status" aria-label={`Order progress: ${STEPS[currentStep]}`}>
@@ -210,12 +213,23 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
           </div>
         )}
 
-        {/* Live progress tracker */}
-        <ProgressTracker
-          status={order.status}
-          placedAt={order.placedAt}
-          estimatedMinutes={order.estimatedMinutes}
-        />
+        {/* Live progress tracker — collapses to a compact line once delivered,
+            since the step-by-step view stops being useful the moment the
+            order is actually complete */}
+        {order.status === "delivered" ? (
+          <div className="flex items-center gap-2 px-3 py-2 bg-felt-400/8 border border-felt-400/20 rounded-xl">
+            <CheckCircle size={13} className="text-felt-400 flex-shrink-0" />
+            <p className="text-felt-300 text-xs font-body">
+              Delivered{order.staffName ? ` · ${order.staffName}` : ""}
+            </p>
+          </div>
+        ) : (
+          <ProgressTracker
+            status={order.status}
+            placedAt={order.placedAt}
+            estimatedMinutes={order.estimatedMinutes}
+          />
+        )}
 
         {/* Reorder — same items/quantities, added straight to the cart */}
         <button
