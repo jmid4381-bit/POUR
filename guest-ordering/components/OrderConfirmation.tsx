@@ -107,7 +107,10 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
         readOrderStatus(order.id),
         readOrderStaffName(order.id),
       ]);
-      const staffStep = statusToStep(realStatus);
+      // "delivered" means fully complete — including the 4th step itself,
+      // which statusToStep alone can never express since it returns the
+      // last valid index (3), not "one past the end."
+      const staffStep = realStatus === "delivered" ? STEPS.length : statusToStep(realStatus);
       setCurrentStep(prev => Math.max(prev, staffStep));
       if (name) setStaffName(name);
     };
