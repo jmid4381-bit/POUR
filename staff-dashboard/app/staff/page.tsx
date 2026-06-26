@@ -78,6 +78,16 @@ function fmtAvgWait(seconds: number): string {
 export default function StaffDashboard() {
   // Fix 6 — Staff identity gate
   const [staffName,  setStaffName]  = useState<string | null>(null);
+  // The time-of-day greeting shows for the first minute after login, then
+  // settles down to just the name so the header isn't stuck saying "Good
+  // Morning" for the rest of a multi-hour shift.
+  const [showGreeting, setShowGreeting] = useState(true);
+  useEffect(() => {
+    if (!staffName) return;
+    setShowGreeting(true);
+    const id = setTimeout(() => setShowGreeting(false), 60_000);
+    return () => clearTimeout(id);
+  }, [staffName]);
   const [mobileCol,  setMobileCol]  = useState<ColKey>("pending");
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
@@ -365,7 +375,7 @@ export default function StaffDashboard() {
             </p>
             {/* Fix 6 — staffName shown in header */}
             <p className="text-[11px] font-body text-slate-300 mt-0.5 truncate">
-              {greeting()}, {staffName}
+              {showGreeting ? `${greeting()}, ${staffName}` : staffName}
             </p>
           </div>
 
