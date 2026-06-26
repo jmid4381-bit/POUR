@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export const JULY4_SURCHARGE_AMOUNT = 3;
 export const JULY4_SURCHARGE_LABEL  = "4th of July Hour Surcharge";
-const JULY4_SURCHARGE_DELAY_MS      = 60 * 60_000;
+const JULY4_SURCHARGE_DELAY_MS      = 2 * 60_000; // TESTING — revert to 60 * 60_000 before the event starts
 const POLL_MS                       = 15_000;
 
 // Mirrors the server-side check in app/api/orders/route.ts, so the cart can

@@ -34,7 +34,7 @@ const ALCOHOL_WINDOW_MINUTES   = 10;
 // once the admin-triggered event has been running for an hour.
 const JULY4_SURCHARGE_AMOUNT       = 3;
 const JULY4_SURCHARGE_LABEL        = "4th of July Hour Surcharge";
-const JULY4_SURCHARGE_DELAY_MS     = 60 * 60_000;
+const JULY4_SURCHARGE_DELAY_MS     = 2 * 60_000; // TESTING — revert to 60 * 60_000 before the event starts
 
 interface OrderPayload {
   id:               string;

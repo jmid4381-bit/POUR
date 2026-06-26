@@ -5,7 +5,7 @@ import { Sparkles, Play, Square, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-const SURCHARGE_DELAY_MS = 60 * 60_000;
+const SURCHARGE_DELAY_MS = 2 * 60_000; // TESTING — revert to 60 * 60_000 before the event starts
 const POLL_MS            = 8_000;
 
 interface EventState {
