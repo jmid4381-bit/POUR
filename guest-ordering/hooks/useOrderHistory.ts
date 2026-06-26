@@ -102,7 +102,21 @@ export function useOrderHistory(locationId: string) {
     setOrders(prev => [{ ...order, status: "pending" }, ...prev]);
   }, []);
 
+  // Merges server-restored history (e.g. a returning guest's past orders,
+  // fetched by their persistent guest-ID cookie) in alongside whatever's
+  // already in this tab's session — de-duped by order ID so a still-active
+  // order already being polled here isn't clobbered by a stale server copy.
+  const restoreOrders = useCallback((fetched: HistoryOrder[]) => {
+    if (fetched.length === 0) return;
+    setOrders(prev => {
+      const existingIds = new Set(prev.map(o => o.id));
+      const merged = [...prev, ...fetched.filter(o => !existingIds.has(o.id))];
+      merged.sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+      return merged;
+    });
+  }, []);
+
   const activeCount = orders.filter(o => !isTerminal(o.status)).length;
 
-  return { orders, addOrder, activeCount, refreshNow: poll };
+  return { orders, addOrder, restoreOrders, activeCount, refreshNow: poll };
 }

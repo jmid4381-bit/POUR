@@ -27,6 +27,7 @@ import {
 import { cn, fmtUSD, generateOrderId } from "@/lib/utils";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import { getOrCreateGuestId } from "@/lib/guestSession";
+import { fetchGuestOrderHistory } from "@/lib/guestOrderHistory";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -104,7 +105,22 @@ export default function GuestOrderPage({ params }: Props) {
   const [bigToast,         setBigToast]    = useState<string | null>(null);
 
   // Session order history — persisted in sessionStorage, polled for live status
-  const { orders: sessionOrders, addOrder, activeCount, refreshNow } = useOrderHistory(locationId);
+  const { orders: sessionOrders, addOrder, restoreOrders, activeCount, refreshNow } = useOrderHistory(locationId);
+
+  // Restore a returning guest's order history (any location, last 24h) from
+  // Supabase by their persistent guest-ID cookie — the same identifier and
+  // window already used for the alcohol cooldown check. Runs once the menu
+  // has loaded (beverages are needed to re-attach emoji/category for
+  // display); a brand-new guest's cookie just won't match any rows, so this
+  // is a no-op for them.
+  const historyRestored = useRef(false);
+  useEffect(() => {
+    if (historyRestored.current) return;
+    const gid = guestIdRef.current;
+    if (!gid || beverages.length === 0) return;
+    historyRestored.current = true;
+    fetchGuestOrderHistory(gid, beverages).then(restoreOrders);
+  }, [beverages, restoreOrders]);
 
   // Furthest-along active order — drives the persistent header status label.
   // Same step ranking/wording as the My Orders panel's progress tracker.
