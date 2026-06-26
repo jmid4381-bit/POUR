@@ -498,6 +498,7 @@ export default function GuestOrderPage({ params }: Props) {
     return (
       <>
         <OrderConfirmation
+          key={placedOrder.id}
           order={placedOrder}
           onOrderMore={handleOrderMore}
           onReorder={() => handleReorder(placedOrder)}
