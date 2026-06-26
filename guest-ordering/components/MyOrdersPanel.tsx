@@ -259,6 +259,7 @@ interface MyOrdersPanelProps {
 export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrdersPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
+  const [tab, setTab] = useState<"history" | "summary">("history");
 
   // Lock body scroll while panel is open
   useEffect(() => {
@@ -274,6 +275,14 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
   }, [onClose]);
 
   const activeCount = orders.filter(o => o.status !== "delivered" && o.status !== "cancelled").length;
+
+  // Cancelled orders were never actually charged, so they're excluded from
+  // spend — everything else (active or delivered) reflects committed spend.
+  const billableOrders = orders.filter(o => o.status !== "cancelled");
+  const totalSpend = billableOrders.reduce((sum, o) => {
+    const itemsTotal = o.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+    return sum + itemsTotal + (o.surchargeAmount ?? 0);
+  }, 0);
 
   return (
     <>
@@ -304,6 +313,9 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
             <h2 className="font-display font-semibold text-white text-xl leading-none">My Orders</h2>
             <p className="text-mist-500 text-[11px] font-mono mt-0.5">
               {orders.length} order{orders.length !== 1 ? "s" : ""} this session
+              {billableOrders.length > 0 && (
+                <span className="text-mist-300"> · {fmtUSD(totalSpend)} total</span>
+              )}
               {activeCount > 0 && (
                 <span className="ml-2 text-felt-400">· {activeCount} in progress</span>
               )}
@@ -318,6 +330,29 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
           </button>
         </div>
 
+        {/* Tab toggle — Order History (detailed, unchanged) vs Summary (condensed) */}
+        {orders.length > 0 && (
+          <div className="flex gap-1.5 px-4 pt-3 pb-1 flex-shrink-0">
+            {([
+              { id: "history", label: "Order History" },
+              { id: "summary", label: "Summary" },
+            ] as const).map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "flex-1 py-2 rounded-xl text-xs font-body font-bold transition-all",
+                  tab === t.id
+                    ? "bg-felt-grad text-white shadow-btn-felt"
+                    : "bg-lift border border-edge text-mist-400 hover:text-white",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Order list */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
           {orders.length === 0 ? (
@@ -326,6 +361,8 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
               <p className="text-mist-400 text-sm font-body">No orders yet this session</p>
               <p className="text-mist-600 text-xs font-body mt-1">Your orders will appear here after you place them</p>
             </div>
+          ) : tab === "summary" ? (
+            <SummaryView orders={billableOrders} totalSpend={totalSpend} />
           ) : (
             orders.map(order => (
               <OrderCard key={order.id} order={order} cooldownMs={cooldownMs} onReorder={onReorder} />
@@ -334,5 +371,69 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
         </div>
       </div>
     </>
+  );
+}
+
+// ─── Summary view ───────────────────────────────────────────────────────────
+
+interface SummaryViewProps {
+  orders:     HistoryOrder[];
+  totalSpend: number;
+}
+
+function SummaryView({ orders, totalSpend }: SummaryViewProps) {
+  const drinkMap = new Map<string, { name: string; emoji: string; quantity: number; revenue: number }>();
+  for (const order of orders) {
+    for (const item of order.items) {
+      const cur = drinkMap.get(item.beverage.id) ?? {
+        name: item.beverage.name,
+        emoji: item.beverage.emoji,
+        quantity: 0,
+        revenue: 0,
+      };
+      drinkMap.set(item.beverage.id, {
+        ...cur,
+        quantity: cur.quantity + item.quantity,
+        revenue:  cur.revenue + item.beverage.price * item.quantity,
+      });
+    }
+  }
+  const drinks = [...drinkMap.values()].sort((a, b) => b.revenue - a.revenue);
+
+  const surchargeOrders = orders.filter(o => (o.surchargeAmount ?? 0) > 0);
+  const surchargeTotal  = surchargeOrders.reduce((s, o) => s + (o.surchargeAmount ?? 0), 0);
+  const surchargeLabel  = surchargeOrders[0]?.surchargeLabel ?? "Event Surcharge";
+
+  return (
+    <div className="bg-card border border-edge rounded-2xl overflow-hidden shadow-card">
+      <div className="h-[2px] bg-gold-grad" />
+      <div className="p-4 space-y-2.5">
+        {drinks.map(d => (
+          <div key={d.name} className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg flex-shrink-0" aria-hidden>{d.emoji}</span>
+              <span className="text-mist-100 font-body text-sm truncate">
+                <span className="font-mono text-mist-400">{d.quantity}×</span> {d.name}
+              </span>
+            </div>
+            <span className="font-mono text-sm text-white font-semibold flex-shrink-0">{fmtUSD(d.revenue)}</span>
+          </div>
+        ))}
+
+        {surchargeTotal > 0 && (
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-edge/60">
+            <span className="text-amber-400 font-body text-xs truncate">
+              {surchargeLabel}{surchargeOrders.length > 1 ? ` ×${surchargeOrders.length} orders` : ""}
+            </span>
+            <span className="font-mono text-xs text-amber-300 font-semibold flex-shrink-0">{fmtUSD(surchargeTotal)}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-2.5 border-t border-edge">
+          <span className="text-mist-300 font-body text-sm font-semibold">Total</span>
+          <span className="font-mono text-base text-white font-bold">{fmtUSD(totalSpend)}</span>
+        </div>
+      </div>
+    </div>
   );
 }
