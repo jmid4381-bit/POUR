@@ -11,6 +11,7 @@ import { OrderConfirmation } from "@/components/OrderConfirmation";
 import { OrderReviewModal }  from "@/components/OrderReviewModal";
 import { MyOrdersPanel }     from "@/components/MyOrdersPanel";
 import { ReorderConfirmDialog } from "@/components/ReorderConfirmDialog";
+import { July4MilestoneOverlay } from "@/components/July4MilestoneOverlay";
 import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession, getGuestName } from "@/components/AgeGate";
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
@@ -523,12 +524,16 @@ export default function GuestOrderPage({ params }: Props) {
     });
   }, []);
 
+  // Any active modal/checkout flow — used both to lock body scroll and to
+  // hold off the July 4th milestone overlay so it never interrupts an
+  // active checkout action.
+  const anyModalOpen = showReview || showOrders || !!selectedBeverage || !!reorderCandidate;
+
   // Lock body scroll when any overlay is open
   useEffect(() => {
-    const anyOpen = showReview || showOrders || !!selectedBeverage;
-    document.body.classList.toggle("modal-open", anyOpen);
+    document.body.classList.toggle("modal-open", anyModalOpen);
     return () => document.body.classList.remove("modal-open");
-  }, [showReview, showOrders, selectedBeverage]);
+  }, [anyModalOpen]);
 
   // ── Render gates ───────────────────────────────────────────────────────────
 
@@ -589,6 +594,7 @@ export default function GuestOrderPage({ params }: Props) {
             isPlacing={placingOrder}
           />
         )}
+        <July4MilestoneOverlay suppressed={anyModalOpen} />
       </>
     );
   }
@@ -989,6 +995,8 @@ export default function GuestOrderPage({ params }: Props) {
           {toast}
         </div>
       )}
+
+      <July4MilestoneOverlay suppressed={anyModalOpen} />
     </main>
   );
 }
