@@ -2,26 +2,27 @@
 
 /**
  * July4MilestoneOverlay — full-screen, auto-dismissing countdown
- * notifications toward the July 4th alcohol surcharge. See
- * hooks/useJuly4Milestones for the timing/queueing logic; this component
- * is purely presentational.
+ * notifications toward the July 4th alcohol surcharge. Purely
+ * presentational — `display` must come from a single useJuly4Milestones()
+ * call made once at the top of the page component (not inside this
+ * component), since this overlay gets mounted/unmounted as the guest
+ * switches between the menu and the confirmation screen. Calling the hook
+ * in here would reset its "already fired" tracking on every such switch
+ * and replay milestones that already happened. See hooks/useJuly4Milestones
+ * for the timing/queueing logic.
  */
 
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useJuly4Milestones } from "@/hooks/useJuly4Milestones";
+import type { July4MilestoneDisplay } from "@/hooks/useJuly4Milestones";
 import { Fireworks } from "./Fireworks";
 
 interface July4MilestoneOverlayProps {
-  // True whenever the guest is in an active modal/checkout flow — the
-  // overlay holds off rendering entirely until this goes false.
-  suppressed: boolean;
+  display: July4MilestoneDisplay | null;
 }
 
-export function July4MilestoneOverlay({ suppressed }: July4MilestoneOverlayProps) {
-  const display = useJuly4Milestones(suppressed);
-
+export function July4MilestoneOverlay({ display }: July4MilestoneOverlayProps) {
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);

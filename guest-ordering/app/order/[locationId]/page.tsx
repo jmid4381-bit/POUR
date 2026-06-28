@@ -12,6 +12,7 @@ import { OrderReviewModal }  from "@/components/OrderReviewModal";
 import { MyOrdersPanel }     from "@/components/MyOrdersPanel";
 import { ReorderConfirmDialog } from "@/components/ReorderConfirmDialog";
 import { July4MilestoneOverlay } from "@/components/July4MilestoneOverlay";
+import { useJuly4Milestones } from "@/hooks/useJuly4Milestones";
 import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession, getGuestName } from "@/components/AgeGate";
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
@@ -529,6 +530,13 @@ export default function GuestOrderPage({ params }: Props) {
   // active checkout action.
   const anyModalOpen = showReview || showOrders || !!selectedBeverage || !!reorderCandidate;
 
+  // Called once here (not inside the overlay component) so its "already
+  // fired" tracking survives the menu <-> confirmation screen transition —
+  // those are two separate conditional returns below, and a hook called
+  // inside a component that gets unmounted/remounted on that switch would
+  // otherwise reset and replay milestones that already happened.
+  const july4Milestone = useJuly4Milestones(anyModalOpen);
+
   // Lock body scroll when any overlay is open
   useEffect(() => {
     document.body.classList.toggle("modal-open", anyModalOpen);
@@ -594,7 +602,7 @@ export default function GuestOrderPage({ params }: Props) {
             isPlacing={placingOrder}
           />
         )}
-        <July4MilestoneOverlay suppressed={anyModalOpen} />
+        <July4MilestoneOverlay display={july4Milestone} />
       </>
     );
   }
@@ -996,7 +1004,7 @@ export default function GuestOrderPage({ params }: Props) {
         </div>
       )}
 
-      <July4MilestoneOverlay suppressed={anyModalOpen} />
+      <July4MilestoneOverlay display={july4Milestone} />
     </main>
   );
 }
