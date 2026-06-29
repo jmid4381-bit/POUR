@@ -31,11 +31,11 @@ export function AdminSidebar() {
       <div className="px-5 py-6 border-b border-edge">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gold-gradient rounded-xl flex items-center justify-center shadow-gold-sm flex-shrink-0">
-            <Zap size={18} className="text-void" strokeWidth={2.5} />
+            <Wine size={18} className="text-void" strokeWidth={2.5} />
           </div>
           <div>
             <p className="font-display font-semibold text-white text-base leading-none">Admin Console</p>
-            <p className="text-[10px] font-mono text-gold-500/70 tracking-[0.18em] uppercase mt-0.5">The Grand Casino</p>
+            <p className="text-[10px] font-mono text-gold-500/70 tracking-[0.18em] uppercase mt-0.5">POUR</p>
           </div>
         </div>
       </div>

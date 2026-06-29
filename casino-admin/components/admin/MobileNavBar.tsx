@@ -31,11 +31,11 @@ export function MobileNavBar() {
           {/* Brand */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-gold-gradient rounded-xl flex items-center justify-center flex-shrink-0">
-              <Zap size={14} className="text-void" strokeWidth={2.5} />
+              <Wine size={14} className="text-void" strokeWidth={2.5} />
             </div>
             <div>
               <p className="font-display font-semibold text-white text-sm leading-none">Admin Console</p>
-              <p className="text-[9px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">The Grand Casino</p>
+              <p className="text-[9px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">POUR</p>
             </div>
           </div>
 
@@ -83,11 +83,11 @@ export function MobileNavBar() {
             <div className="flex items-center justify-between px-5 py-5 border-b border-edge">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-gold-gradient rounded-xl flex items-center justify-center">
-                  <Zap size={16} className="text-void" strokeWidth={2.5} />
+                  <Wine size={16} className="text-void" strokeWidth={2.5} />
                 </div>
                 <div>
                   <p className="font-display font-semibold text-white text-base leading-none">Admin Console</p>
-                  <p className="text-[10px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">The Grand Casino</p>
+                  <p className="text-[10px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">POUR</p>
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="text-ink-500 hover:text-white transition-colors">
