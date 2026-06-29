@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 // Only real staff members may appear here — no placeholder/test names,
 // and no free-text entry, so no other name can ever be selected.
-const STAFF_NAMES = ["Evan", "Justin"];
+const STAFF_NAMES = ["Evan", "Justin", "Bray"];
 
 interface StaffLoginProps {
   onLogin: (name: string) => void;
