@@ -35,7 +35,7 @@ export function LoginScreen() {
           </div>
           <h1 className="font-display font-bold text-2xl text-white mb-1">Staff Sign In</h1>
           <p className="text-[11px] font-mono text-gold-500/70 tracking-[0.2em] uppercase">
-            The Grand Casino
+            POUR
           </p>
         </div>
 
