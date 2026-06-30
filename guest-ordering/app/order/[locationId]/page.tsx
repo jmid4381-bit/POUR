@@ -5,6 +5,7 @@ import {
   MapPin, ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock,
 } from "lucide-react";
 import { BeverageCard }      from "@/components/BeverageCard";
+import { BrandCard }        from "@/components/BrandCard";
 import { BeverageImage }     from "@/components/BeverageImage";
 import { BeverageModal }     from "@/components/BeverageModal";
 import { OrderConfirmation } from "@/components/OrderConfirmation";
@@ -246,6 +247,34 @@ export default function GuestOrderPage({ params }: Props) {
     () => visibleBeverages.filter(b => b.category === activeCategory && b.isAvailable),
     [visibleBeverages, activeCategory],
   );
+
+  // Group drinks that share a brand into a single card (e.g. White Claw flavors, Truly flavors).
+  // Returns an ordered list of either a single Beverage (rendered as BeverageCard) or a brand
+  // group (rendered as BrandCard). Order is preserved — first beverage of each group sets position.
+  const BRAND_PREFIXES = ["White Claw", "Truly"] as const;
+  type BrandGroup = { kind: "brand"; brand: string; emoji: string; beverages: Beverage[] };
+  type SingleItem = { kind: "single"; beverage: Beverage };
+  const menuItems = useMemo((): (BrandGroup | SingleItem)[] => {
+    const seen = new Set<string>();
+    const result: (BrandGroup | SingleItem)[] = [];
+    for (const bev of menuDrinks) {
+      const brand = BRAND_PREFIXES.find(p => bev.name.startsWith(p + " ") || bev.name === p);
+      if (brand) {
+        if (!seen.has(brand)) {
+          seen.add(brand);
+          result.push({
+            kind: "brand",
+            brand,
+            emoji: bev.emoji,
+            beverages: menuDrinks.filter(b => b.name.startsWith(brand + " ") || b.name === brand),
+          });
+        }
+      } else {
+        result.push({ kind: "single", beverage: bev });
+      }
+    }
+    return result;
+  }, [menuDrinks]);
 
   // Lookup how many of each beverage are in cart
   const cartQuantityMap = useMemo(() => {
@@ -892,25 +921,37 @@ export default function GuestOrderPage({ params }: Props) {
           className="px-4 pt-5"
           aria-label={`${CATEGORY_META[activeCategory].label} — ${menuDrinks.length} items`}
         >
-          {menuDrinks.length > 0 ? (
+          {menuItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {menuDrinks.map((bev, i) => (
-                <BeverageCard
-                  key={bev.id}
-                  beverage={bev}
-                  onClick={setSelected}
-                  onQuickAdd={handleQuickAdd}
-                  cartQuantity={cartQuantityMap.get(bev.id) ?? 0}
-                  style={{ animationDelay: `${i * 40}ms` }}
-                />
-              ))}
+              {menuItems.map((item, i) =>
+                item.kind === "brand" ? (
+                  <BrandCard
+                    key={item.brand}
+                    brand={item.brand}
+                    emoji={item.emoji}
+                    beverages={item.beverages}
+                    cartQuantityMap={cartQuantityMap}
+                    onClick={setSelected}
+                    style={{ animationDelay: `${i * 40}ms` }}
+                  />
+                ) : (
+                  <BeverageCard
+                    key={item.beverage.id}
+                    beverage={item.beverage}
+                    onClick={setSelected}
+                    onQuickAdd={handleQuickAdd}
+                    cartQuantity={cartQuantityMap.get(item.beverage.id) ?? 0}
+                    style={{ animationDelay: `${i * 40}ms` }}
+                  />
+                )
+              )}
             </div>
-          ) : (
+          ) : menuDrinks.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-4xl mb-3" aria-hidden>🍹</p>
               <p className="text-mist-500 font-body text-sm">No items available right now</p>
             </div>
-          )}
+          ) : null}
         </section>
 
         <div className="h-8" />
