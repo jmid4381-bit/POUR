@@ -23,6 +23,7 @@ import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/l
 import { Fireworks } from "./Fireworks";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { PlacedOrder } from "@/lib/data";
+import { GIANT_UPCHARGE } from "@/lib/data";
 
 interface OrderConfirmationProps {
   order:        PlacedOrder;
@@ -54,7 +55,7 @@ function statusToStep(status: QueuedOrderStatus): number {
 }
 
 export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders }: OrderConfirmationProps) {
-  const subtotal  = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal  = order.items.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
   const surcharge = order.surchargeAmount ?? 0;
   const total     = subtotal + surcharge;
 
@@ -184,20 +185,26 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
             </div>
 
             <div className="space-y-2">
-              {order.items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{item.beverage.emoji}</span>
-                    <span className="text-mist-200 font-body">
-                      {item.beverage.name}
-                      {item.quantity > 1 && <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>}
+              {order.items.map((item, i) => {
+                const unitPrice = item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0);
+                return (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg flex-shrink-0">{item.beverage.emoji}</span>
+                      <span className="text-mist-200 font-body truncate">
+                        {item.beverage.name}
+                        {item.size === "giant" && (
+                          <span className="ml-1.5 text-[9px] font-mono font-bold text-blue-400 bg-blue-400/15 border border-blue-400/30 rounded px-1 py-0.5 align-middle">GIANT</span>
+                        )}
+                        {item.quantity > 1 && <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>}
+                      </span>
+                    </div>
+                    <span className="font-mono text-mist-300 flex-shrink-0">
+                      {fmtUSD(unitPrice * item.quantity)}
                     </span>
                   </div>
-                  <span className="font-mono text-mist-300">
-                    {fmtUSD(item.beverage.price * item.quantity)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
 
               {order.items.some(i => i.note) && (
                 <div className="mt-2 px-3 py-2 bg-amber-400/5 border border-amber-400/15 rounded-xl">
