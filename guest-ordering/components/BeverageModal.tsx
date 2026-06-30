@@ -76,7 +76,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
   if (!beverage) return null;
 
   const isGold        = beverage.isVip || beverage.isFeatured;
-  const effectivePrice = beverage.price + (size === "giant" ? GIANT_UPCHARGE : 0);
+  const effectivePrice = beverage.price + (beverage.isAlcoholic && size === "giant" ? GIANT_UPCHARGE : 0);
 
   return (
     <>
@@ -236,37 +236,41 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
             isGold ? "border-gold-600/20" : "border-edge",
           )}>
 
-            {/* Size selector */}
-            <div className="flex gap-2">
-              {(["regular", "giant"] as const).map(s => {
-                const isGiantOption  = s === "giant";
-                const giantUnavail   = isGiantOption && giantCupsAvailable === 0;
-                const isSelected     = size === s;
-                return (
-                  <button
-                    key={s}
-                    onClick={() => { if (!giantUnavail) setSize(s); }}
-                    disabled={giantUnavail}
-                    className={cn(
-                      "flex-1 py-2.5 rounded-xl border text-sm font-body font-semibold transition-all",
-                      isSelected && !giantUnavail
-                        ? isGiantOption
-                          ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
-                          : "bg-felt-600/20 border-felt-500/40 text-felt-300"
-                        : giantUnavail
-                        ? "bg-lift/40 border-edge text-mist-700 cursor-not-allowed"
-                        : "bg-lift border-edge text-mist-400 hover:border-rim hover:text-white",
-                    )}
-                  >
-                    {s === "regular" ? "Regular" : `Giant +$${GIANT_UPCHARGE}`}
-                  </button>
-                );
-              })}
-            </div>
-            {giantCupsAvailable === 0 && (
-              <p className="text-[11px] text-mist-600 font-body text-center -mt-1">
-                Giant cups currently unavailable — check back soon
-              </p>
+            {/* Size selector — alcoholic drinks only */}
+            {beverage.isAlcoholic && (
+              <>
+                <div className="flex gap-2">
+                  {(["regular", "giant"] as const).map(s => {
+                    const isGiantOption  = s === "giant";
+                    const giantUnavail   = isGiantOption && giantCupsAvailable === 0;
+                    const isSelected     = size === s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => { if (!giantUnavail) setSize(s); }}
+                        disabled={giantUnavail}
+                        className={cn(
+                          "flex-1 py-2.5 rounded-xl border text-sm font-body font-semibold transition-all",
+                          isSelected && !giantUnavail
+                            ? isGiantOption
+                              ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
+                              : "bg-felt-600/20 border-felt-500/40 text-felt-300"
+                            : giantUnavail
+                            ? "bg-lift/40 border-edge text-mist-700 cursor-not-allowed"
+                            : "bg-lift border-edge text-mist-400 hover:border-rim hover:text-white",
+                        )}
+                      >
+                        {s === "regular" ? "Regular" : `Giant +$${GIANT_UPCHARGE}`}
+                      </button>
+                    );
+                  })}
+                </div>
+                {giantCupsAvailable === 0 && (
+                  <p className="text-[11px] text-mist-600 font-body text-center -mt-1">
+                    Giant cups currently unavailable — check back soon
+                  </p>
+                )}
+              </>
             )}
 
             {/* Quantity + note toggle row */}
