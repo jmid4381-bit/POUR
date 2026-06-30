@@ -4,48 +4,48 @@ import { useState } from "react";
 import { Clock, Star, Plus, Check, Info } from "lucide-react";
 import { cn, fmtUSD } from "@/lib/utils";
 import { BeverageImage } from "./BeverageImage";
+import { GIANT_UPCHARGE } from "@/lib/data";
 import type { Beverage } from "@/lib/data";
 
 interface BeverageCardProps {
-  beverage:      Beverage;
-  onClick:       (b: Beverage) => void;
-  onQuickAdd:    (b: Beverage) => void;
-  cartQuantity?: number;   // Fix 8: how many are already in cart
-  style?:        React.CSSProperties;
+  beverage:             Beverage;
+  onClick:              (b: Beverage) => void;
+  onQuickAdd:           (b: Beverage, size: "regular" | "giant") => void;
+  cartQuantity?:        number;
+  giantCupsAvailable?:  number;
+  style?:               React.CSSProperties;
 }
 
-export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, style }: BeverageCardProps) {
-  // Brief "added" flash on the quick-add button
+export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, giantCupsAvailable = 4, style }: BeverageCardProps) {
   const [justAdded, setJustAdded] = useState(false);
+  const [size, setSize] = useState<"regular" | "giant">("regular");
 
   if (!beverage.isAvailable) return null;
 
   const isGold = beverage.isVip || beverage.isFeatured;
+  const showSizeToggle = beverage.isAlcoholic;
+  const giantDisabled = giantCupsAvailable === 0;
+  const effectivePrice = beverage.price + (size === "giant" ? GIANT_UPCHARGE : 0);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
-    e.stopPropagation();          // don't open the modal
-    onQuickAdd(beverage);
+    e.stopPropagation();
+    onQuickAdd(beverage, size);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   };
 
   return (
-    // Outer wrapper — NOT a button so the two inner buttons work independently
     <div
       style={style}
       className={cn(
         "group relative w-full rounded-2xl overflow-hidden",
         "border transition-all duration-300",
         "bg-card shadow-card animate-fade-up",
-        isGold
-          ? "border-gold-500/30"
-          : "border-edge",
+        isGold ? "border-gold-500/30" : "border-edge",
       )}
     >
-      {/* Card sheen */}
       <div className="absolute inset-0 bg-card-sheen pointer-events-none" />
 
-      {/* VIP / Featured ribbon */}
       {isGold && (
         <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden z-10">
           <div className={cn(
@@ -58,13 +58,12 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
         </div>
       )}
 
-      {/* ── Tappable card body → opens detail modal ── */}
+      {/* Tappable card body → opens detail modal */}
       <button
         onClick={() => onClick(beverage)}
         aria-label={`View details for ${beverage.name}`}
         className="w-full text-left active:scale-[0.98] transition-transform"
       >
-        {/* Emoji area */}
         <div className="relative h-28 flex items-center justify-center overflow-hidden bg-gradient-to-b from-lift to-card">
           <div className={cn(
             "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
@@ -80,20 +79,17 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
             emojiClassName="text-5xl"
           />
 
-          {/* In-cart quantity badge — Fix 8 */}
           {cartQuantity > 0 && (
             <div className="absolute top-2 left-2 flex items-center gap-1 bg-felt-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-felt-glow">
               <span className="text-[10px] font-mono font-bold text-white">{cartQuantity} in order</span>
             </div>
           )}
 
-          {/* Prep time badge */}
           <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-void/70 backdrop-blur-sm rounded-full px-2 py-0.5">
             <Clock size={9} className="text-gold-400" />
             <span className="text-[9px] font-mono text-mist-200">{beverage.prepMinutes}m</span>
           </div>
 
-          {/* Non-alc badge */}
           {!beverage.isAlcoholic && (
             <div className="absolute bottom-2 left-2">
               <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-sky-600/60 text-sky-200 border border-sky-500/25 rounded-full px-1.5 py-0.5 backdrop-blur-sm">
@@ -103,7 +99,6 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
           )}
         </div>
 
-        {/* Text */}
         <div className="px-3.5 pt-3 pb-2">
           <div className="flex items-start justify-between gap-1.5 mb-0.5">
             <h3 className={cn(
@@ -117,7 +112,6 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
           <p className="text-mist-400 text-[11px] font-body leading-relaxed line-clamp-2">
             {beverage.tagline}
           </p>
-          {/* "Tap for details" hint */}
           <div className="flex items-center gap-1 mt-1.5">
             <Info size={10} className="text-mist-600" />
             <span className="text-[10px] text-mist-600 font-body">Tap for details</span>
@@ -125,26 +119,54 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
         </div>
       </button>
 
-      {/* ── Bottom action bar — always visible ── */}
+      {/* Size toggle — alcoholic drinks only */}
+      {showSizeToggle && (
+        <div className="px-3.5 pb-2 flex items-center gap-2" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => setSize("regular")}
+            className={cn(
+              "flex-1 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all active:scale-95",
+              size === "regular"
+                ? "bg-felt-600/25 border-felt-500/40 text-felt-300"
+                : "bg-transparent border-edge text-mist-500 hover:text-mist-300",
+            )}
+          >
+            Regular
+          </button>
+          <button
+            onClick={() => { if (!giantDisabled) setSize("giant"); }}
+            disabled={giantDisabled}
+            className={cn(
+              "flex-1 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all active:scale-95",
+              size === "giant"
+                ? "bg-blue-600/25 border-blue-500/40 text-blue-300"
+                : "bg-transparent border-edge text-mist-500 hover:text-mist-300",
+              giantDisabled && "opacity-40 cursor-not-allowed",
+            )}
+          >
+            {giantDisabled ? "Giant (unavail.)" : `Giant +$${GIANT_UPCHARGE}`}
+          </button>
+        </div>
+      )}
+
+      {/* Bottom action bar */}
       <div className={cn(
         "flex items-center justify-between px-3.5 py-3 border-t",
         isGold ? "border-gold-600/15" : "border-edge",
       )}>
-        {/* Price */}
         <div>
           <span className={cn(
             "font-mono font-bold text-base",
             isGold ? "text-gold-300" : "text-white",
           )}>
-            {fmtUSD(beverage.price)}
+            {fmtUSD(effectivePrice)}
           </span>
           <p className="text-[10px] text-mist-600 font-mono">per drink</p>
         </div>
 
-        {/* Quick-add button — prominent, always visible */}
         <button
           onClick={handleQuickAdd}
-          aria-label={`Add ${beverage.name} to order`}
+          aria-label={`Add ${beverage.name} (${size}) to order`}
           className={cn(
             "flex items-center gap-2 px-5 py-2.5 rounded-xl",
             "text-sm font-body font-bold",

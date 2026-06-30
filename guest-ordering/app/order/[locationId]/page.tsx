@@ -326,8 +326,8 @@ export default function GuestOrderPage({ params }: Props) {
     }
   }, [addItem]);
 
-  const handleQuickAdd = useCallback((beverage: Beverage) => {
-    handleAddToOrder(beverage, 1, "");
+  const handleQuickAdd = useCallback((beverage: Beverage, size: "regular" | "giant" = "regular") => {
+    handleAddToOrder(beverage, 1, "", size);
   }, [handleAddToOrder]);
 
   const removeFromCart = useCallback((beverageId: string) => {
@@ -987,6 +987,7 @@ export default function GuestOrderPage({ params }: Props) {
                     onClick={setSelected}
                     onQuickAdd={handleQuickAdd}
                     cartQuantity={cartQuantityMap.get(item.beverage.id) ?? 0}
+                    giantCupsAvailable={giantCupsAvailable}
                     style={{ animationDelay: `${i * 40}ms` }}
                   />
                 )
