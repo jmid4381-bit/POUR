@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
-export const JULY4_SURCHARGE_DELAY_MS = 2 * 60_000; // TESTING — revert to 60 * 60_000 before the event starts
+export const JULY4_SURCHARGE_DELAY_MS = 60 * 60_000;
 const POLL_MS = 15_000;
 
 export const GIANT_CUP_MAX = 4;
