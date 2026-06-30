@@ -18,6 +18,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CartItem, Beverage } from "@/lib/data";
+import { GIANT_UPCHARGE } from "@/lib/data";
 
 const CART_VERSION = "v2";
 const MAX_ALCOHOLIC_PER_ORDER = 2;
@@ -117,7 +118,7 @@ export function useCart(locationId: string) {
   // orders (the 10-minute sliding window). Non-alcoholic items are never
   // capped. Returns how much actually got added, whether the limit clipped
   // the request, and ms remaining on the cooldown if fully blocked.
-  const addItem = useCallback((beverage: Beverage, qty: number, note: string): { added: number; capped: boolean; cooldownMs: number } => {
+  const addItem = useCallback((beverage: Beverage, qty: number, note: string, size: "regular" | "giant" = "regular"): { added: number; capped: boolean; cooldownMs: number } => {
     let added  = qty;
     let capped = false;
     let cooldownMs = 0;
@@ -140,10 +141,10 @@ export function useCart(locationId: string) {
       const idx = prev.findIndex(i => i.beverage.id === beverage.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + added };
+        next[idx] = { ...next[idx], quantity: next[idx].quantity + added, size };
         return next;
       }
-      return [...prev, { beverage, quantity: added, note }];
+      return [...prev, { beverage, quantity: added, note, size }];
     });
 
     return { added, capped, cooldownMs };
@@ -194,7 +195,7 @@ export function useCart(locationId: string) {
   }, [locationId]);
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const cartTotal = cart.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const cartTotal = cart.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
 
   return {
     cart, cartCount, cartTotal, hydrated,

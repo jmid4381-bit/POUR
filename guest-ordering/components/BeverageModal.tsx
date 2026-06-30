@@ -9,21 +9,24 @@ import { cn, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { BeverageImage } from "./BeverageImage";
 import type { Beverage } from "@/lib/data";
+import { GIANT_UPCHARGE } from "@/lib/data";
 
 interface BeverageModalProps {
-  beverage: Beverage | null;
-  onClose:  () => void;
-  onOrder:  (beverage: Beverage, qty: number, note: string) => void;
+  beverage:            Beverage | null;
+  giantCupsAvailable:  number;
+  onClose:             () => void;
+  onOrder:             (beverage: Beverage, qty: number, note: string, size: "regular" | "giant") => void;
 }
 
 type BtnState = "idle" | "loading" | "done";
 
-export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps) {
+export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }: BeverageModalProps) {
   const [qty,      setQty]      = useState(1);
   const [note,     setNote]     = useState("");
   const [showNote, setShowNote] = useState(false);
   const [btnState, setBtnState] = useState<BtnState>("idle");
   const [qtyKey,   setQtyKey]   = useState(0);
+  const [size,     setSize]     = useState<"regular" | "giant">("regular");
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Fix 9 — focus trap: keyboard stays inside modal, Escape closes it
@@ -35,6 +38,7 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
       setNote("");
       setShowNote(false);
       setBtnState("idle");
+      setSize("regular");
     }
   }, [beverage?.id]);
 
@@ -63,7 +67,7 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
     if (!beverage || btnState !== "idle") return;
     setBtnState("loading");
     await new Promise(r => setTimeout(r, 750));
-    onOrder(beverage, qty, note);
+    onOrder(beverage, qty, note, size);
     setBtnState("done");
     await new Promise(r => setTimeout(r, 600));
     onClose();
@@ -71,7 +75,8 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
 
   if (!beverage) return null;
 
-  const isGold = beverage.isVip || beverage.isFeatured;
+  const isGold        = beverage.isVip || beverage.isFeatured;
+  const effectivePrice = beverage.price + (size === "giant" ? GIANT_UPCHARGE : 0);
 
   return (
     <>
@@ -173,7 +178,10 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
                   )}
                   <span className={cn("text-sm font-mono font-bold ml-auto",
                     isGold ? "text-gold-300" : "text-white")}>
-                    {fmtUSD(beverage.price)}
+                    {fmtUSD(effectivePrice)}
+                    {size === "giant" && (
+                      <span className="ml-1 text-[10px] text-blue-400 font-mono normal-case">+$1 giant</span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -227,6 +235,39 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
             "flex-shrink-0 border-t px-5 pt-3 pb-4 space-y-3 bg-card",
             isGold ? "border-gold-600/20" : "border-edge",
           )}>
+
+            {/* Size selector */}
+            <div className="flex gap-2">
+              {(["regular", "giant"] as const).map(s => {
+                const isGiantOption  = s === "giant";
+                const giantUnavail   = isGiantOption && giantCupsAvailable === 0;
+                const isSelected     = size === s;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => { if (!giantUnavail) setSize(s); }}
+                    disabled={giantUnavail}
+                    className={cn(
+                      "flex-1 py-2.5 rounded-xl border text-sm font-body font-semibold transition-all",
+                      isSelected && !giantUnavail
+                        ? isGiantOption
+                          ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
+                          : "bg-felt-600/20 border-felt-500/40 text-felt-300"
+                        : giantUnavail
+                        ? "bg-lift/40 border-edge text-mist-700 cursor-not-allowed"
+                        : "bg-lift border-edge text-mist-400 hover:border-rim hover:text-white",
+                    )}
+                  >
+                    {s === "regular" ? "Regular" : `Giant +$${GIANT_UPCHARGE}`}
+                  </button>
+                );
+              })}
+            </div>
+            {giantCupsAvailable === 0 && (
+              <p className="text-[11px] text-mist-600 font-body text-center -mt-1">
+                Giant cups currently unavailable — check back soon
+              </p>
+            )}
 
             {/* Quantity + note toggle row */}
             <div className="flex items-center justify-between gap-4">
@@ -309,7 +350,7 @@ export function BeverageModal({ beverage, onClose, onOrder }: BeverageModalProps
               {btnState === "done"    && <Check size={19} className="animate-scale-in" />}
               {btnState === "idle"   && <ShoppingBag size={19} />}
               <span>
-                {btnState === "idle"    && `Add to Order${qty > 1 ? ` ×${qty}` : ""} — ${fmtUSD(beverage.price * qty)}`}
+                {btnState === "idle"    && `Add to Order${qty > 1 ? ` ×${qty}` : ""} — ${fmtUSD(effectivePrice * qty)}`}
                 {btnState === "loading" && "Adding to your order…"}
                 {btnState === "done"    && "Added to your order!"}
               </span>

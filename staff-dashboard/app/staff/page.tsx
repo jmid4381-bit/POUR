@@ -21,7 +21,7 @@ import {
   WifiOff, Wifi, AlertTriangle,
   Bell, X, Package, CheckCircle2,
   TrendingUp, ClipboardList, LayoutGrid, Volume2, VolumeX,
-  Truck, RefreshCw, Search, MapPin, Clock, LogOut,
+  Truck, RefreshCw, Search, MapPin, Clock, LogOut, GlassWater, Undo2,
 } from "lucide-react";
 import { supabase }             from "@/lib/supabase";
 import { useStaffOrders }       from "@/hooks/useStaffOrders";
@@ -91,6 +91,32 @@ export default function StaffDashboard() {
   const [mobileCol,  setMobileCol]  = useState<ColKey>("pending");
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
+
+  // Giant cup tracker — polls event_settings every 10s
+  const GIANT_CUP_MAX = 4;
+  const [giantCupsAvailable, setGiantCupsAvailable] = useState(GIANT_CUP_MAX);
+  const [giantReturning,     setGiantReturning]      = useState(false);
+  useEffect(() => {
+    const fetchGiants = async () => {
+      const { data } = await supabase
+        .from("event_settings")
+        .select("giant_cups_available")
+        .eq("id", 1)
+        .maybeSingle();
+      if (data && typeof data.giant_cups_available === "number") {
+        setGiantCupsAvailable(data.giant_cups_available);
+      }
+    };
+    fetchGiants();
+    const id = setInterval(fetchGiants, 10_000);
+    return () => clearInterval(id);
+  }, []);
+  const markGiantReturned = useCallback(async () => {
+    setGiantReturning(true);
+    const { error } = await supabase.rpc("increment_giant_cup");
+    if (!error) setGiantCupsAvailable(prev => Math.min(GIANT_CUP_MAX, prev + 1));
+    setGiantReturning(false);
+  }, []);
   const [zonePickerOpen, setZonePickerOpen] = useState(false);
   const [zoneToast, setZoneToast] = useState<string | null>(null);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -502,7 +528,7 @@ export default function StaffDashboard() {
         )}
 
         {/* ── Stats row ── */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-shrink-0">
+        <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 flex-shrink-0">
           <StatCard
             label="Active"
             value={stats.totalActive}
@@ -550,6 +576,32 @@ export default function StaffDashboard() {
             accent="gold"
             sub="Per delivery"
           />
+
+          {/* Giants stat card — inline since it needs a return button */}
+          <div className="relative rounded-2xl bg-surface border border-border overflow-hidden shadow-card text-left w-full">
+            <div className="h-[2px] w-full bg-blue-400" />
+            <div className="p-3.5">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
+                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.12em] leading-none mt-0.5">Giants</p>
+                <div className="w-7 h-7 rounded-xl border flex items-center justify-center flex-shrink-0 text-blue-400 bg-blue-400/10 border-blue-400/20">
+                  <GlassWater size={13} strokeWidth={1.8} />
+                </div>
+              </div>
+              <p className="font-mono font-bold text-3xl text-blue-300 leading-none">
+                {GIANT_CUP_MAX - giantCupsAvailable}
+                <span className="text-slate-500 text-sm font-mono font-normal">/{GIANT_CUP_MAX}</span>
+              </p>
+              <p className="text-[10px] text-slate-500 font-body mt-1">Out with guests</p>
+              <button
+                onClick={markGiantReturned}
+                disabled={giantReturning || giantCupsAvailable >= GIANT_CUP_MAX}
+                className="mt-2 w-full flex items-center justify-center gap-1 text-[10px] font-mono bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg px-2 py-1.5 hover:bg-blue-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Undo2 size={10} />
+                Cup Returned
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ── Guest name search ── */}

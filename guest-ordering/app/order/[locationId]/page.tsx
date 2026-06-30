@@ -13,6 +13,7 @@ import { MyOrdersPanel }     from "@/components/MyOrdersPanel";
 import { ReorderConfirmDialog } from "@/components/ReorderConfirmDialog";
 import { July4MilestoneOverlay } from "@/components/July4MilestoneOverlay";
 import { useJuly4Milestones } from "@/hooks/useJuly4Milestones";
+import { useJuly4EventSettings } from "@/hooks/useJuly4EventSettings";
 import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession, getGuestName } from "@/components/AgeGate";
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
@@ -275,8 +276,8 @@ export default function GuestOrderPage({ params }: Props) {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleAddToOrder = useCallback((beverage: Beverage, qty: number, note: string) => {
-    const { added, capped, cooldownMs } = addItem(beverage, qty, note);
+  const handleAddToOrder = useCallback((beverage: Beverage, qty: number, note: string, size: "regular" | "giant" = "regular") => {
+    const { added, capped, cooldownMs } = addItem(beverage, qty, note, size);
     if (added === 0) {
       const mins = Math.max(1, Math.ceil(cooldownMs / 60_000));
       setToast(`Drink limit reached — try again in ${mins} minute${mins !== 1 ? "s" : ""}`);
@@ -536,6 +537,7 @@ export default function GuestOrderPage({ params }: Props) {
   // inside a component that gets unmounted/remounted on that switch would
   // otherwise reset and replay milestones that already happened.
   const july4Milestone = useJuly4Milestones(anyModalOpen);
+  const { giantCupsAvailable } = useJuly4EventSettings();
 
   // Lock body scroll when any overlay is open
   useEffect(() => {
@@ -917,6 +919,7 @@ export default function GuestOrderPage({ params }: Props) {
       {/* ── BEVERAGE MODAL ── */}
       <BeverageModal
         beverage={selectedBeverage}
+        giantCupsAvailable={giantCupsAvailable}
         onClose={() => setSelected(null)}
         onOrder={handleAddToOrder}
       />

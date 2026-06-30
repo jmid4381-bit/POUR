@@ -53,6 +53,7 @@ interface OrderPayload {
     beverage: { id: string; name: string; price: number };
     quantity: number;
     note?:    string;
+    size?:    "regular" | "giant";
   }[];
 }
 
@@ -149,16 +150,22 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const GIANT_UPCHARGE = 1;
   const rows = order.items.map(item => {
-    const bev = beverageMap.get(String(item.beverage.id))!;
+    const bev     = beverageMap.get(String(item.beverage.id))!;
+    const isGiant = item.size === "giant";
     return {
       beverage_id:   bev.id,
       beverage_name: bev.name.slice(0, 200),
-      unit_price:    Number(bev.price),
+      unit_price:    Number(bev.price) + (isGiant ? GIANT_UPCHARGE : 0),
       quantity:      Math.min(8, Math.max(1, Number(item.quantity) || 1)),
       note:          item.note ? String(item.note).slice(0, MAX_NOTE_LEN) : null,
     };
   });
+
+  const giantCount = order.items.reduce((sum, item) =>
+    item.size === "giant" ? sum + Math.min(8, Math.max(1, Number(item.quantity) || 1)) : sum, 0
+  );
 
   // Order + items inserted atomically via RPC — either both land or neither
   // does, and a duplicate order ID is a safe no-op rather than a hard error.
@@ -183,6 +190,12 @@ export async function POST(req: NextRequest) {
 
   if (submitErr) {
     return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
+  }
+
+  // Decrement giant cup inventory for each giant item ordered — best-effort,
+  // floored at 0 by the RPC so concurrent orders can't go negative.
+  if (giantCount > 0) {
+    await supabase.rpc("decrement_giant_cups", { p_count: giantCount });
   }
 
   return NextResponse.json({ ok: true, surchargeAmount, surchargeLabel });

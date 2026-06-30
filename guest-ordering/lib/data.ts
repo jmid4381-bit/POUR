@@ -33,10 +33,13 @@ export interface Location {
   isActive: boolean;
 }
 
+export const GIANT_UPCHARGE = 1;
+
 export interface CartItem {
   beverage:  Beverage;
   quantity:  number;
   note:      string;
+  size?:     "regular" | "giant";
 }
 
 export interface PlacedOrder {

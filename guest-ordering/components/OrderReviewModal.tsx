@@ -6,6 +6,7 @@ import { cn, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useJuly4Surcharge, JULY4_SURCHARGE_AMOUNT, JULY4_SURCHARGE_LABEL } from "@/hooks/useJuly4Surcharge";
 import type { CartItem } from "@/lib/data";
+import { GIANT_UPCHARGE } from "@/lib/data";
 
 interface OrderReviewModalProps {
   cart:         CartItem[];
@@ -25,7 +26,7 @@ export function OrderReviewModal({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
-  const subtotal    = cart.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal    = cart.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
   const itemCount   = cart.reduce((s, i) => s + i.quantity, 0);
   const uniqueCount = cart.length;
 
@@ -173,11 +174,16 @@ export function OrderReviewModal({
                     <span className="text-2xl flex-shrink-0">{item.beverage.emoji}</span>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-body text-sm font-medium leading-tight truncate">{item.beverage.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-white font-body text-sm font-medium leading-tight truncate">{item.beverage.name}</p>
+                        {item.size === "giant" && (
+                          <span className="text-[9px] font-mono text-blue-400 bg-blue-400/10 border border-blue-400/20 rounded-full px-1.5 py-0.5 flex-shrink-0">GIANT</span>
+                        )}
+                      </div>
                       {item.note && (
                         <p className="text-amber-400/70 text-xs font-body italic mt-0.5 line-clamp-1">"{item.note}"</p>
                       )}
-                      <p className="text-mist-500 font-mono text-xs mt-0.5">{fmtUSD(item.beverage.price)} each</p>
+                      <p className="text-mist-500 font-mono text-xs mt-0.5">{fmtUSD(item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0))} each</p>
                     </div>
 
                     {/* Qty controls */}
@@ -201,7 +207,7 @@ export function OrderReviewModal({
 
                     {/* Subtotal + remove */}
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-1">
-                      <span className="font-mono text-sm font-semibold text-white">{fmtUSD(item.beverage.price * item.quantity)}</span>
+                      <span className="font-mono text-sm font-semibold text-white">{fmtUSD((item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0)) * item.quantity)}</span>
                       <button
                         onClick={() => onRemoveItem(item.beverage.id)}
                         aria-label={`Remove ${item.beverage.name}`}
