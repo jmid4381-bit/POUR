@@ -71,10 +71,11 @@ export interface AdminLocation {
 // ─── Order submission ─────────────────────────────────────────────────────────
 
 export interface SubmitOrderResult {
-  ok:              boolean;
-  rateLimited?:    boolean;
+  ok:               boolean;
+  rateLimited?:     boolean;
   cooldownBlocked?: boolean;
-  cooldownMs?:     number;
+  cooldownMs?:      number;
+  giantUnavailable?: boolean;
   surchargeAmount?: number;
   surchargeLabel?:  string | null;
 }
@@ -93,12 +94,13 @@ export async function submitOrder(order: QueuedOrder): Promise<SubmitOrderResult
 
     if (res.status === 429) {
       const body = await res.json().catch(() => ({}));
-      // The alcohol cooldown rejection includes cooldownMs; the plain
-      // request-rate limiter doesn't — that's how we tell them apart.
       if (typeof body.cooldownMs === "number") {
         return { ok: false, cooldownBlocked: true, cooldownMs: body.cooldownMs };
       }
       return { ok: false, rateLimited: true };
+    }
+    if (res.status === 409) {
+      return { ok: false, giantUnavailable: true };
     }
     if (!res.ok) throw new Error(`Order submission failed: ${res.status}`);
 

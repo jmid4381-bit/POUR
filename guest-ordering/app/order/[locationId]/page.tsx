@@ -392,6 +392,14 @@ export default function GuestOrderPage({ params }: Props) {
       return false;
     }
 
+    if (result.giantUnavailable) {
+      setPlacingOrder(false);
+      isConfirming.current = false;
+      setToast("Giant cups are no longer available — please order Regular instead");
+      setTimeout(() => setToast(null), 4000);
+      return false;
+    }
+
     await new Promise(r => setTimeout(r, 900));
 
     const placed: PlacedOrder = {

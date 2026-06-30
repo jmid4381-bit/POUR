@@ -150,6 +150,27 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Server-side giant cup check — reject before inserting if the inventory
+  // can't cover this order's giant items, closing the race window where two
+  // guests simultaneously see cups available but only one can actually get one.
+  const giantCount = order.items.reduce((sum, item) =>
+    item.size === "giant" ? sum + Math.min(8, Math.max(1, Number(item.quantity) || 1)) : sum, 0
+  );
+  if (giantCount > 0) {
+    const { data: cupRow } = await supabase
+      .from("event_settings")
+      .select("giant_cups_available")
+      .eq("id", 1)
+      .maybeSingle();
+    const available = typeof cupRow?.giant_cups_available === "number" ? cupRow.giant_cups_available : 0;
+    if (available < giantCount) {
+      return NextResponse.json(
+        { error: "Giant cups are no longer available — please order Regular instead." },
+        { status: 409 },
+      );
+    }
+  }
+
   const GIANT_UPCHARGE = 1;
   const rows = order.items.map(item => {
     const bev     = beverageMap.get(String(item.beverage.id))!;
@@ -162,10 +183,6 @@ export async function POST(req: NextRequest) {
       note:          item.note ? String(item.note).slice(0, MAX_NOTE_LEN) : null,
     };
   });
-
-  const giantCount = order.items.reduce((sum, item) =>
-    item.size === "giant" ? sum + Math.min(8, Math.max(1, Number(item.quantity) || 1)) : sum, 0
-  );
 
   // Order + items inserted atomically via RPC — either both land or neither
   // does, and a duplicate order ID is a safe no-op rather than a hard error.
