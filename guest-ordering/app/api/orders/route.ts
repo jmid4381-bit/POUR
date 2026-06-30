@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     const isGiant = item.size === "giant";
     return {
       beverage_id:   bev.id,
-      beverage_name: bev.name.slice(0, 200),
+      beverage_name: (isGiant ? bev.name + " (Giant)" : bev.name).slice(0, 200),
       unit_price:    Number(bev.price) + (isGiant ? GIANT_UPCHARGE : 0),
       quantity:      Math.min(8, Math.max(1, Number(item.quantity) || 1)),
       note:          item.note ? String(item.note).slice(0, MAX_NOTE_LEN) : null,
