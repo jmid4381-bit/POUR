@@ -107,6 +107,9 @@ export default function GuestOrderPage({ params }: Props) {
   // to miss while a guest is scrolling the menu, unlike the small bottom
   // confirmations like "added to your order".
   const [bigToast,         setBigToast]    = useState<string | null>(null);
+  // Full-attention cooldown blocker — shown when a guest tries to add an
+  // alcoholic drink while their cooldown is still active.
+  const [cooldownBlocked,  setCooldownBlocked] = useState(false);
 
   // Session order history — persisted in sessionStorage, polled for live status
   const { orders: sessionOrders, addOrder, restoreOrders, clearOrders, activeCount, refreshNow } = useOrderHistory(locationId);
@@ -306,16 +309,21 @@ export default function GuestOrderPage({ params }: Props) {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleAddToOrder = useCallback((beverage: Beverage, qty: number, note: string, size: "regular" | "giant" = "regular") => {
-    const { added, capped, cooldownMs } = addItem(beverage, qty, note, size);
-    if (added === 0) {
-      const mins = Math.max(1, Math.ceil(cooldownMs / 60_000));
-      setToast(`Drink limit reached — try again in ${mins} minute${mins !== 1 ? "s" : ""}`);
+    const { added, capped } = addItem(beverage, qty, note, size);
+    if (added === 0 && beverage.isAlcoholic) {
+      // Prominent blocker — don't show an "added" toast, just the countdown
+      setCooldownBlocked(true);
+      setTimeout(() => setCooldownBlocked(false), 5000);
+    } else if (added === 0) {
+      setToast("Drink limit reached — try again shortly");
+      setTimeout(() => setToast(null), 3500);
     } else if (capped) {
       setToast(`Added ${added} — drink limit reached for now`);
+      setTimeout(() => setToast(null), 3500);
     } else {
       setToast(`${beverage.name} added`);
+      setTimeout(() => setToast(null), 3500);
     }
-    setTimeout(() => setToast(null), 3500);
   }, [addItem]);
 
   const handleQuickAdd = useCallback((beverage: Beverage) => {
@@ -810,6 +818,25 @@ export default function GuestOrderPage({ params }: Props) {
                 <Check size={16} className="text-void" strokeWidth={2.5} />
               </div>
               <p className="text-void font-body font-bold text-sm leading-tight">{bigToast}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Cooldown blocker — fires when a guest tries to add an alcoholic
+            drink while their limit is still active. Sticky under the header
+            so it's impossible to miss; shows the live countdown. */}
+        {cooldownBlocked && cooldownMs > 0 && (
+          <div className="sticky top-14 z-40 px-4 pt-3 pointer-events-none animate-fade-up">
+            <div className="flex items-center gap-3 bg-red-600/95 rounded-2xl px-4 py-3.5 shadow-[0_8px_32px_rgba(220,38,38,0.45)] animate-scale-in">
+              <div className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Clock size={16} className="text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-white font-body font-bold text-sm leading-tight">Drink limit reached</p>
+                <p className="text-white/80 font-mono text-xs mt-0.5">
+                  {formatCooldown(cooldownMs)} until your next alcoholic drink
+                </p>
+              </div>
             </div>
           </div>
         )}
