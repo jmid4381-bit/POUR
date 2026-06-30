@@ -465,7 +465,7 @@ export default function GuestOrderPage({ params }: Props) {
     for (const item of order.items) {
       const live = beverages.find(b => b.id === item.beverage.id);
       if (!live || !live.isAvailable) { unavailableCount++; continue; }
-      (live.isAlcoholic ? alcoholic : nonAlcoholic).push({ beverage: live, quantity: item.quantity, note: item.note });
+      (live.isAlcoholic ? alcoholic : nonAlcoholic).push({ beverage: live, quantity: item.quantity, note: item.note, size: item.size });
     }
 
     let droppedAlcoholicQty = 0;
@@ -527,6 +527,15 @@ export default function GuestOrderPage({ params }: Props) {
       });
     });
   }, [reorderRoomLeft]);
+
+  const updateReorderSize = useCallback((beverageId: string, size: "regular" | "giant") => {
+    setReorderCandidate(prev => {
+      if (!prev) return prev;
+      return prev.map(item =>
+        item.beverage.id === beverageId ? { ...item, size } : item
+      );
+    });
+  }, []);
 
   const confirmReorder = useCallback(async () => {
     if (!reorderCandidate) return;
@@ -628,6 +637,8 @@ export default function GuestOrderPage({ params }: Props) {
             note={reorderNote}
             alcoholRoomLeft={reorderRoomLeft}
             onUpdateQty={updateReorderQty}
+            onUpdateSize={updateReorderSize}
+            giantCupsAvailable={giantCupsAvailable}
             onConfirm={confirmReorder}
             onCancel={cancelReorder}
             isPlacing={placingOrder}
@@ -982,6 +993,8 @@ export default function GuestOrderPage({ params }: Props) {
           note={reorderNote}
           alcoholRoomLeft={reorderRoomLeft}
           onUpdateQty={updateReorderQty}
+          onUpdateSize={updateReorderSize}
+          giantCupsAvailable={giantCupsAvailable}
           onConfirm={confirmReorder}
           onCancel={cancelReorder}
           isPlacing={placingOrder}

@@ -6,6 +6,7 @@ import { cn, fmtTime, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { HistoryOrder } from "@/hooks/useOrderHistory";
 import type { QueuedOrderStatus } from "@/lib/queue";
+import { GIANT_UPCHARGE } from "@/lib/data";
 
 // "1:23" — same shape as the cooldown text shown elsewhere in the app
 function formatCooldown(ms: number): string {
@@ -136,7 +137,7 @@ interface OrderCardProps {
 }
 
 function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
-  const subtotal  = order.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+  const subtotal  = order.items.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
   const surcharge = order.surchargeAmount ?? 0;
   const total     = subtotal + surcharge;
   const display = STATUS_DISPLAY[order.status];
@@ -173,22 +174,28 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
 
         {/* Item list */}
         <div className="space-y-1.5">
-          {order.items.map((item, i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm" aria-hidden>{item.beverage.emoji}</span>
-                <span className="text-mist-200 font-body text-xs">
-                  {item.beverage.name}
-                  {item.quantity > 1 && (
-                    <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>
-                  )}
+          {order.items.map((item, i) => {
+            const unitPrice = item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0);
+            return (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm flex-shrink-0" aria-hidden>{item.beverage.emoji}</span>
+                  <span className="text-mist-200 font-body text-xs truncate">
+                    {item.beverage.name}
+                    {item.size === "giant" && (
+                      <span className="ml-1.5 text-[9px] font-mono font-bold text-blue-400 bg-blue-400/15 border border-blue-400/30 rounded px-1 py-0.5 align-middle">GIANT</span>
+                    )}
+                    {item.quantity > 1 && (
+                      <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>
+                    )}
+                  </span>
+                </div>
+                <span className="font-mono text-mist-500 text-xs flex-shrink-0">
+                  {fmtUSD(unitPrice * item.quantity)}
                 </span>
               </div>
-              <span className="font-mono text-mist-500 text-xs">
-                {fmtUSD(item.beverage.price * item.quantity)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {surcharge > 0 && (
@@ -298,7 +305,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
   // spend — everything else (active or delivered) reflects committed spend.
   const billableOrders = orders.filter(o => o.status !== "cancelled");
   const totalSpend = billableOrders.reduce((sum, o) => {
-    const itemsTotal = o.items.reduce((s, i) => s + i.beverage.price * i.quantity, 0);
+    const itemsTotal = o.items.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
     return sum + itemsTotal + (o.surchargeAmount ?? 0);
   }, 0);
 
@@ -444,19 +451,23 @@ interface SummaryViewProps {
 }
 
 function SummaryView({ orders, totalSpend, filterQuery }: SummaryViewProps) {
-  const drinkMap = new Map<string, { name: string; emoji: string; quantity: number; revenue: number }>();
+  const drinkMap = new Map<string, { name: string; emoji: string; quantity: number; revenue: number; isGiant: boolean }>();
   for (const order of orders) {
     for (const item of order.items) {
-      const cur = drinkMap.get(item.beverage.id) ?? {
+      const isGiant = item.size === "giant";
+      const key = item.beverage.id + (isGiant ? "__giant" : "");
+      const unitPrice = item.beverage.price + (isGiant ? GIANT_UPCHARGE : 0);
+      const cur = drinkMap.get(key) ?? {
         name: item.beverage.name,
         emoji: item.beverage.emoji,
         quantity: 0,
         revenue: 0,
+        isGiant,
       };
-      drinkMap.set(item.beverage.id, {
+      drinkMap.set(key, {
         ...cur,
         quantity: cur.quantity + item.quantity,
-        revenue:  cur.revenue + item.beverage.price * item.quantity,
+        revenue:  cur.revenue + unitPrice * item.quantity,
       });
     }
   }
@@ -475,11 +486,14 @@ function SummaryView({ orders, totalSpend, filterQuery }: SummaryViewProps) {
       <div className="flex-1 flex flex-col p-5 sm:p-6">
         <div className="flex-1 space-y-4">
           {drinks.map(d => (
-            <div key={d.name} className="flex items-center justify-between gap-3">
+            <div key={d.name + (d.isGiant ? "_giant" : "")} className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <span className="text-2xl flex-shrink-0" aria-hidden>{d.emoji}</span>
                 <span className="text-mist-100 font-body text-base truncate">
                   <span className="font-mono text-mist-400">{d.quantity}×</span> {d.name}
+                  {d.isGiant && (
+                    <span className="ml-1.5 text-[9px] font-mono font-bold text-blue-400 bg-blue-400/15 border border-blue-400/30 rounded px-1 py-0.5 align-middle">GIANT</span>
+                  )}
                 </span>
               </div>
               <span className="font-mono text-base text-white font-semibold flex-shrink-0">{fmtUSD(d.revenue)}</span>
