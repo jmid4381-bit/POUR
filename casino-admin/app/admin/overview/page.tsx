@@ -86,7 +86,7 @@ function ActivityRow({ order, index }: { order: ReturnType<typeof useAnalytics>[
           {meta.label}
         </span>
         <span className="text-[10px] font-mono text-ink-600 mt-0.5">
-          {ageMin < 1 ? "just now" : ageMin < 60 ? `${ageMin}m ago` : ageMin < 1440 ? `${Math.floor(ageMin/60)}h ago` : `${Math.floor(ageMin/1440)}d ago`}
+          {ageMin < 1 ? "just now" : ageMin < 60 ? `${ageMin}m ago` : ageMin < 1440 ? `${Math.floor(ageMin/60)}h ago` : (() => { const d = Math.floor(ageMin/1440); const h = Math.floor((ageMin % 1440)/60); return h > 0 ? `${d}d ${h}h ago` : `${d}d ago`; })()}
         </span>
       </div>
     </div>
