@@ -313,18 +313,19 @@ export default function GuestOrderPage({ params }: Props) {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleAddToOrder = useCallback((beverage: Beverage, qty: number, note: string, size: "regular" | "giant" = "regular") => {
-    const { added, capped } = addItem(beverage, qty, note, size);
-    if (added === 0 && beverage.isAlcoholic) {
-      // Re-trigger on every attempt — clear any running timer, briefly
-      // collapse the banner so the animation replays from scratch, then
-      // show it again and start a fresh 5s dismiss window.
+    // Any active cooldown blocks ALL alcoholic adds — show the countdown banner
+    if (beverage.isAlcoholic && cooldownMs > 0) {
       if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
       setCooldownBlocked(false);
       requestAnimationFrame(() => {
         setCooldownBlocked(true);
         cooldownTimerRef.current = setTimeout(() => setCooldownBlocked(false), 5000);
       });
-    } else if (added === 0) {
+      return;
+    }
+
+    const { added, capped } = addItem(beverage, qty, note, size);
+    if (added === 0) {
       setToast("Drink limit reached — try again shortly");
       setTimeout(() => setToast(null), 3500);
     } else if (capped) {
@@ -334,7 +335,7 @@ export default function GuestOrderPage({ params }: Props) {
       setToast(`${beverage.name} added`);
       setTimeout(() => setToast(null), 3500);
     }
-  }, [addItem]);
+  }, [addItem, cooldownMs]);
 
   const handleQuickAdd = useCallback((beverage: Beverage, size: "regular" | "giant" = "regular") => {
     handleAddToOrder(beverage, 1, "", size);
