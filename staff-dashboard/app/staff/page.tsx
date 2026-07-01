@@ -353,7 +353,7 @@ export default function StaffDashboard() {
      * No magic-number calc(100dvh - 240px) that breaks with different
      * header heights or soft keyboard states.
      */
-    <div className="h-screen flex flex-col overflow-hidden bg-base">
+    <div className="h-screen [height:100dvh] flex flex-col overflow-hidden bg-base">
 
       {/* Dot-grid atmosphere */}
       <div
