@@ -137,19 +137,27 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
         <div className="px-3.5 pt-3 pb-2">
           <div className="flex items-start justify-between gap-1.5 mb-0.5">
             <h3 className={cn(
-              "font-display font-semibold text-lg leading-tight",
-              isGold ? "text-gold-300" : "text-white",
+              "font-display font-bold text-xl leading-tight",
+              HOLIDAY_THEME_ACTIVE
+                ? "text-white drop-shadow-[0_1px_8px_rgba(96,165,250,0.5)]"
+                : isGold ? "text-gold-300" : "text-white",
             )}>
               {beverage.name}
             </h3>
             {beverage.isVip && <Star size={12} className="text-gold-400 fill-gold-400 mt-1.5 flex-shrink-0" />}
           </div>
-          <p className="text-mist-400 text-[11px] font-body leading-relaxed line-clamp-2">
+          <p className={cn(
+            "text-[12px] font-body leading-relaxed line-clamp-2 font-medium",
+            HOLIDAY_THEME_ACTIVE ? "text-blue-100/90" : "text-mist-400",
+          )}>
             {beverage.tagline}
           </p>
           <div className="flex items-center gap-1 mt-1.5">
-            <Info size={10} className="text-mist-600" />
-            <span className="text-[10px] text-mist-600 font-body">Tap for details</span>
+            <Info size={10} className={HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600"} />
+            <span className={cn(
+              "text-[10px] font-body",
+              HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600",
+            )}>Tap for details</span>
           </div>
         </div>
       </button>
@@ -160,9 +168,11 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
           <button
             onClick={() => setSize("regular")}
             className={cn(
-              "flex-1 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all active:scale-95",
+              "flex-1 py-2 rounded-xl text-xs font-mono font-bold border-2 transition-all active:scale-95",
               size === "regular"
-                ? "bg-felt-600/25 border-felt-500/40 text-felt-300"
+                ? "bg-felt-500/30 border-felt-400 text-felt-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+                : HOLIDAY_THEME_ACTIVE
+                ? "bg-white/5 border-white/25 text-blue-100/80 hover:text-white hover:border-white/40"
                 : "bg-transparent border-edge text-mist-500 hover:text-mist-300",
             )}
           >
@@ -172,9 +182,11 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
             onClick={() => { if (!giantDisabled) setSize("giant"); }}
             disabled={giantDisabled}
             className={cn(
-              "flex-1 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all active:scale-95",
+              "flex-1 py-2 rounded-xl text-xs font-mono font-bold border-2 transition-all active:scale-95",
               size === "giant"
-                ? "bg-blue-600/25 border-blue-500/40 text-blue-300"
+                ? "bg-blue-500/30 border-blue-400 text-blue-100 shadow-[0_0_12px_rgba(59,130,246,0.4)]"
+                : HOLIDAY_THEME_ACTIVE
+                ? "bg-white/5 border-white/25 text-blue-100/80 hover:text-white hover:border-white/40"
                 : "bg-transparent border-edge text-mist-500 hover:text-mist-300",
               giantDisabled && "opacity-40 cursor-not-allowed",
             )}
@@ -191,12 +203,15 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
       )}>
         <div>
           <span className={cn(
-            "font-mono font-bold text-base",
-            isGold ? "text-gold-300" : "text-white",
+            "font-mono font-bold text-lg",
+            HOLIDAY_THEME_ACTIVE ? "text-white" : isGold ? "text-gold-300" : "text-white",
           )}>
             {fmtUSD(effectivePrice)}
           </span>
-          <p className="text-[10px] text-mist-600 font-mono">per drink</p>
+          <p className={cn(
+            "text-[10px] font-mono",
+            HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600",
+          )}>per drink</p>
         </div>
 
         <button

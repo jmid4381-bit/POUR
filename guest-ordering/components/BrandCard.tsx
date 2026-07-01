@@ -82,9 +82,17 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
 
       {/* Brand name + flavor chips */}
       <div className="px-3.5 pt-3 pb-3">
-        <h3 className="font-display font-semibold text-lg leading-tight text-white mb-2.5">{brand}</h3>
+        <h3 className={cn(
+          "font-display font-bold text-xl leading-tight mb-2.5",
+          HOLIDAY_THEME_ACTIVE
+            ? "text-white drop-shadow-[0_1px_8px_rgba(96,165,250,0.5)]"
+            : "text-white",
+        )}>{brand}</h3>
 
-        <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest mb-2">Pick a flavor</p>
+        <p className={cn(
+          "text-[10px] font-mono uppercase tracking-widest mb-2 font-semibold",
+          HOLIDAY_THEME_ACTIVE ? "text-blue-200/80" : "text-mist-500",
+        )}>Pick a flavor</p>
         <div className="flex flex-wrap gap-2">
           {beverages.map(bev => {
             const qty   = cartQuantityMap.get(bev.id) ?? 0;
@@ -94,15 +102,17 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
                 key={bev.id}
                 onClick={() => onClick(bev)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-body font-semibold transition-all active:scale-95",
+                  "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border-2 text-sm font-body font-bold transition-all active:scale-95",
                   qty > 0
-                    ? "bg-felt-600/20 border-felt-500/40 text-felt-300"
+                    ? "bg-felt-500/30 border-felt-400 text-felt-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+                    : HOLIDAY_THEME_ACTIVE
+                    ? "bg-white/5 border-white/25 text-white hover:border-white/50 hover:bg-white/10"
                     : "bg-lift border-edge text-mist-200 hover:border-rim hover:text-white",
                 )}
               >
                 {label}
                 {qty > 0 && (
-                  <span className="text-[10px] font-mono bg-felt-500/30 rounded-full px-1.5 py-0.5 text-felt-300">
+                  <span className="text-[10px] font-mono bg-felt-500/30 rounded-full px-1.5 py-0.5 text-felt-200">
                     {qty}
                   </span>
                 )}
@@ -118,10 +128,16 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
         HOLIDAY_THEME_ACTIVE ? "border-blue-900/40" : "border-edge",
       )}>
         <div>
-          <span className="font-mono font-bold text-base text-white">{fmtUSD(price)}</span>
-          <p className="text-[10px] text-mist-600 font-mono">per drink</p>
+          <span className="font-mono font-bold text-lg text-white">{fmtUSD(price)}</span>
+          <p className={cn(
+            "text-[10px] font-mono",
+            HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600",
+          )}>per drink</p>
         </div>
-        <p className="text-[11px] text-mist-500 font-body">Tap a flavor to order</p>
+        <p className={cn(
+          "text-[11px] font-body",
+          HOLIDAY_THEME_ACTIVE ? "text-blue-200/80" : "text-mist-500",
+        )}>Tap a flavor to order</p>
       </div>
     </div>
   );
