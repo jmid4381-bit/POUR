@@ -24,17 +24,17 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
   const prepMin = beverages[0]?.prepMinutes ?? 1;
 
   const cardBg = HOLIDAY_THEME_ACTIVE
-    ? { background: "linear-gradient(145deg, #0a1545 0%, #0f1f5c 30%, #1a0a2e 60%, #3a0a0a 100%)" }
+    ? { background: "linear-gradient(145deg, #16266e 0%, #1d3384 32%, #341250 62%, #5e1418 100%)" }
     : undefined;
 
   return (
     <div
       style={{ ...style, ...cardBg }}
       className={cn(
-        "group relative w-full rounded-2xl overflow-hidden shadow-card animate-fade-up",
+        "group relative w-full rounded-2xl overflow-hidden animate-fade-up",
         HOLIDAY_THEME_ACTIVE
-          ? "border border-blue-800/50"
-          : "border border-edge bg-card",
+          ? "border border-blue-400/60 shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(37,99,235,0.25)]"
+          : "border border-edge bg-card shadow-card",
       )}
     >
       <div className="absolute inset-0 bg-card-sheen pointer-events-none" />

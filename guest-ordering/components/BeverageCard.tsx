@@ -36,11 +36,11 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
   };
 
   const cardBg = HOLIDAY_THEME_ACTIVE
-    ? { background: "linear-gradient(145deg, #0a1545 0%, #0f1f5c 30%, #1a0a2e 60%, #3a0a0a 100%)" }
+    ? { background: "linear-gradient(145deg, #16266e 0%, #1d3384 32%, #341250 62%, #5e1418 100%)" }
     : undefined;
 
   const cardBorder = HOLIDAY_THEME_ACTIVE
-    ? "border-blue-600/60"
+    ? "border-blue-400/60"
     : isGold ? "border-gold-500/30" : "border-edge";
 
   return (
@@ -48,8 +48,10 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
       style={{ ...style, ...cardBg }}
       className={cn(
         "group relative w-full rounded-2xl overflow-hidden",
-        "border transition-all duration-300",
-        "shadow-card animate-fade-up",
+        "border transition-all duration-300 animate-fade-up",
+        HOLIDAY_THEME_ACTIVE
+          ? "shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(37,99,235,0.25)]"
+          : "shadow-card",
         !HOLIDAY_THEME_ACTIVE && "bg-card",
         cardBorder,
       )}
