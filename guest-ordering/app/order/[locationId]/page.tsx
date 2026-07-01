@@ -235,6 +235,10 @@ export default function GuestOrderPage({ params }: Props) {
   // Prevent duplicate submissions
   const isConfirming = useRef(false);
 
+  // Tracks the auto-dismiss timer for the cooldown blocker banner so every
+  // new attempt resets the countdown instead of being silently swallowed.
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── Derived ────────────────────────────────────────────────────────────────
 
   // Underage sessions only ever see non-alcoholic beverages — filtered once
@@ -311,9 +315,15 @@ export default function GuestOrderPage({ params }: Props) {
   const handleAddToOrder = useCallback((beverage: Beverage, qty: number, note: string, size: "regular" | "giant" = "regular") => {
     const { added, capped } = addItem(beverage, qty, note, size);
     if (added === 0 && beverage.isAlcoholic) {
-      // Prominent blocker — don't show an "added" toast, just the countdown
-      setCooldownBlocked(true);
-      setTimeout(() => setCooldownBlocked(false), 5000);
+      // Re-trigger on every attempt — clear any running timer, briefly
+      // collapse the banner so the animation replays from scratch, then
+      // show it again and start a fresh 5s dismiss window.
+      if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+      setCooldownBlocked(false);
+      requestAnimationFrame(() => {
+        setCooldownBlocked(true);
+        cooldownTimerRef.current = setTimeout(() => setCooldownBlocked(false), 5000);
+      });
     } else if (added === 0) {
       setToast("Drink limit reached — try again shortly");
       setTimeout(() => setToast(null), 3500);
