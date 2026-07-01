@@ -22,6 +22,7 @@ import {
   Bell, X, Package, CheckCircle2,
   TrendingUp, ClipboardList, LayoutGrid, Volume2, VolumeX,
   Truck, RefreshCw, Search, MapPin, Clock, LogOut, GlassWater, Undo2,
+  ChevronDown,
 } from "lucide-react";
 import { supabase }             from "@/lib/supabase";
 import { useStaffOrders }       from "@/hooks/useStaffOrders";
@@ -89,6 +90,10 @@ export default function StaffDashboard() {
     return () => clearTimeout(id);
   }, [staffName]);
   const [mobileCol,  setMobileCol]  = useState<ColKey>("pending");
+  // Stats grid is collapsed by default on mobile so the order board gets the
+  // full screen; staff tap to expand when they want the numbers. Desktop /
+  // tablet always show the stats regardless of this flag.
+  const [statsCollapsed, setStatsCollapsed] = useState(true);
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
 
@@ -527,8 +532,30 @@ export default function StaffDashboard() {
           </div>
         )}
 
+        {/* ── Stats collapse toggle — mobile only ── */}
+        <button
+          onClick={() => setStatsCollapsed(c => !c)}
+          className="sm:hidden flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-surface border border-border text-slate-300 flex-shrink-0 active:scale-[0.99] transition-all"
+        >
+          <span className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-widest">
+            <ClipboardList size={13} className="text-gold-400" />
+            Stats
+            <span className="text-slate-500 normal-case tracking-normal font-body">
+              · {stats.totalActive} active · {stats.totalPending} new
+              {stats.overdueCount > 0 && <span className="text-red-400"> · {stats.overdueCount} late</span>}
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            className={cn("text-slate-500 transition-transform", !statsCollapsed && "rotate-180")}
+          />
+        </button>
+
         {/* ── Stats row ── */}
-        <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 flex-shrink-0">
+        <div className={cn(
+          "grid grid-cols-3 sm:grid-cols-7 gap-2 flex-shrink-0",
+          statsCollapsed && "hidden sm:grid",
+        )}>
           <StatCard
             label="Active"
             value={stats.totalActive}
