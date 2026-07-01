@@ -714,7 +714,14 @@ export default function GuestOrderPage({ params }: Props) {
         className="fixed inset-0 pointer-events-none"
         style={{ backgroundImage:"radial-gradient(circle,rgba(30,48,72,0.5) 1px,transparent 1px)", backgroundSize:"28px 28px" }}
       />
-      <div className="fixed inset-0 pointer-events-none bg-hero-glow" />
+      {HOLIDAY_THEME_ACTIVE ? (
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse 80% 40% at 50% 0%, rgba(29,78,216,0.18), transparent), radial-gradient(ellipse 60% 30% at 20% 100%, rgba(185,28,28,0.15), transparent)" }}
+        />
+      ) : (
+        <div className="fixed inset-0 pointer-events-none bg-hero-glow" />
+      )}
 
       <div className="relative z-10 max-w-lg mx-auto">
 

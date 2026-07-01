@@ -5,6 +5,7 @@ import { Clock, Star, Plus, Check, Info } from "lucide-react";
 import { cn, fmtUSD } from "@/lib/utils";
 import { BeverageImage } from "./BeverageImage";
 import { GIANT_UPCHARGE } from "@/lib/data";
+import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { Beverage } from "@/lib/data";
 
 interface BeverageCardProps {
@@ -34,18 +35,40 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
     setTimeout(() => setJustAdded(false), 1500);
   };
 
+  const cardBg = HOLIDAY_THEME_ACTIVE
+    ? { background: "linear-gradient(135deg, #080f28 0%, #0d1528 50%, #1c0809 100%)" }
+    : undefined;
+
+  const cardBorder = HOLIDAY_THEME_ACTIVE
+    ? "border-blue-800/50"
+    : isGold ? "border-gold-500/30" : "border-edge";
+
   return (
     <div
-      style={style}
+      style={{ ...style, ...cardBg }}
       className={cn(
         "group relative w-full rounded-2xl overflow-hidden",
         "border transition-all duration-300",
-        "bg-card shadow-card animate-fade-up",
-        isGold ? "border-gold-500/30" : "border-edge",
+        "shadow-card animate-fade-up",
+        !HOLIDAY_THEME_ACTIVE && "bg-card",
+        cardBorder,
       )}
     >
+      {/* Card sheen */}
       <div className="absolute inset-0 bg-card-sheen pointer-events-none" />
 
+      {/* July 4th sparkle overlay */}
+      {HOLIDAY_THEME_ACTIVE && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+      )}
+
+      {/* VIP / Featured ribbon */}
       {isGold && (
         <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden z-10">
           <div className={cn(
@@ -64,13 +87,22 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
         aria-label={`View details for ${beverage.name}`}
         className="w-full text-left active:scale-[0.98] transition-transform"
       >
-        <div className="relative h-28 flex items-center justify-center overflow-hidden bg-gradient-to-b from-lift to-card">
-          <div className={cn(
-            "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-            isGold
-              ? "bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(212,150,10,0.18),transparent)]"
-              : "bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(16,185,129,0.13),transparent)]",
-          )} />
+        <div className={cn(
+          "relative h-28 flex items-center justify-center overflow-hidden",
+          HOLIDAY_THEME_ACTIVE
+            ? "bg-gradient-to-b from-blue-950/70 to-transparent"
+            : "bg-gradient-to-b from-lift to-card",
+        )}>
+          {HOLIDAY_THEME_ACTIVE ? (
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(220,38,38,0.2),transparent)]" />
+          ) : (
+            <div className={cn(
+              "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+              isGold
+                ? "bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(212,150,10,0.18),transparent)]"
+                : "bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(16,185,129,0.13),transparent)]",
+            )} />
+          )}
 
           <BeverageImage
             imageUrl={beverage.imageUrl}
@@ -152,7 +184,7 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
       {/* Bottom action bar */}
       <div className={cn(
         "flex items-center justify-between px-3.5 py-3 border-t",
-        isGold ? "border-gold-600/15" : "border-edge",
+        HOLIDAY_THEME_ACTIVE ? "border-blue-900/40" : isGold ? "border-gold-600/15" : "border-edge",
       )}>
         <div>
           <span className={cn(

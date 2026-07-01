@@ -2,6 +2,7 @@
 
 import { Clock } from "lucide-react";
 import { cn, fmtUSD } from "@/lib/utils";
+import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { Beverage } from "@/lib/data";
 
 interface BrandCardProps {
@@ -13,8 +14,6 @@ interface BrandCardProps {
   style?:          React.CSSProperties;
 }
 
-// Extracts the flavor label by stripping the brand prefix from the name.
-// "White Claw Mango" with brand "White Claw" → "Mango"
 function flavorLabel(name: string, brand: string): string {
   return name.startsWith(brand + " ") ? name.slice(brand.length + 1) : name;
 }
@@ -24,27 +23,54 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
   const price = beverages[0]?.price ?? 0;
   const prepMin = beverages[0]?.prepMinutes ?? 1;
 
+  const cardBg = HOLIDAY_THEME_ACTIVE
+    ? { background: "linear-gradient(135deg, #080f28 0%, #0d1528 50%, #1c0809 100%)" }
+    : undefined;
+
   return (
     <div
-      style={style}
-      className="group relative w-full rounded-2xl overflow-hidden border border-edge bg-card shadow-card animate-fade-up"
+      style={{ ...style, ...cardBg }}
+      className={cn(
+        "group relative w-full rounded-2xl overflow-hidden shadow-card animate-fade-up",
+        HOLIDAY_THEME_ACTIVE
+          ? "border border-blue-800/50"
+          : "border border-edge bg-card",
+      )}
     >
       <div className="absolute inset-0 bg-card-sheen pointer-events-none" />
 
+      {/* July 4th sparkle overlay */}
+      {HOLIDAY_THEME_ACTIVE && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+      )}
+
       {/* Hero area */}
-      <div className="relative h-28 flex items-center justify-center overflow-hidden bg-gradient-to-b from-lift to-card">
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(16,185,129,0.13),transparent)]" />
+      <div className={cn(
+        "relative h-28 flex items-center justify-center overflow-hidden",
+        HOLIDAY_THEME_ACTIVE
+          ? "bg-gradient-to-b from-blue-950/70 to-transparent"
+          : "bg-gradient-to-b from-lift to-card",
+      )}>
+        {HOLIDAY_THEME_ACTIVE ? (
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(220,38,38,0.2),transparent)]" />
+        ) : (
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(16,185,129,0.13),transparent)]" />
+        )}
 
         <span className="text-5xl select-none">{emoji}</span>
 
-        {/* In-cart badge */}
         {totalInCart > 0 && (
           <div className="absolute top-2 left-2 flex items-center gap-1 bg-felt-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-felt-glow">
             <span className="text-[10px] font-mono font-bold text-white">{totalInCart} in order</span>
           </div>
         )}
 
-        {/* Prep badge */}
         <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-void/70 backdrop-blur-sm rounded-full px-2 py-0.5">
           <Clock size={9} className="text-gold-400" />
           <span className="text-[9px] font-mono text-mist-200">{prepMin}m</span>
@@ -84,7 +110,10 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
       </div>
 
       {/* Bottom bar */}
-      <div className="flex items-center justify-between px-3.5 py-3 border-t border-edge">
+      <div className={cn(
+        "flex items-center justify-between px-3.5 py-3 border-t",
+        HOLIDAY_THEME_ACTIVE ? "border-blue-900/40" : "border-edge",
+      )}>
         <div>
           <span className="font-mono font-bold text-base text-white">{fmtUSD(price)}</span>
           <p className="text-[10px] text-mist-600 font-mono">per drink</p>
