@@ -36,11 +36,11 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
   };
 
   const cardBg = HOLIDAY_THEME_ACTIVE
-    ? { background: "linear-gradient(135deg, #080f28 0%, #0d1528 50%, #1c0809 100%)" }
+    ? { background: "linear-gradient(145deg, #0a1545 0%, #0f1f5c 30%, #1a0a2e 60%, #3a0a0a 100%)" }
     : undefined;
 
   const cardBorder = HOLIDAY_THEME_ACTIVE
-    ? "border-blue-800/50"
+    ? "border-blue-600/60"
     : isGold ? "border-gold-500/30" : "border-edge";
 
   return (
@@ -57,15 +57,18 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
       {/* Card sheen */}
       <div className="absolute inset-0 bg-card-sheen pointer-events-none" />
 
-      {/* July 4th sparkle overlay */}
+      {/* July 4th star pattern + red/blue top accent bar */}
       {HOLIDAY_THEME_ACTIVE && (
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        />
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
+            }}
+          />
+          <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-red-500 via-white/80 to-blue-500 pointer-events-none" />
+        </>
       )}
 
       {/* VIP / Featured ribbon */}
@@ -90,7 +93,7 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
         <div className={cn(
           "relative h-28 flex items-center justify-center overflow-hidden",
           HOLIDAY_THEME_ACTIVE
-            ? "bg-gradient-to-b from-blue-950/70 to-transparent"
+            ? "bg-gradient-to-b from-blue-900/50 to-transparent"
             : "bg-gradient-to-b from-lift to-card",
         )}>
           {HOLIDAY_THEME_ACTIVE ? (

@@ -24,7 +24,7 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
   const prepMin = beverages[0]?.prepMinutes ?? 1;
 
   const cardBg = HOLIDAY_THEME_ACTIVE
-    ? { background: "linear-gradient(135deg, #080f28 0%, #0d1528 50%, #1c0809 100%)" }
+    ? { background: "linear-gradient(145deg, #0a1545 0%, #0f1f5c 30%, #1a0a2e 60%, #3a0a0a 100%)" }
     : undefined;
 
   return (
@@ -39,15 +39,18 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
     >
       <div className="absolute inset-0 bg-card-sheen pointer-events-none" />
 
-      {/* July 4th sparkle overlay */}
+      {/* July 4th star pattern + red/blue top accent bar */}
       {HOLIDAY_THEME_ACTIVE && (
-        <div
-          className="absolute inset-0 pointer-events-none opacity-30"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        />
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
+            }}
+          />
+          <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-red-500 via-white/80 to-blue-500 pointer-events-none" />
+        </>
       )}
 
       {/* Hero area */}

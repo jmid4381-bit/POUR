@@ -717,7 +717,7 @@ export default function GuestOrderPage({ params }: Props) {
       {HOLIDAY_THEME_ACTIVE ? (
         <div
           className="fixed inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 80% 40% at 50% 0%, rgba(29,78,216,0.18), transparent), radial-gradient(ellipse 60% 30% at 20% 100%, rgba(185,28,28,0.15), transparent)" }}
+          style={{ background: "radial-gradient(ellipse 90% 45% at 50% 0%, rgba(29,78,216,0.35), transparent), radial-gradient(ellipse 70% 35% at 10% 100%, rgba(185,28,28,0.3), transparent), radial-gradient(ellipse 70% 35% at 90% 100%, rgba(185,28,28,0.25), transparent)" }}
         />
       ) : (
         <div className="fixed inset-0 pointer-events-none bg-hero-glow" />
