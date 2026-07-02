@@ -81,7 +81,9 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
   const validate = () => {
     const e: typeof errors = {};
     if (!form.name.trim())     e.name  = "Name is required";
-    if (form.price <= 0)       e.price = "Price must be greater than $0";
+    // $0 is valid — event drinks are free (Giant upcharge / surcharge handled
+    // elsewhere). Only a negative price is rejected.
+    if (form.price < 0)        e.price = "Price can't be negative";
     if (form.prepMinutes <= 0) e.prepMinutes = "Prep time must be at least 1 minute";
     setErrors(e);
     return Object.keys(e).length === 0;
