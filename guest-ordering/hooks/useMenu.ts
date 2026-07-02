@@ -17,11 +17,22 @@
  *   - Initial mount
  *   - Window focus (manager changes availability in admin → guests see it)
  *   - Visibility change (phone unlocked, tab returned to)
+ *   - Supabase Realtime change on the beverages table (instant push)
+ *   - A short polling interval — the reliable fallback that guarantees the
+ *     menu still updates within a few seconds even if Realtime delivers no
+ *     events (Realtime has historically been unreliable on this project, so
+ *     the poll is what actually makes availability changes propagate).
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import { BEVERAGES, LOCATIONS, type Beverage, type Location } from "@/lib/data";
 import { readAdminBeverages, readAdminLocations } from "@/lib/queue";
+
+// How often the fallback poll re-fetches the menu while a guest is actively
+// viewing it. Kept modest to limit round-trips for a small event; Realtime
+// (when it works) makes changes appear faster than this anyway.
+const MENU_POLL_MS = 8_000;
 
 // Merge Supabase data over the static fallback.
 // Static data provides the rich content; Supabase controls operational fields.
@@ -145,6 +156,46 @@ export function useMenu() {
       window.removeEventListener("focus",              forceRefresh);
       document.removeEventListener("visibilitychange", forceRefresh);
     };
+  }, [refresh]);
+
+  // ── Supabase Realtime — instant push when an admin changes a beverage ──
+  // Listens for ANY change to the beverages table (availability toggle, price
+  // edit, insert, delete) and re-fetches the merged menu. A short debounce
+  // coalesces a burst of row updates (e.g. admin toggling several drinks) into
+  // a single re-fetch. The client auto-reconnects after a network blip, so no
+  // error is ever surfaced to the guest; the polling fallback below covers any
+  // gap while a reconnect is in flight.
+  useEffect(() => {
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => refresh(true), 300);
+    };
+
+    const channel = supabase
+      .channel("beverages-menu-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "beverages" },
+        scheduleRefresh,
+      )
+      .subscribe();
+
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
+  }, [refresh]);
+
+  // ── Polling fallback — the guarantee ──
+  // Realtime is best-effort on this project; this interval is what actually
+  // ensures an availability change reaches every active guest within a few
+  // seconds even when no Realtime event arrives. force=true bypasses the TTL
+  // cache; refresh() never toggles the loading spinner on a re-fetch, so this
+  // causes no flicker — an unavailable drink simply isn't in the next render.
+  useEffect(() => {
+    const id = setInterval(() => refresh(true), MENU_POLL_MS);
+    return () => clearInterval(id);
   }, [refresh]);
 
   return { beverages, locations, loading, lastSynced, refresh };

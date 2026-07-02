@@ -341,6 +341,20 @@ export default function GuestOrderPage({ params }: Props) {
     handleAddToOrder(beverage, 1, "", size);
   }, [handleAddToOrder]);
 
+  // If an admin marks a drink unavailable while a guest has its detail modal
+  // open, close the modal gracefully and tell them — rather than leaving them
+  // staring at (and able to add) a drink that no longer exists. The live menu
+  // arrives via useMenu's Realtime/poll sync, so we just react to `beverages`.
+  useEffect(() => {
+    if (!selectedBeverage) return;
+    const live = beverages.find(b => b.id === selectedBeverage.id);
+    if (!live || !live.isAvailable) {
+      setSelected(null);
+      setToast("This drink is no longer available");
+      setTimeout(() => setToast(null), 3500);
+    }
+  }, [beverages, selectedBeverage]);
+
   const removeFromCart = useCallback((beverageId: string) => {
     removeItem(beverageId);
     if (cart.filter(i => i.beverage.id !== beverageId).length === 0) {
