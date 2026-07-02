@@ -103,8 +103,8 @@ export function ReorderConfirmDialog({
                         </span>
                       )}
                     </div>
-                    {/* Size toggle — alcoholic items only */}
-                    {item.beverage.isAlcoholic && onUpdateSize && (
+                    {/* Size toggle — alcoholic items only, excluding shots (single size) */}
+                    {item.beverage.isAlcoholic && item.beverage.category !== "shot" && onUpdateSize && (
                       <div className="flex gap-1.5 ml-0">
                         {(["regular", "giant"] as const).map(s => {
                           const isGiantOpt = s === "giant";

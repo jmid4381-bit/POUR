@@ -236,8 +236,8 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
             isGold ? "border-gold-600/20" : "border-edge",
           )}>
 
-            {/* Size selector — alcoholic drinks only */}
-            {beverage.isAlcoholic && (
+            {/* Size selector — alcoholic drinks only, excluding shots (single size) */}
+            {beverage.isAlcoholic && beverage.category !== "shot" && (
               <>
                 <div className="flex gap-2">
                   {(["regular", "giant"] as const).map(s => {
