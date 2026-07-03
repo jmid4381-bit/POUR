@@ -58,6 +58,7 @@ export interface AdminBeverage {
   emoji:       string;
   description: string;
   imageUrl:    string | null;
+  giantAvailable: boolean;
 }
 
 export interface AdminLocation {
@@ -233,7 +234,7 @@ export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
   try {
     const { data, error } = await supabase
       .from("beverages")
-      .select("id, name, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description, image_url");
+      .select("id, name, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description, image_url, giant_available");
 
     if (error) throw error;
     if (!data || data.length === 0) return null;
@@ -250,6 +251,9 @@ export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
       emoji:       b.emoji ?? "",
       description: b.description ?? "",
       imageUrl:    b.image_url ?? null,
+      // Default true — a drink without the column set still offers Giant,
+      // matching prior behaviour. Only an explicit false hides the toggle.
+      giantAvailable: b.giant_available ?? true,
     }));
 
   } catch {

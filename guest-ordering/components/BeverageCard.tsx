@@ -24,9 +24,12 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
   if (!beverage.isAvailable) return null;
 
   const isGold = beverage.isVip || beverage.isFeatured;
-  // Giant is offered for alcoholic drinks — except shots, which only come in
-  // one size (they're still alcoholic, so cooldown + surcharge still apply).
-  const showSizeToggle = beverage.isAlcoholic && beverage.category !== "shot";
+  // Giant is offered for alcoholic drinks — except shots (single size) and any
+  // drink explicitly flagged giantAvailable === false (e.g. BuzzBallz, Big Sipz).
+  // These are still alcoholic, so cooldown + surcharge still apply.
+  const showSizeToggle = beverage.isAlcoholic
+    && beverage.category !== "shot"
+    && beverage.giantAvailable !== false;
   const giantDisabled = giantCupsAvailable === 0;
   const effectivePrice = beverage.price + (size === "giant" ? GIANT_UPCHARGE : 0);
 

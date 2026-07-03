@@ -63,6 +63,7 @@ async function mergedBeverages(): Promise<Beverage[]> {
         emoji:       liveBev.emoji || staticBev.emoji,
         description: liveBev.description || staticBev.description,
         imageUrl:    liveBev.imageUrl ?? staticBev.imageUrl ?? null,
+        giantAvailable: liveBev.giantAvailable,
       };
     }
     // No static content yet — show with what Supabase has, gracefully
@@ -81,6 +82,7 @@ async function mergedBeverages(): Promise<Beverage[]> {
       isFeatured:   liveBev.isFeatured,
       isSignature:  false,
       isVip:        false,
+      giantAvailable: liveBev.giantAvailable,
       prepMinutes:  liveBev.prepMinutes,
       tags:         [],
     };

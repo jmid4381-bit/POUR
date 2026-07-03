@@ -20,6 +20,7 @@ export interface Beverage {
   isFeatured:   boolean;
   isSignature:  boolean;
   isVip:        boolean;
+  giantAvailable?: boolean;   // false hides the Giant size toggle for this drink
   prepMinutes:  number;
   tags:         string[];
   pairsWith?:   string;        // food pairing note
@@ -66,7 +67,7 @@ export const CATEGORY_META: Record<BeverageCategory, CategoryMeta> = {
   champagne:      { label: "Champagne",    emoji: "🍾", shortLabel: "Champagne"   },
   spirit:         { label: "Spirits",      emoji: "🥃", shortLabel: "Spirits"     },
   wine:           { label: "Wine",         emoji: "🍷", shortLabel: "Wine"        },
-  beer:           { label: "Beer",         emoji: "🍺", shortLabel: "Beer"        },
+  beer:           { label: "Seltzer/Juice", emoji: "🍹", shortLabel: "Seltzer"    },
   shot:           { label: "Shots",        emoji: "⚡",  shortLabel: "Shots"       },
   "non-alcoholic":{ label: "Non-Alcoholic",emoji: "💧", shortLabel: "Non-Alc"    },
 };
