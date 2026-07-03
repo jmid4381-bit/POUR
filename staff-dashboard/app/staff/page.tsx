@@ -281,7 +281,9 @@ export default function StaffDashboard() {
     // still only ever uses the zone-filtered `orders`.
     const source = q ? allOrders : orders;
     const matchesSearch = (o: typeof orders[number]) =>
-      !q || (o.guestName ?? "").toLowerCase().includes(q);
+      !q
+      || (o.guestName ?? "").toLowerCase().includes(q)
+      || o.id.toLowerCase().includes(q);
     return {
       pending:   sort(source.filter(o => o.status === "pending" && matchesSearch(o))),
       accepted:  sort(source.filter(o => (o.status === "accepted" || o.status === "preparing") && matchesSearch(o))),
@@ -637,7 +639,7 @@ export default function StaffDashboard() {
           <input
             value={guestSearch}
             onChange={e => setGuestSearch(e.target.value)}
-            placeholder="Search by guest name…"
+            placeholder="Search by guest name or order #…"
             className="w-full bg-raised border border-gold-500/25 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-slate-500 font-body focus:outline-none focus:border-gold-500/60 focus:bg-surface transition-colors shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
           />
           {guestSearch && (

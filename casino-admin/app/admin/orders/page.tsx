@@ -401,7 +401,7 @@ export default function OrdersPage() {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by guest name…"
+              placeholder="Search by guest name or order #…"
               className="field-input pl-8 w-full text-xs"
             />
             {search && (
