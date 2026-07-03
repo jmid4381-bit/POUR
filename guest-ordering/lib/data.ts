@@ -67,7 +67,7 @@ export const CATEGORY_META: Record<BeverageCategory, CategoryMeta> = {
   champagne:      { label: "Champagne",    emoji: "🍾", shortLabel: "Champagne"   },
   spirit:         { label: "Spirits",      emoji: "🥃", shortLabel: "Spirits"     },
   wine:           { label: "Wine",         emoji: "🍷", shortLabel: "Wine"        },
-  beer:           { label: "Seltzer/Juice", emoji: "🍹", shortLabel: "Seltzer"    },
+  beer:           { label: "Seltzer/Juice", emoji: "🍹", shortLabel: "Seltzer/Juice" },
   shot:           { label: "Shots",        emoji: "⚡",  shortLabel: "Shots"       },
   "non-alcoholic":{ label: "Non-Alcoholic",emoji: "💧", shortLabel: "Non-Alc"    },
 };
