@@ -3,7 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
-export const JULY4_SURCHARGE_DELAY_MS = 60 * 60_000;
+// ⚠️ TEMPORARY TEST VALUE — set to 2 minutes to verify the countdown
+// notifications (2 min / 1 min / final 10s / final message) fire correctly.
+// REVERT to `60 * 60_000` (1 hour) before the live event.
+export const JULY4_SURCHARGE_DELAY_MS = 2 * 60_000;
 const POLL_MS = 15_000;
 
 export const GIANT_CUP_MAX = 4;
