@@ -1111,21 +1111,31 @@ export default function GuestOrderPage({ params }: Props) {
       )}
 
       {/* ── TOAST ── */}
+      {/* Full-width centering wrapper keeps the pill within the viewport on
+          narrow phones: short messages stay a compact centered pill, long ones
+          wrap to multiple lines (capped at the screen width minus 16px margins)
+          instead of being clipped off the edges. Verified at 375px & 390px. */}
       {toast && (
         <div
-          role="status"
-          aria-live="polite"
           className={cn(
-            "fixed left-1/2 -translate-x-1/2 z-50",
-            "flex items-center gap-2 bg-felt-600 border border-felt-400/30",
-            "rounded-2xl px-4 py-2.5 shadow-felt-glow",
-            "text-white text-sm font-body font-semibold",
-            "animate-toast-up whitespace-nowrap",
+            "fixed inset-x-0 z-50 px-4 flex justify-center pointer-events-none",
             cartCount > 0 ? "bottom-24" : "bottom-8",
           )}
         >
-          <Check size={14} />
-          {toast}
+          <div
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "inline-flex items-center gap-2 max-w-full",
+              "bg-felt-600 border border-felt-400/30",
+              "rounded-2xl px-4 py-2.5 shadow-felt-glow",
+              "text-white text-sm font-body font-semibold",
+              "animate-toast-up",
+            )}
+          >
+            <Check size={14} className="flex-shrink-0" />
+            <span className="min-w-0 leading-snug">{toast}</span>
+          </div>
         </div>
       )}
 
