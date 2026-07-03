@@ -5,7 +5,9 @@ import { Sparkles, Play, Square, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-const SURCHARGE_DELAY_MS = 60 * 60_000;
+// ⚠️ TEMPORARY TEST VALUE — 2 minutes to match the guest countdown test.
+// REVERT to `60 * 60_000` (1 hour) before the live event.
+const SURCHARGE_DELAY_MS = 2 * 60_000;
 const POLL_MS            = 8_000;
 
 interface EventState {
