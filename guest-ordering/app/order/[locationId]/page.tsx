@@ -258,7 +258,7 @@ export default function GuestOrderPage({ params }: Props) {
   // Group drinks that share a brand into a single card (e.g. White Claw flavors, Truly flavors).
   // Returns an ordered list of either a single Beverage (rendered as BeverageCard) or a brand
   // group (rendered as BrandCard). Order is preserved — first beverage of each group sets position.
-  const BRAND_PREFIXES = ["White Claw Tails", "BuzzBallz", "Mom Water"] as const;
+  const BRAND_PREFIXES = ["White Claw Tails", "BuzzBallz", "Mom Water", "Smirnoff Ice Icy Island"] as const;
   type BrandGroup = { kind: "brand"; brand: string; emoji: string; beverages: Beverage[] };
   type SingleItem = { kind: "single"; beverage: Beverage };
   const menuItems = useMemo((): (BrandGroup | SingleItem)[] => {
