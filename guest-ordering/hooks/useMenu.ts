@@ -70,7 +70,7 @@ async function mergedBeverages(): Promise<Beverage[]> {
     return {
       id:           liveBev.id,
       name:         liveBev.name,
-      tagline:      "",
+      tagline:      liveBev.tagline,
       description:  liveBev.description,
       ingredients:  [],
       category:     liveBev.category as Beverage["category"],

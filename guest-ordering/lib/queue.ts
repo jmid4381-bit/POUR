@@ -49,6 +49,7 @@ export interface QueuedOrder {
 export interface AdminBeverage {
   id:          string;
   name:        string;
+  tagline:     string;
   price:       number;
   isAvailable: boolean;
   isFeatured:  boolean;
@@ -234,7 +235,7 @@ export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
   try {
     const { data, error } = await supabase
       .from("beverages")
-      .select("id, name, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description, image_url, giant_available");
+      .select("id, name, tagline, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description, image_url, giant_available");
 
     if (error) throw error;
     if (!data || data.length === 0) return null;
@@ -242,6 +243,7 @@ export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
     return data.map(b => ({
       id:          b.id,
       name:        b.name,
+      tagline:     b.tagline ?? "",
       price:       Number(b.price),
       isAvailable: b.is_available,
       isFeatured:  b.is_featured,
