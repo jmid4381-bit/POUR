@@ -369,6 +369,13 @@ export default function GuestOrderPage({ params }: Props) {
     }
   }, [selectedBeverage]);
 
+  // Close the review sheet automatically once the cart is emptied — whether the
+  // last item was removed via the trash button or decremented to zero. No point
+  // showing an empty "0 drinks" summary.
+  useEffect(() => {
+    if (showReview && cart.length === 0) setShowReview(false);
+  }, [cart.length, showReview]);
+
   const handleQuickAdd = useCallback((beverage: Beverage, size: "regular" | "giant" = "regular") => {
     handleAddToOrder(beverage, 1, "", size);
   }, [handleAddToOrder]);
@@ -389,10 +396,8 @@ export default function GuestOrderPage({ params }: Props) {
 
   const removeFromCart = useCallback((beverageId: string) => {
     removeItem(beverageId);
-    if (cart.filter(i => i.beverage.id !== beverageId).length === 0) {
-      setShowReview(false);
-    }
-  }, [removeItem, cart]);
+    // Sheet auto-closes on empty cart via the effect above.
+  }, [removeItem]);
 
   const updateCartQty = useCallback((beverageId: string, delta: number) => {
     updateQty(beverageId, delta);
