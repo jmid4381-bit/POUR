@@ -26,6 +26,48 @@ export function OrderReviewModal({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
+  // ── Bottom-sheet entrance + swipe-to-dismiss ──────────────────────────────
+  // Entrance uses the CSS `animate-sheet-up` keyframe (translateY 100%→0) — no
+  // rAF/JS timer, so it can't get stuck. The moment the guest interacts (drag
+  // or any close), we switch to an inline transform we control: the grabber
+  // drag follows the finger and closes past a threshold (else snaps back), and
+  // every close route (X, back, Add More, backdrop, swipe) slides down first.
+  const [closing, setClosing]       = useState(false);
+  const [dragY,   setDragY]         = useState(0);
+  const [interacted, setInteracted] = useState(false);
+  const dragging = useRef(false);
+  const startY   = useRef(0);
+
+  const requestClose = () => {
+    if (closing) return;
+    setInteracted(true);
+    setClosing(true);
+    setTimeout(onClose, 300); // matches the transform transition below
+  };
+
+  const onHandleDown = (e: React.PointerEvent) => {
+    setInteracted(true);
+    dragging.current = true;
+    startY.current = e.clientY;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const onHandleMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    setDragY(Math.max(0, e.clientY - startY.current));
+  };
+  const onHandleUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (dragY > 110) requestClose();
+    else setDragY(0);
+  };
+
+  const useInline = interacted || closing;
+  const panelStyle: React.CSSProperties | undefined = useInline ? {
+    transform: `translateY(${closing ? "100%" : `${dragY}px`})`,
+    transition: dragging.current ? "none" : "transform 0.3s cubic-bezier(0.16,1,0.3,1)",
+  } : undefined;
+
   const subtotal    = cart.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
   const itemCount   = cart.reduce((s, i) => s + i.quantity, 0);
   const uniqueCount = cart.length;
@@ -40,21 +82,38 @@ export function OrderReviewModal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-void/85 backdrop-blur-md animate-fade-in"
-        onClick={onClose}
+        onClick={requestClose}
         aria-hidden
       />
 
-      {/* Full-viewport flex wrapper — bulletproof centering */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      {/* Full-viewport flex wrapper — bottom-anchored sheet */}
+      <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
 
-        {/* Modal panel */}
+        {/* Sheet panel */}
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Review your order"
           ref={panelRef}
-          className="pointer-events-auto w-full max-w-md bg-card rounded-3xl shadow-modal flex flex-col max-h-[88dvh] animate-scale-in"
+          style={panelStyle}
+          className={cn(
+            "pointer-events-auto w-full max-w-md bg-card rounded-t-3xl shadow-modal flex flex-col max-h-[88dvh]",
+            !useInline && "animate-sheet-up",
+          )}
         >
+
+          {/* Drag handle — swipe down to dismiss */}
+          <div
+            onPointerDown={onHandleDown}
+            onPointerMove={onHandleMove}
+            onPointerUp={onHandleUp}
+            onPointerCancel={onHandleUp}
+            className="flex-shrink-0 flex items-center justify-center pt-2.5 pb-1 cursor-grab active:cursor-grabbing"
+            style={{ touchAction: "none" }}
+            aria-hidden
+          >
+            <div className="w-10 h-1.5 rounded-full bg-mist-600/60" />
+          </div>
 
           {/* Gold top stripe */}
           <div className="h-[3px] w-full bg-gold-grad flex-shrink-0" />
@@ -63,7 +122,7 @@ export function OrderReviewModal({
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0">
             <div className="flex items-center gap-3">
               <button
-                onClick={onClose}
+                onClick={requestClose}
                 aria-label="Back to menu"
                 className="w-8 h-8 rounded-xl bg-lift flex items-center justify-center text-mist-400 hover:text-white transition-colors"
               >
@@ -77,7 +136,7 @@ export function OrderReviewModal({
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={requestClose}
               aria-label="Close"
               className="w-8 h-8 rounded-full bg-lift flex items-center justify-center text-mist-400 hover:text-white transition-colors"
             >
@@ -135,6 +194,15 @@ export function OrderReviewModal({
                   Place Order · {fmtUSD(total)}
                 </>
               )}
+            </button>
+
+            {/* Add More Drinks — minimizes the sheet back to the menu, cart kept */}
+            <button
+              onClick={requestClose}
+              aria-label="Add more drinks"
+              className="w-full py-2.5 rounded-xl font-body font-semibold text-sm flex items-center justify-center gap-2 bg-lift border border-edge text-mist-200 hover:text-white hover:border-rim transition-all active:scale-[0.98]"
+            >
+              <Plus size={15} /> Add More Drinks
             </button>
 
             <p className="text-center text-[11px] text-mist-600 font-body">

@@ -239,6 +239,14 @@ export default function GuestOrderPage({ params }: Props) {
   // new attempt resets the countdown instead of being silently swallowed.
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Auto-open summary: the review sheet slides up on the first successful add
+  // of a session. Once the guest closes it, we stop auto-opening for the rest
+  // of the session (bottom bar takes over) — reset when a new order starts.
+  const autoReviewDismissed = useRef(false);
+  // Set when an add came from the BeverageModal — defer opening the sheet until
+  // the modal has finished closing so two panels never overlap.
+  const pendingAutoOpen = useRef(false);
+
   // ── Derived ────────────────────────────────────────────────────────────────
 
   // Underage sessions only ever see non-alcoholic beverages — filtered once
@@ -324,18 +332,42 @@ export default function GuestOrderPage({ params }: Props) {
       return;
     }
 
+    // Was this add triggered from inside the BeverageModal (vs a card quick-add)?
+    const fromModal = selectedBeverage !== null;
     const { added, capped } = addItem(beverage, qty, note, size);
+
     if (added === 0) {
+      // Nothing added (drink limit) — this is a block, not a confirm: no auto-open
       setToast("Drink limit reached — try again shortly");
       setTimeout(() => setToast(null), 3500);
-    } else if (capped) {
+      return;
+    }
+
+    // A real add happened. Show the cap toast if partial; otherwise only show
+    // the small "added" toast when auto-open is off (the sheet is the confirm).
+    if (capped) {
       setToast(`Added ${added} — drink limit reached for now`);
       setTimeout(() => setToast(null), 3500);
-    } else {
+    } else if (autoReviewDismissed.current) {
       setToast(`${beverage.name} added`);
       setTimeout(() => setToast(null), 3500);
     }
-  }, [addItem, cooldownMs]);
+
+    // Auto-open the summary sheet the first time this session.
+    if (!autoReviewDismissed.current) {
+      if (fromModal) pendingAutoOpen.current = true; // opens once the modal closes
+      else           setShowReview(true);
+    }
+  }, [addItem, cooldownMs, selectedBeverage]);
+
+  // Slide the summary sheet up only after the BeverageModal has fully closed,
+  // so the two panels never overlap during the modal's confirm animation.
+  useEffect(() => {
+    if (selectedBeverage === null && pendingAutoOpen.current) {
+      pendingAutoOpen.current = false;
+      setShowReview(true);
+    }
+  }, [selectedBeverage]);
 
   const handleQuickAdd = useCallback((beverage: Beverage, size: "regular" | "giant" = "regular") => {
     handleAddToOrder(beverage, 1, "", size);
@@ -478,6 +510,7 @@ export default function GuestOrderPage({ params }: Props) {
     if (placed) {
       clearItems();
       setShowReview(false);
+      autoReviewDismissed.current = false; // next order is a fresh session
     }
   }, [cart, placeOrder, clearItems]);
 
@@ -596,6 +629,7 @@ export default function GuestOrderPage({ params }: Props) {
   // Restore category and scroll position when returning from confirmation
   const handleOrderMore = useCallback(() => {
     setPlacedOrder(null);
+    autoReviewDismissed.current = false; // returning to browse — fresh session
     setActiveCategory(savedCategory.current);
     // Restore scroll after DOM has updated
     requestAnimationFrame(() => {
@@ -1076,7 +1110,7 @@ export default function GuestOrderPage({ params }: Props) {
           locationName={location.name}
           isSubmitting={placingOrder}
           onConfirm={handleConfirmOrder}
-          onClose={() => setShowReview(false)}
+          onClose={() => { setShowReview(false); autoReviewDismissed.current = true; }}
           onRemoveItem={removeFromCart}
           onUpdateQty={updateCartQty}
         />
