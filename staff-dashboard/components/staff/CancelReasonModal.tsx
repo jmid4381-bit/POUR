@@ -52,17 +52,21 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
         aria-hidden
       />
 
-      {/* Modal */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Cancel order reason"
-        className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 mx-auto max-w-sm animate-fade-up"
-      >
-        <div className="bg-surface border border-red-500/20 rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.8)]">
-          <div className="h-[2px] w-full bg-red-500" />
+      {/* Modal — centered, height-capped, and internally scrollable so the
+          confirm actions are always reachable even on short screens or with the
+          on-screen keyboard up (this was unscrollable before — buttons could sit
+          off the bottom of the phone with no way to reach them). */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cancel order reason"
+          className="pointer-events-auto w-full max-w-sm bg-surface border border-red-500/20 rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.8)] flex flex-col max-h-[90dvh] animate-fade-up"
+        >
+          <div className="h-[2px] w-full bg-red-500 flex-shrink-0" />
 
-          <div className="p-4 space-y-4">
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -135,27 +139,29 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-0.5">
-              <button
-                onClick={handleConfirm}
-                disabled={!canSubmit || busy}
-                className={cn(
-                  "flex-1 py-3 rounded-xl font-body font-bold text-sm transition-all active:scale-[0.97]",
-                  canSubmit
-                    ? "bg-red-600 hover:bg-red-500 text-white"
-                    : "bg-raised border border-border text-slate-600 cursor-not-allowed",
-                )}
-              >
-                {busy ? "Cancelling…" : "Confirm Cancel"}
-              </button>
-              <button
-                onClick={onDismiss}
-                className="flex-1 py-3 rounded-xl bg-raised border border-border text-slate-300 font-body font-semibold text-sm hover:border-rim hover:text-white transition-all active:scale-[0.97]"
-              >
-                Keep Order
-              </button>
-            </div>
+          </div>
+          {/* end scrollable content */}
+
+          {/* Pinned actions — always visible regardless of content height */}
+          <div className="flex-shrink-0 flex gap-2 p-4 pt-3 border-t border-border">
+            <button
+              onClick={handleConfirm}
+              disabled={!canSubmit || busy}
+              className={cn(
+                "flex-1 py-3 rounded-xl font-body font-bold text-sm transition-all active:scale-[0.97]",
+                canSubmit
+                  ? "bg-red-600 hover:bg-red-500 text-white"
+                  : "bg-raised border border-border text-slate-600 cursor-not-allowed",
+              )}
+            >
+              {busy ? "Cancelling…" : "Confirm Cancel"}
+            </button>
+            <button
+              onClick={onDismiss}
+              className="flex-1 py-3 rounded-xl bg-raised border border-border text-slate-300 font-body font-semibold text-sm hover:border-rim hover:text-white transition-all active:scale-[0.97]"
+            >
+              Keep Order
+            </button>
           </div>
         </div>
       </div>
