@@ -80,10 +80,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // only, while still applying everything else in that response normally.
   const lastBevMutationAt = useRef(0);
 
+  // Every admin page does `if (loading) return <...spinner...>` -- a full
+  // replacement of the page tree, which unmounts any open modal/edit state.
+  // `loading` must only be true for the VERY FIRST fetch (before there's any
+  // data on screen yet); a background poll refresh must never flip it back
+  // on, or it kicks the admin out of whatever they're doing every single
+  // poll tick -- exactly the "can't type a price before it refreshes and
+  // kicks me out" bug, and the real reason shortening the interval made it
+  // so much worse.
+  const hasLoadedOnce = useRef(false);
+
   // ── Load orders (rolling window) + beverages + zones from Supabase ────────
   const fetchAll = useCallback(async () => {
     const fetchStartedAt = Date.now();
-    setLoading(true);
+    if (!hasLoadedOnce.current) setLoading(true);
     const since = new Date(Date.now() - ORDER_WINDOW_DAYS * 86_400_000).toISOString();
 
     const [ordersRes, beveragesRes, locationsRes, staffZonesRes, zoneRequestsRes] = await Promise.all([
@@ -133,6 +143,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!staffZonesRes.error)   setStaffZones((staffZonesRes.data as StaffZoneRow[] ?? []).map(rowToStaffZone));
     if (!zoneRequestsRes.error) setZoneRequests((zoneRequestsRes.data as ZoneRequestRow[] ?? []).map(rowToZoneRequest));
 
+    hasLoadedOnce.current = true;
     setLoading(false);
   }, []);
 
