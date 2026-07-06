@@ -432,11 +432,18 @@ export default function StaffDashboard() {
             <p className="font-display font-bold text-2xl leading-none tracking-wide truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
               POUR
             </p>
-            {/* Fix 6 — staffName shown in header, plus multi-tenant venue name */}
-            <p className="text-sm font-body font-medium text-slate-200 mt-1 truncate">
-              {showGreeting ? `${greeting()}, ${staffName}` : staffName}
-              <span className="text-slate-500"> · {venueName}</span>
-            </p>
+            {/* Fix 6 — staffName shown in header, plus multi-tenant venue name.
+                Greeting truncates first on narrow screens (flex-shrink default);
+                the venue name has its own shrink-resistant slot so it's never
+                the part that silently gets cut off. */}
+            <div className="flex items-center gap-1 mt-1 min-w-0">
+              <p className="text-sm font-body font-medium text-slate-200 truncate min-w-0">
+                {showGreeting ? `${greeting()}, ${staffName}` : staffName}
+              </p>
+              <span className="text-slate-500 text-sm font-body truncate flex-shrink-0 max-w-[45%]">
+                · {venueName}
+              </span>
+            </div>
           </div>
 
           {/* Right cluster */}
