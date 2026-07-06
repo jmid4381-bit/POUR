@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const MAX_VENUE_NAME_LEN = 50;
 export const DEFAULT_VENUE_NAME = "POUR";
-const POLL_MS = 8_000;
+const POLL_MS = 3_000;
 
 export function VenueSettingsCard() {
   const [savedName,  setSavedName]  = useState<string>(DEFAULT_VENUE_NAME);

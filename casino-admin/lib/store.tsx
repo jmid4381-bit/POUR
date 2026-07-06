@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  createContext, useContext, useState,
+  createContext, useContext, useState, useRef,
   useEffect, useCallback, useMemo, type ReactNode,
 } from "react";
 import type { Beverage, Order, Location, StaffZone, ZoneRequest } from "./types";
@@ -69,8 +69,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState<string | null>(null);
 
+  // Timestamp of the most recent optimistic beverage mutation. A fetchAll()
+  // that STARTED before this timestamp has a beverages snapshot taken before
+  // that mutation happened -- applying it would revert the mutation the
+  // instant the poll resolves, which is exactly the "hurry up to beat the
+  // poll" bug: edit something, then watch it flicker back to the old value
+  // a moment later because an in-flight fetch that started just before your
+  // edit lands just after it. Comparing fetch-start-time against this
+  // timestamp lets a late-arriving stale response skip the beverages field
+  // only, while still applying everything else in that response normally.
+  const lastBevMutationAt = useRef(0);
+
   // ── Load orders (rolling window) + beverages + zones from Supabase ────────
   const fetchAll = useCallback(async () => {
+    const fetchStartedAt = Date.now();
     setLoading(true);
     const since = new Date(Date.now() - ORDER_WINDOW_DAYS * 86_400_000).toISOString();
 
@@ -110,7 +122,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } else {
       setError(null);
       setOrders((ordersRes.data as OrderRow[]).map(rowToOrder));
-      setRawBeverages((beveragesRes.data as BeverageRow[]).map(r => rowToBeverage(r)));
+      // Skip applying this snapshot if a beverage was optimistically edited
+      // after this particular fetch started -- see lastBevMutationAt above.
+      if (fetchStartedAt >= lastBevMutationAt.current) {
+        setRawBeverages((beveragesRes.data as BeverageRow[]).map(r => rowToBeverage(r)));
+      }
     }
 
     if (!locationsRes.error)    setLocations((locationsRes.data as LocationRow[] ?? []).map(rowToLocation));
@@ -144,11 +160,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // SUBSCRIBED) but not actually arriving for any table during testing --
   // a project/Realtime-side issue, not something the app can fix directly.
   // This guarantees the dashboard self-corrects within a few seconds either
-  // way, without depending on push events working at all. 8s strikes a
-  // balance -- fast enough to feel live, slow enough not to make the UI
-  // flicker/refresh visibly underfoot.
+  // way, without depending on push events working at all. Tightened from 8s
+  // to 3s so any change made anywhere (a different admin, a guest order,
+  // etc.) shows up much sooner -- combined with the beverage-mutation
+  // staleness guard above, an admin's own edits are no longer at risk of
+  // being reverted by this poll either.
   useEffect(() => {
-    const id = setInterval(fetchAll, 8_000);
+    const id = setInterval(fetchAll, 3_000);
     return () => clearInterval(id);
   }, [fetchAll]);
 
@@ -159,15 +177,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addBeverage = useCallback(async (b: Omit<Beverage, "id" | "ordersTotal" | "createdAt">) => {
     const id = `bev-${uid()}`;
+    const createdAt = new Date().toISOString();
+    // Optimistic insert -- the new drink appears in the table instantly
+    // instead of waiting on a full refetch, and can't be raced by an
+    // in-flight poll (guarded by lastBevMutationAt below).
+    lastBevMutationAt.current = Date.now();
+    setRawBeverages(prev => [...prev, { ...b, id, createdAt, ordersTotal: 0 }]);
     const { error: err } = await supabase
       .from("beverages")
       .insert({ id, ...beverageToRow(b) });
-    if (err) { console.error("Failed to add beverage:", err.message); return; }
+    if (err) {
+      console.error("Failed to add beverage:", err.message);
+      setRawBeverages(prev => prev.filter(x => x.id !== id));
+      return;
+    }
     logAudit("add_beverage", "beverages", id, { name: b.name, price: b.price });
-    await fetchAll();
-  }, [fetchAll]);
+  }, []);
 
   const updateBeverage = useCallback(async (b: Beverage) => {
+    lastBevMutationAt.current = Date.now();
     setRawBeverages(prev => prev.map(x => x.id === b.id ? b : x));
     const { id, ordersTotal, createdAt, updatedAt, ...rest } = b;
     const { error: err } = await supabase
@@ -179,6 +207,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [fetchAll]);
 
   const deleteBeverage = useCallback(async (id: string) => {
+    lastBevMutationAt.current = Date.now();
     setRawBeverages(prev => prev.filter(b => b.id !== id));
     const { error: err } = await supabase.from("beverages").delete().eq("id", id);
     if (err) { console.error("Failed to delete beverage:", err.message); await fetchAll(); }
@@ -186,6 +215,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [fetchAll]);
 
   const updatePrice = useCallback(async (id: string, price: number) => {
+    lastBevMutationAt.current = Date.now();
     setRawBeverages(prev => prev.map(b => b.id === id ? { ...b, price } : b));
     const { error: err } = await supabase.from("beverages").update({ price }).eq("id", id);
     if (err) { console.error("Failed to update price:", err.message); await fetchAll(); }
@@ -196,6 +226,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const target = rawBeverages.find(b => b.id === id);
     if (!target) return;
     const isAvailable = !target.isAvailable;
+    lastBevMutationAt.current = Date.now();
     setRawBeverages(prev => prev.map(b => b.id === id ? { ...b, isAvailable } : b));
     const { error: err } = await supabase.from("beverages").update({ is_available: isAvailable }).eq("id", id);
     if (err) { console.error("Failed to toggle availability:", err.message); await fetchAll(); }

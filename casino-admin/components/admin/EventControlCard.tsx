@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const SURCHARGE_DELAY_MS = 60 * 60_000;
-const POLL_MS            = 8_000;
+const POLL_MS            = 3_000;
 
 interface EventState {
   startedAt: string | null;
