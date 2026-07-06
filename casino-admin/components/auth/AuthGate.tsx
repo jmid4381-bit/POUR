@@ -4,13 +4,18 @@ import { useState, useEffect, useRef } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { LoginScreen } from "./LoginScreen";
+import { ResetPasswordScreen } from "./ResetPasswordScreen";
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"] as const;
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session,    setSession]    = useState<Session | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  // Set when Supabase reports the user arrived via a password-reset email
+  // link — takes over the whole screen until they've set a new password,
+  // regardless of what their existing role/session would otherwise show.
+  const [recovering, setRecovering] = useState(false);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -18,7 +23,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setLoading(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === "PASSWORD_RECOVERY") setRecovering(true);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -50,6 +58,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     return <LoginScreen />;
+  }
+
+  // A recovery-link session takes priority over everything else — the user
+  // is authenticated, but the whole point of the visit is to set a new
+  // password, not to land straight in the console with their old one gone.
+  if (recovering) {
+    return <ResetPasswordScreen onDone={() => setRecovering(false)} />;
   }
 
   if (session.user.app_metadata.role !== "admin") {
