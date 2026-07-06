@@ -59,10 +59,25 @@ const COL_TABS: { key: ColKey; label: string }[] = [
   { key: "delivered", label: "Done"  },
 ];
 
+// Reads the current hour in US Eastern time specifically — the venue's local
+// clock — regardless of what timezone the staff member's device is set to.
+function easternHour(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const raw = parts.find(p => p.type === "hour")?.value;
+  let hour = raw ? parseInt(raw, 10) : new Date().getHours();
+  if (hour === 24) hour = 0; // some locales render midnight as "24" under hour12:false
+  return hour;
+}
+
+// 5:00–11:59 → Morning · 12:00–16:59 → Afternoon · 17:00–4:59 → Evening
 function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 17) return "Good Afternoon";
+  const hour = easternHour();
+  if (hour >= 5 && hour < 12) return "Good Morning";
+  if (hour >= 12 && hour < 17) return "Good Afternoon";
   return "Good Evening";
 }
 
@@ -79,16 +94,6 @@ function fmtAvgWait(seconds: number): string {
 export default function StaffDashboard() {
   // Fix 6 — Staff identity gate
   const [staffName,  setStaffName]  = useState<string | null>(null);
-  // The time-of-day greeting shows for the first minute after login, then
-  // settles down to just the name so the header isn't stuck saying "Good
-  // Morning" for the rest of a multi-hour shift.
-  const [showGreeting, setShowGreeting] = useState(true);
-  useEffect(() => {
-    if (!staffName) return;
-    setShowGreeting(true);
-    const id = setTimeout(() => setShowGreeting(false), 60_000);
-    return () => clearTimeout(id);
-  }, [staffName]);
   const [mobileCol,  setMobileCol]  = useState<ColKey>("pending");
   // Stats grid is collapsed by default on mobile so the order board gets the
   // full screen; staff tap to expand when they want the numbers. Desktop /
@@ -424,24 +429,34 @@ export default function StaffDashboard() {
       )}
 
       {/* ── HEADER ── */}
+      {/* No fixed pixel height — a configurable venue name can run long, so the
+          header sizes to its content (auto height via padding) instead of a
+          magic-number height that would either clip the name or overflow the
+          box. Short names (the common case) still render at roughly the same
+          compact height as before. */}
       <header className="relative z-30 flex-shrink-0 bg-base/96 backdrop-blur-xl border-b border-border">
-        <div className="px-4 flex items-center justify-between gap-2" style={{ height: "64px" }}>
+        <div className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
 
-          {/* Brand + staff identity */}
+          {/* Venue branding (line 1) + greeting/staff/POUR (line 2). Venue name
+              wraps up to 2 lines (rather than single-line ellipsis) since a
+              typical multi-word venue name doesn't fit on one line at mobile
+              widths alongside the full icon cluster — verified: "The Grand
+              Casino" needs ~180-245px depending on size, but only ~146px is
+              available next to the mobile icon row at 375px. */}
           <div className="min-w-0">
-            <p className="font-display font-bold text-2xl leading-none tracking-wide truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-              POUR
+            <p className="font-display font-bold text-xl sm:text-2xl leading-tight tracking-wide bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+              {venueName}
             </p>
-            {/* Fix 6 — staffName shown in header, plus multi-tenant venue name.
-                Greeting truncates first on narrow screens (flex-shrink default);
-                the venue name has its own shrink-resistant slot so it's never
-                the part that silently gets cut off. */}
+            {/* Greeting + staff name truncates first; "· POUR" has its own
+                shrink-resistant slot so the brand mention is never the part
+                that silently disappears (same measured-and-verified pattern
+                used to protect the venue name earlier). */}
             <div className="flex items-center gap-1 mt-1 min-w-0">
-              <p className="text-sm font-body font-medium text-slate-200 truncate min-w-0">
-                {showGreeting ? `${greeting()}, ${staffName}` : staffName}
+              <p className="text-xs sm:text-sm font-body font-medium text-slate-300 truncate min-w-0">
+                {greeting()} · {staffName}
               </p>
-              <span className="text-slate-500 text-sm font-body truncate flex-shrink-0 max-w-[45%]">
-                · {venueName}
+              <span className="text-slate-500 text-xs sm:text-sm font-body flex-shrink-0">
+                · POUR
               </span>
             </div>
           </div>
