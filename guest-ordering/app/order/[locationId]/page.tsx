@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
-  MapPin, ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock,
+  ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock, Building2,
 } from "lucide-react";
 import { BeverageCard }      from "@/components/BeverageCard";
 import { BrandCard }        from "@/components/BrandCard";
@@ -655,7 +655,13 @@ export default function GuestOrderPage({ params }: Props) {
   // inside a component that gets unmounted/remounted on that switch would
   // otherwise reset and replay milestones that already happened.
   const july4Milestone = useJuly4Milestones(anyModalOpen);
-  const { giantCupsAvailable } = useJuly4EventSettings();
+  const { giantCupsAvailable, venueName } = useJuly4EventSettings();
+
+  // Multi-tenant: reflect the venue name in the browser tab too, once it's
+  // loaded from event_settings (falls back to the static default until then).
+  useEffect(() => {
+    document.title = `Order Beverages — ${venueName}`;
+  }, [venueName]);
 
   // Lock body scroll when any overlay is open
   useEffect(() => {
@@ -930,9 +936,12 @@ export default function GuestOrderPage({ params }: Props) {
               {location.name}
             </h1>
           )}
-          <div className="flex items-center justify-center gap-1.5 text-mist-400 animate-fade-up" style={{ animationDelay:"0.05s" }}>
-            <MapPin size={12} className="text-felt-500" />
-            <span className="text-sm font-body">{location.name}</span>
+          {/* Venue name — multi-tenant branding, sourced from event_settings.
+              (The hero above already shows the specific location; this line
+              identifies which venue/property this deployment belongs to.) */}
+          <div className="flex items-start justify-center gap-1.5 text-mist-400 animate-fade-up max-w-[92%] mx-auto" style={{ animationDelay:"0.05s" }}>
+            <Building2 size={12} className="text-felt-500 flex-shrink-0 mt-0.5" />
+            <span className="text-sm font-body text-center break-words">{venueName}</span>
           </div>
           {isUnderage && (
             <div className="flex justify-center mt-3 animate-fade-up" style={{ animationDelay:"0.08s" }}>

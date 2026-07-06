@@ -9,6 +9,7 @@ import { useAnalytics }  from "@/hooks/useAnalytics";
 import { MetricCard }    from "@/components/admin/MetricCard";
 import { ZoneRequestsCard } from "@/components/admin/ZoneRequestsCard";
 import { EventControlCard } from "@/components/admin/EventControlCard";
+import { VenueSettingsCard } from "@/components/admin/VenueSettingsCard";
 import { useStore }      from "@/lib/store";
 import { cn, fmtUSD, fmtDateTime } from "@/lib/utils";
 import { STATUS_META, CATEGORY_META } from "@/lib/types";
@@ -200,6 +201,9 @@ export default function OverviewPage() {
       )}
 
       <div className="p-6 space-y-6">
+
+        {/* ── VENUE BRANDING (multi-tenant) ── */}
+        <VenueSettingsCard />
 
         {/* ── 4TH OF JULY EVENT CONTROL ── */}
         <EventControlCard />

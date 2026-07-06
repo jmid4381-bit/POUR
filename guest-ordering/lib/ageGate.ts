@@ -7,7 +7,10 @@
  */
 
 export const LEGAL_DRINKING_AGE = 21;
-export const DEFAULT_VENUE_NAME = "The Grand Casino";
+// Multi-tenant fallback — the real venue name (event_settings.venue_name) is
+// fetched and passed in by the ordering page; this only matters for a caller
+// that doesn't supply one.
+export const DEFAULT_VENUE_NAME = "POUR";
 
 const VERIFIED_KEY  = "age_gate_verified";
 const DECLINED_KEY  = "age_gate_declined";

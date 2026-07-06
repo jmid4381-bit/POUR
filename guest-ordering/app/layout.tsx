@@ -28,8 +28,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Static fallback for the initial server-rendered <title> — the real venue
+// name (event_settings.venue_name) is set dynamically client-side once
+// fetched (see app/order/[locationId]/page.tsx).
 export const metadata: Metadata = {
-  title: "Order Beverages — The Grand Casino",
+  title: "Order Beverages — POUR",
   description: "Premium drinks delivered directly to your seat.",
 };
 

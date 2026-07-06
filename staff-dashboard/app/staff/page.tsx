@@ -97,25 +97,51 @@ export default function StaffDashboard() {
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
 
-  // Giant cup tracker — polls event_settings every 10s
+  // Giant cup tracker — polls event_settings every 10s. Multi-tenant venue
+  // name rides along on the same row/poll, so no extra Supabase round trip.
   const GIANT_CUP_MAX = 4;
+  const DEFAULT_VENUE_NAME = "POUR";
   const [giantCupsAvailable, setGiantCupsAvailable] = useState(GIANT_CUP_MAX);
   const [giantReturning,     setGiantReturning]      = useState(false);
+  const [venueName,          setVenueName]           = useState(DEFAULT_VENUE_NAME);
   useEffect(() => {
     const fetchGiants = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("event_settings")
-        .select("giant_cups_available")
+        .select("giant_cups_available, venue_name")
         .eq("id", 1)
         .maybeSingle();
+
+      // PostgREST fails the whole query if venue_name doesn't exist yet on
+      // this deployment (pending migration) — fall back so the giant-cup
+      // counter (which already depends on this same poll) never breaks.
+      if (error) {
+        const { data: fallback } = await supabase
+          .from("event_settings")
+          .select("giant_cups_available")
+          .eq("id", 1)
+          .maybeSingle();
+        if (fallback && typeof fallback.giant_cups_available === "number") {
+          setGiantCupsAvailable(fallback.giant_cups_available);
+        }
+        setVenueName(DEFAULT_VENUE_NAME);
+        return;
+      }
+
       if (data && typeof data.giant_cups_available === "number") {
         setGiantCupsAvailable(data.giant_cups_available);
       }
+      if (data) setVenueName((data.venue_name ?? "").trim() || DEFAULT_VENUE_NAME);
     };
     fetchGiants();
     const id = setInterval(fetchGiants, 10_000);
     return () => clearInterval(id);
   }, []);
+
+  // Reflect the venue name in the browser tab too.
+  useEffect(() => {
+    document.title = `Staff Operations — ${venueName}`;
+  }, [venueName]);
   const markGiantReturned = useCallback(async () => {
     setGiantReturning(true);
     const { error } = await supabase.rpc("increment_giant_cup");
@@ -406,9 +432,10 @@ export default function StaffDashboard() {
             <p className="font-display font-bold text-2xl leading-none tracking-wide truncate bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
               POUR
             </p>
-            {/* Fix 6 — staffName shown in header */}
+            {/* Fix 6 — staffName shown in header, plus multi-tenant venue name */}
             <p className="text-sm font-body font-medium text-slate-200 mt-1 truncate">
               {showGreeting ? `${greeting()}, ${staffName}` : staffName}
+              <span className="text-slate-500"> · {venueName}</span>
             </p>
           </div>
 

@@ -22,8 +22,11 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+// Static fallback for the initial server-rendered <title> — the real venue
+// name (event_settings.venue_name) is set dynamically client-side once
+// fetched (see app/staff/page.tsx).
 export const metadata: Metadata = {
-  title: "Staff Operations — The Grand Casino",
+  title: "Staff Operations — POUR",
   description: "Real-time beverage order management for casino floor staff.",
 };
 
