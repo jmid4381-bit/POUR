@@ -39,10 +39,15 @@ export function LoginScreen() {
       redirectTo: window.location.origin,
     });
     setResetLoading(false);
-    // Deliberately generic — don't confirm/deny whether the email has an
-    // account, same as the sign-in error above gives no such hint either.
-    if (!err) setResetSent(true);
-    else setResetError("Something went wrong. Please try again.");
+    if (!err) {
+      setResetSent(true);
+      return;
+    }
+    // Supabase never reveals whether the email has an account here — errors
+    // at this point are things like rate limiting or a malformed address,
+    // never "no such user" — so it's safe to surface the real message
+    // instead of a generic one that hides what actually happened.
+    setResetError(err.message || "Something went wrong. Please try again.");
   };
 
   return (
