@@ -78,6 +78,10 @@ export interface SubmitOrderResult {
   cooldownBlocked?: boolean;
   cooldownMs?:      number;
   giantUnavailable?: boolean;
+  // Set when the server determined the order has a real charge and must go
+  // through the Stripe payment flow instead of the free path.
+  paymentRequired?: boolean;
+  amountCents?:     number;
   surchargeAmount?: number;
   surchargeLabel?:  string | null;
 }
@@ -103,6 +107,10 @@ export async function submitOrder(order: QueuedOrder): Promise<SubmitOrderResult
     }
     if (res.status === 409) {
       return { ok: false, giantUnavailable: true };
+    }
+    if (res.status === 402) {
+      const body = await res.json().catch(() => ({}));
+      return { ok: false, paymentRequired: true, amountCents: body.amountCents ?? 0 };
     }
     if (!res.ok) throw new Error(`Order submission failed: ${res.status}`);
 

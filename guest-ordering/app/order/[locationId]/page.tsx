@@ -12,6 +12,7 @@ import { OrderConfirmation } from "@/components/OrderConfirmation";
 import { OrderReviewModal }  from "@/components/OrderReviewModal";
 import { MyOrdersPanel }     from "@/components/MyOrdersPanel";
 import { ReorderConfirmDialog } from "@/components/ReorderConfirmDialog";
+import { StripePaymentSheet } from "@/components/StripePaymentSheet";
 import { July4MilestoneOverlay } from "@/components/July4MilestoneOverlay";
 import { useJuly4Milestones } from "@/hooks/useJuly4Milestones";
 import { useJuly4EventSettings } from "@/hooks/useJuly4EventSettings";
@@ -101,6 +102,18 @@ export default function GuestOrderPage({ params }: Props) {
   const [showOrders,       setShowOrders] = useState(false);
   const [placedOrder,      setPlacedOrder]= useState<PlacedOrder | null>(null);
   const [placingOrder,     setPlacingOrder]= useState(false);
+  // Set when an order needs card/wallet payment — drives the Stripe sheet.
+  // Holds everything needed to complete the order UX once payment succeeds.
+  const [pendingPayment, setPendingPayment] = useState<{
+    clientSecret:     string;
+    amountCents:      number;
+    items:            CartItem[];
+    orderId:          string;
+    placedAt:         string;
+    estimatedMinutes: number;
+    surchargeAmount:  number;
+    surchargeLabel:   string | null;
+  } | null>(null);
   const [toast,            setToast]      = useState<string | null>(null);
   // Separate from `toast` — these are the passive status notifications
   // (cooldown cleared, staff assigned, order ready), which need to be hard
@@ -408,11 +421,43 @@ export default function GuestOrderPage({ params }: Props) {
     setShowReview(true);
   }, [cart.length]);
 
+  // Everything that happens once an order is definitively placed (free path
+  // right away, or the paid path after payment succeeds): record it to session
+  // history, remember scroll position, tick the alcohol window, and switch to
+  // the confirmation screen. Shared so the free and paid paths end identically.
+  const completeOrder = useCallback((args: {
+    items: CartItem[]; orderId: string; placedAt: string; estimatedMinutes: number;
+    surchargeAmount: number; surchargeLabel: string | null;
+  }) => {
+    if (!location) return;
+    const { items, orderId, placedAt, estimatedMinutes, surchargeAmount, surchargeLabel } = args;
+    const placed: PlacedOrder = {
+      id: orderId, locationName: location.name, items: [...items],
+      estimatedMinutes, placedAt, surchargeAmount, surchargeLabel,
+    };
+    addOrder({
+      id: orderId, locationName: location.name, items: [...items],
+      estimatedMinutes, placedAt, surchargeAmount, surchargeLabel,
+    });
+    savedScrollY.current  = window.scrollY;
+    savedCategory.current = activeCategory;
+    const alcoholicQty = items.reduce((s, i) => i.beverage.isAlcoholic ? s + i.quantity : s, 0);
+    recordAlcoholicOrder(alcoholicQty);
+    if (alcoholicQty > 0) refreshCooldown();
+    setPlacingOrder(false);
+    setPlacedOrder(placed);
+    isConfirming.current = false;
+  }, [location, activeCategory, addOrder, recordAlcoholicOrder, refreshCooldown]);
+
   // Core submission pipeline — shared by the normal cart checkout and by
   // Reorder (which places a standalone order from a past order's items
   // without ever touching the visible cart). Server-side validation in
   // /api/orders is the real authority on availability and the alcohol
   // cooldown either way; this just wires its result back into the UI.
+  //
+  // Returns true only when the order is fully placed (free path). When the
+  // order needs payment it opens the Stripe sheet and returns false — the
+  // sheet's success handler completes it, so the cart stays until then.
   const placeOrder = useCallback(async (items: CartItem[]): Promise<boolean> => {
     if (items.length === 0 || isConfirming.current || !location) return false;
     isConfirming.current = true;
@@ -470,44 +515,52 @@ export default function GuestOrderPage({ params }: Props) {
       return false;
     }
 
+    // Order has a real charge — the free path returned 402. Fetch a Stripe
+    // PaymentIntent and hand off to the payment sheet; the order is created
+    // server-side only once payment succeeds.
+    if (result.paymentRequired) {
+      try {
+        const piRes = await fetch("/api/payments/create-intent", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ order: queued }),
+        });
+        const pi = await piRes.json().catch(() => ({}));
+        if (!piRes.ok || !pi.clientSecret) {
+          setPlacingOrder(false);
+          isConfirming.current = false;
+          setToast(pi.error || "Couldn't start payment — please try again");
+          setTimeout(() => setToast(null), 4000);
+          return false;
+        }
+        setPendingPayment({
+          clientSecret:     pi.clientSecret,
+          amountCents:      pi.amountCents ?? 0,
+          items:            [...items],
+          orderId,
+          placedAt:         now,
+          estimatedMinutes,
+          surchargeAmount:  pi.surchargeAmount ?? 0,
+          surchargeLabel:   pi.surchargeLabel ?? null,
+        });
+      } catch {
+        setToast("Couldn't start payment — please try again");
+        setTimeout(() => setToast(null), 4000);
+      }
+      setPlacingOrder(false);
+      isConfirming.current = false;
+      return false; // not placed yet — the payment sheet completes it
+    }
+
     await new Promise(r => setTimeout(r, 900));
 
-    const placed: PlacedOrder = {
-      id: orderId,
-      locationName:     location.name,
-      items:            [...items],
-      estimatedMinutes,
-      placedAt:         now,
-      surchargeAmount:  result.surchargeAmount ?? 0,
-      surchargeLabel:   result.surchargeLabel ?? null,
-    };
-
-    // Save to session history before switching to confirmation screen
-    addOrder({
-      id:               orderId,
-      locationName:     location.name,
-      items:            [...items],
-      estimatedMinutes,
-      placedAt:         now,
-      surchargeAmount:  result.surchargeAmount ?? 0,
-      surchargeLabel:   result.surchargeLabel ?? null,
+    completeOrder({
+      items, orderId, placedAt: now, estimatedMinutes,
+      surchargeAmount: result.surchargeAmount ?? 0,
+      surchargeLabel:  result.surchargeLabel ?? null,
     });
-
-    // Save scroll position before switching to confirmation screen
-    savedScrollY.current   = window.scrollY;
-    savedCategory.current  = activeCategory;
-
-    // Record alcoholic drinks just placed so the 10-minute window correctly
-    // limits how much more can be ordered this session
-    const alcoholicQty = items.reduce((s, i) => i.beverage.isAlcoholic ? s + i.quantity : s, 0);
-    recordAlcoholicOrder(alcoholicQty);
-    if (alcoholicQty > 0) refreshCooldown();
-
-    setPlacingOrder(false);
-    setPlacedOrder(placed);
-    isConfirming.current = false;
     return true;
-  }, [location, locationId, activeCategory, addOrder, recordAlcoholicOrder, refreshCooldown]);
+  }, [location, locationId, completeOrder]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (cart.length === 0) return;
@@ -518,6 +571,76 @@ export default function GuestOrderPage({ params }: Props) {
       autoReviewDismissed.current = false; // next order is a fresh session
     }
   }, [cart, placeOrder, clearItems]);
+
+  // Payment succeeded in the Stripe sheet — verify + create the order server-
+  // side (finalize), then finish the same confirmation UX as a free order.
+  const handlePaymentSuccess = useCallback(async (paymentIntentId: string) => {
+    const pp = pendingPayment;
+    if (!pp) return;
+    setPlacingOrder(true);
+    try {
+      const res = await fetch("/api/payments/finalize", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ paymentIntentId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPlacingOrder(false);
+        setPendingPayment(null);
+        setToast(data.refunded
+          ? "Payment refunded — that order couldn't be completed. Please try again."
+          : "Something went wrong finishing your order — check My Orders in a moment.");
+        setTimeout(() => setToast(null), 6000);
+        return;
+      }
+      setPendingPayment(null);
+      clearItems();
+      setShowReview(false);
+      autoReviewDismissed.current = false;
+      completeOrder({
+        items: pp.items, orderId: pp.orderId, placedAt: pp.placedAt,
+        estimatedMinutes: pp.estimatedMinutes,
+        surchargeAmount: pp.surchargeAmount, surchargeLabel: pp.surchargeLabel,
+      });
+    } catch {
+      setPlacingOrder(false);
+      setPendingPayment(null);
+      setToast("Something went wrong finishing your order — check My Orders in a moment.");
+      setTimeout(() => setToast(null), 6000);
+    }
+  }, [pendingPayment, clearItems, completeOrder]);
+
+  const handlePaymentCancel = useCallback(() => {
+    setPendingPayment(null); // cart is untouched — guest can retry from Review
+    setPlacingOrder(false);
+    isConfirming.current = false;
+  }, []);
+
+  // Redirect-return safety net — for the rare payment method that leaves the
+  // page (Apple/Google Pay confirm inline and never hit this). Stripe returns
+  // with ?payment_intent&redirect_status; finalize server-side and nudge the
+  // order history so the new order appears in My Orders.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const piId = params.get("payment_intent");
+    const status = params.get("redirect_status");
+    if (!piId) return;
+    window.history.replaceState({}, "", window.location.pathname); // don't re-run on refresh
+    if (status === "succeeded") {
+      fetch("/api/payments/finalize", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ paymentIntentId: piId }),
+      })
+        .then(() => {
+          setBigToast("Payment complete — your order is in!");
+          setTimeout(() => setBigToast(null), 4000);
+          refreshNow();
+        })
+        .catch(() => {});
+    }
+  }, [refreshNow]);
 
   // ── Reorder — re-place a past order's items as a standalone new order,
   // bypassing the cart entirely. Items are re-resolved against the live
@@ -1127,6 +1250,16 @@ export default function GuestOrderPage({ params }: Props) {
           onClose={() => { setShowReview(false); autoReviewDismissed.current = true; }}
           onRemoveItem={removeFromCart}
           onUpdateQty={updateCartQty}
+        />
+      )}
+
+      {/* ── STRIPE PAYMENT SHEET (only for orders with a real charge) ── */}
+      {pendingPayment && (
+        <StripePaymentSheet
+          clientSecret={pendingPayment.clientSecret}
+          amountCents={pendingPayment.amountCents}
+          onSuccess={handlePaymentSuccess}
+          onCancel={handlePaymentCancel}
         />
       )}
 
