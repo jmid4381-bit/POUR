@@ -23,6 +23,7 @@ import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/l
 import { supabase } from "@/lib/supabase";
 import { warmAudio, fireAlert } from "@/lib/notify";
 import { PushOptIn } from "./PushOptIn";
+import { InstallAppCard } from "./InstallAppCard";
 import { Fireworks } from "./Fireworks";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { PlacedOrder } from "@/lib/data";
@@ -347,6 +348,10 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
         {/* Real push opt-in — notifications that fire even with the tab closed.
             Hidden once delivered (nothing left to alert on). */}
         {!isDelivered && <PushOptIn orderId={order.id} />}
+
+        {/* Android one-tap install — renders only when Chrome actually offers
+            it (self-hides on iOS/desktop/already-installed). */}
+        {!isDelivered && <InstallAppCard />}
 
         {/* Bartender assignment — only shown once someone has actually claimed it */}
         {staffName && !isDelivered && (

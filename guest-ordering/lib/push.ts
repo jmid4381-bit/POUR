@@ -55,6 +55,17 @@ async function getRegistration(): Promise<ServiceWorkerRegistration> {
 }
 
 /**
+ * Register the service worker eagerly on page load (fire-and-forget). Chrome
+ * only fires `beforeinstallprompt` (our Android one-tap install) once a service
+ * worker is registered, so we can't wait until the guest taps "Enable alerts".
+ * Safe no-op where service workers aren't supported.
+ */
+export function ensureServiceWorker(): void {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
+/**
  * Subscribe this device and register it against `orderId` on the server.
  *
  * IMPORTANT (iOS): permission must already be granted before calling this —

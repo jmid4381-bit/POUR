@@ -33,6 +33,8 @@ import { cn, fmtUSD, generateOrderId } from "@/lib/utils";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import { getOrCreateGuestId } from "@/lib/guestSession";
 import { ensureAudioUnlock } from "@/lib/notify";
+import { ensureServiceWorker } from "@/lib/push";
+import { initInstallPrompt } from "@/lib/installPrompt";
 import { fetchGuestOrderHistory } from "@/lib/guestOrderHistory";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -65,6 +67,10 @@ export default function GuestOrderPage({ params }: Props) {
     // the ordering flow (including "Place Order") unlocks the AudioContext,
     // letting the delivery chime play later on the tracker screen.
     ensureAudioUnlock();
+    // Register the service worker + start listening for Android's install
+    // event on load — Chrome only offers one-tap install once a SW exists.
+    ensureServiceWorker();
+    initInstallPrompt();
   }, []);
 
   // Real alcohol cooldown, synced from the server (the same check enforced
