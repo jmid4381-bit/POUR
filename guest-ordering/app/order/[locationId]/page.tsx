@@ -863,8 +863,22 @@ export default function GuestOrderPage({ params }: Props) {
     );
   }
 
-  // Location not found — bad or stale QR code
-  if (!menuLoading && !location) {
+  // Still resolving the live menu/locations. The static seed (lib/data.ts)
+  // only holds placeholder casino locations, NOT the real admin-managed ones
+  // (e.g. "screened-porch"), so `location` is legitimately undefined until
+  // Supabase responds. Show a loader here — falling through to the checks
+  // below would flash a false "Service Paused" during the load window, which
+  // is most visible (and can look permanent) on a slow phone connection.
+  if (menuLoading && !location) {
+    return (
+      <main className="min-h-screen bg-base flex items-center justify-center px-4">
+        <div className="w-8 h-8 border-2 border-edge border-t-felt-500 rounded-full animate-spin" aria-label="Loading menu" />
+      </main>
+    );
+  }
+
+  // Location not found — bad or stale QR code (only once loading has settled)
+  if (!location) {
     return (
       <main className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="text-center max-w-xs">
@@ -878,7 +892,7 @@ export default function GuestOrderPage({ params }: Props) {
     );
   }
 
-  if (!location || !location.isActive) {
+  if (!location.isActive) {
     return (
       <main className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="text-center max-w-xs">
