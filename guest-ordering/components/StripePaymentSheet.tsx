@@ -105,8 +105,8 @@ export function StripePaymentSheet({ clientSecret, amountCents, onSuccess, onCan
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-void/85 backdrop-blur-md animate-fade-in" onClick={onCancel} aria-hidden />
-      <div className="fixed inset-x-0 bottom-0 z-[70] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md bg-card rounded-t-3xl shadow-modal flex flex-col max-h-[92dvh] animate-sheet-up">
+      <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center pointer-events-none sm:p-4">
+        <div className="pointer-events-auto w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl shadow-modal flex flex-col max-h-[92dvh] sm:max-h-[85vh] animate-sheet-up">
           <div className="h-[3px] w-full bg-gold-grad flex-shrink-0" />
 
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0">
