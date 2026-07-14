@@ -928,7 +928,11 @@ export default function GuestOrderPage({ params }: Props) {
 
         {/* ── STICKY HEADER ── */}
         <header className={cn(
-          "sticky top-0 z-30 bg-base/92 backdrop-blur-xl",
+          // pt-[env(safe-area-inset-top)] keeps the header clear of the iOS
+          // status bar when installed as a home-screen PWA (viewport-fit=cover
+          // draws content full-bleed under the notch/clock otherwise). Resolves
+          // to 0 in a normal browser tab, so no effect there.
+          "sticky top-0 z-30 bg-base/92 backdrop-blur-xl pt-[env(safe-area-inset-top)]",
           HOLIDAY_THEME_ACTIVE ? "border-b border-transparent" : "border-b border-edge",
         )}>
           <div className="px-4 h-14 flex items-center justify-between gap-3">
@@ -1031,7 +1035,7 @@ export default function GuestOrderPage({ params }: Props) {
               to miss even mid-scroll, unlike the small bottom toast used for
               quick action confirmations. ── */}
         {bigToast && (
-          <div className="sticky top-14 z-40 px-4 pt-3 pointer-events-none animate-fade-up">
+          <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-40 px-4 pt-3 pointer-events-none animate-fade-up">
             <div className="flex items-center gap-3 bg-gold-grad rounded-2xl px-4 py-3.5 shadow-[0_8px_32px_rgba(201,160,48,0.35)] animate-scale-in">
               <div className="w-8 h-8 bg-void/15 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Check size={16} className="text-void" strokeWidth={2.5} />
@@ -1045,7 +1049,7 @@ export default function GuestOrderPage({ params }: Props) {
             drink while their limit is still active. Sticky under the header
             so it's impossible to miss; shows the live countdown. */}
         {cooldownBlocked && cooldownMs > 0 && (
-          <div className="sticky top-14 z-40 px-4 pt-3 pointer-events-none animate-fade-up">
+          <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-40 px-4 pt-3 pointer-events-none animate-fade-up">
             <div className="flex items-center gap-3 bg-red-600/95 rounded-2xl px-4 py-3.5 shadow-[0_8px_32px_rgba(220,38,38,0.45)] animate-scale-in">
               <div className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Clock size={16} className="text-white" strokeWidth={2.5} />

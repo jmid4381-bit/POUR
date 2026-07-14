@@ -44,10 +44,25 @@ export function PushOptIn({ orderId }: { orderId: string }) {
     }
     if (!isPushSupported()) { setState("unsupported"); return; }
     const perm = pushPermission();
-    if (perm === "granted")      setState("enabled");   // already opted in
-    else if (perm === "denied")  setState("denied");
-    else                         setState("prompt");
-  }, []);
+    if (perm === "denied") { setState("denied"); return; }
+    if (perm === "granted") {
+      // Permission already granted from a previous order — silently register
+      // THIS order too, so every order gets alerts, not just the first one
+      // that triggered the prompt. Subscriptions are keyed per order, so a new
+      // order needs its own row or it would never be notified.
+      setState("enabling");
+      subscribeForOrder(orderId, getOrCreateGuestId()).then((res) => {
+        if (res.ok) { setState("enabled"); return; }
+        // Fall back to the manual prompt if the silent re-subscribe failed.
+        setError(`Couldn't turn on alerts for this order (${res.reason}${res.detail ? `: ${res.detail}` : ""}).`);
+        setState("prompt");
+      });
+      return;
+    }
+    setState("prompt");
+    // Re-run per order so each new confirmation screen re-registers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   const enable = async () => {
     setError(null);

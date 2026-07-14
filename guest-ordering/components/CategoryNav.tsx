@@ -144,7 +144,7 @@ export function CategoryNav({ tabs, activeCategory, onSelect }: CategoryNavProps
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
-      className="sticky top-14 z-20 bg-base/92 backdrop-blur-xl border-b border-edge animate-fade-up"
+      className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 bg-base/92 backdrop-blur-xl border-b border-edge animate-fade-up"
       style={{ animationDelay: "0.14s" }}
     >
 
