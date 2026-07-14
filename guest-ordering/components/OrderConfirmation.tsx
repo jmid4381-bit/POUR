@@ -147,12 +147,15 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
     if (alertedStaffStep.current === null) {
       alertedStaffStep.current = staffStep;
     } else if (staffStep > alertedStaffStep.current) {
-      const crossedOnTheWay   = alertedStaffStep.current < 2 && staffStep >= 2;
-      const crossedDelivered  = alertedStaffStep.current < STEPS.length && staffStep >= STEPS.length;
+      const crossedPreparing = alertedStaffStep.current < 1 && staffStep >= 1;
+      const crossedOnTheWay  = alertedStaffStep.current < 2 && staffStep >= 2;
+      const crossedDelivered = alertedStaffStep.current < STEPS.length && staffStep >= STEPS.length;
       if (crossedDelivered) {
         showBanner("Delivered — enjoy your drinks!", "Your order just arrived at your seat.", true);
       } else if (crossedOnTheWay) {
         showBanner("Your order is on the way!", "A server is bringing it to your seat now.", false);
+      } else if (crossedPreparing) {
+        showBanner("Your order is being prepared!", "A bartender just started on your drinks.", false);
       }
       alertedStaffStep.current = staffStep;
     }

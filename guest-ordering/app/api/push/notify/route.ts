@@ -6,18 +6,33 @@ export const runtime = "nodejs";
 
 /**
  * Push-send endpoint, called by a Supabase Database Webhook on every UPDATE to
- * the `orders` table. It fires an OS push notification to the guest's device
- * when their order transitions to "ready" (on the way) or "delivered" — the
- * server-side source of truth, so it works even with the guest's tab closed.
+ * the `orders` table. It fires an OS push notification when the order crosses
+ * a milestone — "being prepared", "on the way", "delivered" — the server-side
+ * source of truth, so it works even with the guest's tab closed.
  *
  * Auth: a shared secret in the `x-webhook-secret` header (PUSH_WEBHOOK_SECRET),
  * so only our Supabase webhook can trigger sends, not the public internet.
  */
 
-// Which status transitions are worth a push, and the copy for each.
-const NOTIFY_ON: Record<string, { title: string; body: string; bright: boolean }> = {
-  ready:     { title: "Your order is on the way! 🍹", body: "A server is bringing it to your seat now.", bright: false },
-  delivered: { title: "Delivered — enjoy! 🎉",         body: "Your order just arrived at your seat.",     bright: true  },
+// Same step mapping as the client's statusToStep (components/OrderConfirmation.tsx)
+// so "accepted" and "preparing" collapse into ONE "being prepared" notification
+// instead of firing twice for what the guest sees as a single step.
+function stepFor(status: string): number {
+  switch (status) {
+    case "pending":   return 0;
+    case "accepted":
+    case "preparing": return 1;
+    case "ready":     return 2;
+    case "delivered": return 3;
+    default:          return 0;
+  }
+}
+
+// Copy per step crossed INTO (index = destination step).
+const STEP_COPY: Record<number, { title: string; body: string; bright: boolean }> = {
+  1: { title: "Your order is being prepared! 🍹", body: "A bartender just started on your drinks.",     bright: false },
+  2: { title: "Your order is on the way! 🍹",      body: "A server is bringing it to your seat now.",    bright: false },
+  3: { title: "Delivered — enjoy! 🎉",             body: "Your order just arrived at your seat.",        bright: true  },
 };
 
 interface WebhookPayload {
@@ -56,10 +71,15 @@ export async function POST(req: NextRequest) {
   const oldStatus = payload.old_record?.status ?? "";
   const orderId   = payload.record.id;
 
-  // Only on an actual transition into a notifiable status.
-  if (newStatus === oldStatus || !NOTIFY_ON[newStatus]) {
+  const newStep = stepFor(newStatus);
+  const oldStep = stepFor(oldStatus);
+
+  // Only on an UPWARD step crossing (e.g. pending->accepted, accepted->preparing
+  // stays at step 1 and does NOT re-fire — same step collapsing as the client).
+  if (newStep <= oldStep || !STEP_COPY[newStep]) {
     return NextResponse.json({ ok: true, skipped: "no-notifiable-transition" });
   }
+  const copy = STEP_COPY[newStep];
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -77,7 +97,6 @@ export async function POST(req: NextRequest) {
   const rows: Array<{ endpoint: string; subscription: unknown }> = Array.isArray(subs) ? subs : [];
   if (rows.length === 0) return NextResponse.json({ ok: true, sent: 0 });
 
-  const copy = NOTIFY_ON[newStatus];
   const webpush = getWebPush();
   const message = JSON.stringify({
     title: copy.title,
