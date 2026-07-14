@@ -32,6 +32,7 @@ import {
 import { cn, fmtUSD, generateOrderId } from "@/lib/utils";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import { getOrCreateGuestId } from "@/lib/guestSession";
+import { ensureAudioUnlock } from "@/lib/notify";
 import { fetchGuestOrderHistory } from "@/lib/guestOrderHistory";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -60,6 +61,10 @@ export default function GuestOrderPage({ params }: Props) {
   const guestIdRef = useRef<string | null>(null);
   useEffect(() => {
     guestIdRef.current = getOrCreateGuestId();
+    // Bind the one-time audio unlock now so the guest's first tap anywhere in
+    // the ordering flow (including "Place Order") unlocks the AudioContext,
+    // letting the delivery chime play later on the tracker screen.
+    ensureAudioUnlock();
   }, []);
 
   // Real alcohol cooldown, synced from the server (the same check enforced

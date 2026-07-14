@@ -31,12 +31,49 @@ function getCtx(): AudioContext | null {
 }
 
 /**
- * Call once from a user gesture (e.g. right after "Place Order") so the
- * AudioContext is running and later chimes aren't blocked by autoplay policy.
+ * Unlock audio on the user's FIRST tap anywhere. Mobile browsers only let an
+ * AudioContext start from inside a real gesture handler, so warming it from a
+ * useEffect (which runs after mount, not during a tap) silently fails — the
+ * context stays suspended and no later chime plays. Binding a one-time global
+ * listener means the very first interaction in the ordering flow (placing an
+ * order, tapping the menu, anything) unlocks it, so a chime minutes later on
+ * the tracker works. iOS additionally needs a silent buffer played inside the
+ * gesture to fully unlock, not just resume().
+ */
+let unlockBound = false;
+export function ensureAudioUnlock(): void {
+  if (typeof window === "undefined" || unlockBound) return;
+  unlockBound = true;
+  const unlock = () => {
+    const ctx = getCtx();
+    if (!ctx) return;
+    ctx.resume().catch(() => {});
+    try {
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch { /* non-fatal */ }
+    if (ctx.state === "running") {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("touchend", unlock);
+      window.removeEventListener("click", unlock);
+    }
+  };
+  window.addEventListener("pointerdown", unlock, { passive: true });
+  window.addEventListener("touchend", unlock, { passive: true });
+  window.addEventListener("click", unlock, { passive: true });
+}
+
+/**
+ * Call from a user gesture (e.g. the "Place Order" tap) to unlock audio
+ * synchronously, and bind the global first-gesture unlock as a fallback.
  */
 export function warmAudio(): void {
   const ctx = getCtx();
   if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+  ensureAudioUnlock();
 }
 
 /**
