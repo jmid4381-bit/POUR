@@ -11,9 +11,17 @@
  * Safari's toolbar can be hidden and how to reveal it.
  */
 
+import { useEffect } from "react";
 import { Plus, BellRing, X, SquareArrowUp, MoveVertical } from "lucide-react";
 
 export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
+  // Lock body scroll while open — on iOS Safari a scrollable body behind a
+  // fixed overlay can steal touch/scroll gestures meant for the sheet itself.
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
   const steps = [
     {
       icon: <SquareArrowUp size={18} className="text-void" />,
@@ -35,8 +43,8 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className="fixed inset-0 z-[80] bg-void/85 backdrop-blur-md animate-fade-in" onClick={onClose} aria-hidden />
-      <div className="fixed inset-x-0 bottom-0 z-[90] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md bg-card rounded-t-3xl shadow-modal flex flex-col max-h-[92dvh] animate-sheet-up pb-[env(safe-area-inset-bottom)]">
+      <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center pointer-events-none sm:p-4">
+        <div className="pointer-events-auto w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl shadow-modal flex flex-col max-h-[85dvh] animate-sheet-up pb-[env(safe-area-inset-bottom)]">
           <div className="h-[3px] w-full bg-gold-grad flex-shrink-0" />
 
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0">
@@ -50,7 +58,7 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+          <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-3" style={{ WebkitOverflowScrolling: "touch" }}>
             <p className="text-mist-400 text-xs font-body">
               iPhone only allows lock-screen alerts once POUR is on your Home Screen. It takes about 10 seconds — close this and follow these steps in Safari:
             </p>

@@ -7,17 +7,17 @@
  * actual per-order push subscription still happens on the confirmation screen
  * (PushOptIn), which is silent once permission is already granted here.
  *
- * Self-hides when there's nothing to do (already granted, denied, unsupported,
- * or the guest dismissed it), so it never nags.
+ * Self-hides once there's nothing left to do (permission granted or denied,
+ * or push unsupported). Deliberately NOT dismissible — a guest who closes it
+ * would lose the chance to enable alerts before ordering, since this card
+ * doesn't reappear on refresh (there'd be no way back to it this session).
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { BellRing, X, ChevronRight } from "lucide-react";
+import { BellRing, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPushSupported, pushPermission } from "@/lib/push";
 import { IOSInstallGuide } from "./IOSInstallGuide";
-
-const DISMISS_KEY = "pour_alerts_setup_dismissed";
 
 function isIOS(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -40,7 +40,6 @@ export function AlertsSetupCard() {
 
   const compute = useCallback(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(DISMISS_KEY)) { setMode("hidden"); return; }
 
     // iOS Safari (not installed) can't do push at all until added to Home Screen.
     if (isIOS() && !isStandalone() && !isPushSupported()) { setMode("ios-install"); return; }
@@ -57,11 +56,6 @@ export function AlertsSetupCard() {
   }, []);
 
   useEffect(() => { compute(); }, [compute]);
-
-  const dismiss = () => {
-    try { sessionStorage.setItem(DISMISS_KEY, "1"); } catch { /* private mode */ }
-    setMode("hidden");
-  };
 
   const enable = async () => {
     setBusy(true);
@@ -114,10 +108,6 @@ export function AlertsSetupCard() {
             </button>
           </>
         )}
-
-        <button onClick={dismiss} aria-label="Dismiss" className="flex-shrink-0 w-6 h-6 rounded-full bg-lift flex items-center justify-center text-mist-500 hover:text-white transition-colors">
-          <X size={12} />
-        </button>
       </div>
 
       {showGuide && <IOSInstallGuide onClose={() => setShowGuide(false)} />}
