@@ -34,6 +34,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Order Beverages — POUR",
   description: "Premium drinks delivered directly to your seat.",
+  // iOS Home Screen icon + PWA hints. The manifest (app/manifest.ts) covers
+  // Android; these cover the iOS "Add to Home Screen" path that unlocks push.
+  appleWebApp: {
+    capable: true,
+    title: "POUR",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
