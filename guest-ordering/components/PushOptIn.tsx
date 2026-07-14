@@ -13,10 +13,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { BellRing, BellOff, Check, Plus, ChevronRight, X, SquareArrowUp } from "lucide-react";
+import { BellRing, BellOff, Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getOrCreateGuestId } from "@/lib/guestSession";
 import { isPushSupported, pushPermission, subscribeForOrder } from "@/lib/push";
+import { IOSInstallGuide } from "./IOSInstallGuide";
 
 type UIState = "loading" | "prompt" | "enabling" | "enabled" | "denied" | "ios-install" | "unsupported";
 
@@ -179,71 +180,5 @@ export function PushOptIn({ orderId }: { orderId: string }) {
         )}
       </button>
     </div>
-  );
-}
-
-/**
- * Step-by-step "Add to Home Screen" guide for iOS. iOS blocks any programmatic
- * way to open the Share sheet or trigger the install, so the best we can do is
- * make the manual steps unmissable: a bottom sheet with numbered steps, the
- * real iOS Share glyph, and a bouncing arrow pointing down toward Safari's
- * toolbar (where the Share button lives on iPhone).
- */
-function IOSInstallGuide({ onClose }: { onClose: () => void }) {
-  const steps = [
-    { icon: <SquareArrowUp size={18} className="text-void" />, title: "Tap the Share button", body: "It's in Safari's toolbar at the bottom of the screen (the square with an up arrow)." },
-    { icon: <Plus size={18} className="text-void" />, title: "Choose \"Add to Home Screen\"", body: "Scroll down in the share menu if you don't see it right away, then tap Add." },
-    { icon: <BellRing size={18} className="text-void" />, title: "Open POUR from your Home Screen", body: "Launch it from the new icon, then tap \"Enable delivery alerts\" to finish." },
-  ];
-
-  return (
-    <>
-      <div className="fixed inset-0 z-[80] bg-void/85 backdrop-blur-md animate-fade-in" onClick={onClose} aria-hidden />
-      <div className="fixed inset-x-0 bottom-0 z-[90] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md bg-card rounded-t-3xl shadow-modal flex flex-col max-h-[92dvh] animate-sheet-up pb-[env(safe-area-inset-bottom)]">
-          <div className="h-[3px] w-full bg-gold-grad flex-shrink-0" />
-
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0">
-            <h3 className="font-display text-xl font-semibold text-white leading-none">Add POUR to your iPhone</h3>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="w-8 h-8 rounded-full bg-lift flex items-center justify-center text-mist-400 hover:text-white transition-colors"
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
-            <p className="text-mist-400 text-xs font-body">
-              iPhone only lets you turn on lock-screen alerts once POUR is on your Home Screen. It takes about 10 seconds:
-            </p>
-
-            {steps.map((s, i) => (
-              <div key={i} className="flex items-start gap-3 bg-lift/60 border border-edge rounded-2xl px-3.5 py-3">
-                <div className="relative flex-shrink-0">
-                  <div className="w-9 h-9 rounded-xl bg-gold-grad flex items-center justify-center shadow-btn-gold">
-                    {s.icon}
-                  </div>
-                  <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-felt-grad text-white text-[10px] font-mono font-bold flex items-center justify-center shadow-btn-felt">
-                    {i + 1}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-white font-body font-semibold text-sm leading-tight">{s.title}</p>
-                  <p className="text-mist-400 text-xs font-body mt-0.5 leading-snug">{s.body}</p>
-                </div>
-              </div>
-            ))}
-
-            {/* Arrow pointing down toward the Safari share button in the toolbar */}
-            <div className="flex flex-col items-center pt-1">
-              <p className="text-gold-400 text-xs font-body font-semibold mb-1">The Share button is down here</p>
-              <SquareArrowUp size={26} className="text-gold-400 animate-bounce" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
   );
 }

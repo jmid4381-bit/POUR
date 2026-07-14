@@ -35,6 +35,8 @@ import { getOrCreateGuestId } from "@/lib/guestSession";
 import { ensureAudioUnlock } from "@/lib/notify";
 import { ensureServiceWorker } from "@/lib/push";
 import { initInstallPrompt } from "@/lib/installPrompt";
+import { AlertsSetupCard } from "@/components/AlertsSetupCard";
+import { InstallAppCard } from "@/components/InstallAppCard";
 import { fetchGuestOrderHistory } from "@/lib/guestOrderHistory";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -1108,6 +1110,11 @@ export default function GuestOrderPage({ params }: Props) {
             <div className="flex-1 h-px bg-gradient-to-l from-transparent to-gold-600/25" />
           </div>
         </div>
+
+        {/* Pre-order alerts setup — lets guests install + turn on notifications
+            up front instead of mid-checkout. Both self-hide when not applicable. */}
+        <AlertsSetupCard />
+        <div className="px-4"><div className="max-w-lg mx-auto"><InstallAppCard /></div></div>
 
         {/* ── FEATURED STRIP ── */}
         {featured.length > 0 && (
