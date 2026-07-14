@@ -12,6 +12,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "POUR — Order Beverages",
     short_name: "POUR",
     description: "Premium drinks delivered directly to your seat.",
+    // This is only the generic app-level fallback manifest (used if someone
+    // somehow installs from the bare "/" root, which real guests never visit —
+    // they always land via a QR code straight on /order/[locationId]). Real
+    // installs use the PER-LOCATION manifest at app/order/[locationId]/manifest.ts
+    // instead, so each venue location's home-screen icon reopens at that same
+    // location rather than this generic fallback.
     start_url: "/",
     display: "standalone",
     background_color: "#040608",
