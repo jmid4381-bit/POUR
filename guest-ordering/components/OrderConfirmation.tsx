@@ -16,10 +16,12 @@
  * a websocket subscription and the UI updates automatically.
  */
 
-import React, { useEffect, useState } from "react";
-import { CheckCircle, Clock, MapPin, RotateCcw, UserRound, Receipt, X } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { CheckCircle, Clock, MapPin, RotateCcw, UserRound, Receipt, X, BellRing } from "lucide-react";
 import { cn, fmtUSD, fmtTime } from "@/lib/utils";
 import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/lib/queue";
+import { supabase } from "@/lib/supabase";
+import { warmAudio, fireAlert } from "@/lib/notify";
 import { Fireworks } from "./Fireworks";
 import { HOLIDAY_THEME_ACTIVE } from "@/lib/config";
 import type { PlacedOrder } from "@/lib/data";
@@ -64,6 +66,31 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
   const [elapsedSecs, setElapsedSecs] = useState(0);
   const [staffName,   setStaffName]   = useState<string | null>(null);
 
+  // ── Milestone alerts ──────────────────────────────────────────────────────
+  // A transient on-screen banner (paired with chime/haptic/tab-title flash from
+  // lib/notify) fired when *real staff status* crosses a milestone the guest
+  // should notice — "on the way" and "delivered". We gate on real status, not
+  // the time-based estimate, so we never cry wolf before the bartender actually
+  // moves the order. `alertedStaffStep` is seeded from the first status read
+  // WITHOUT firing, so reopening an already-ready order doesn't alarm late.
+  const [banner, setBanner] = useState<{ title: string; sub: string; bright: boolean } | null>(null);
+  const alertedStaffStep = useRef<number | null>(null);
+  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showBanner = useCallback((title: string, sub: string, bright: boolean) => {
+    fireAlert(title, bright);
+    setBanner({ title, sub, bright });
+    if (bannerTimer.current) clearTimeout(bannerTimer.current);
+    bannerTimer.current = setTimeout(() => setBanner(null), 6_000);
+  }, []);
+
+  // Warm the AudioContext off the place-order tap that brought us here, so a
+  // chime minutes later (when there's no fresh gesture) still plays.
+  useEffect(() => {
+    warmAudio();
+    return () => { if (bannerTimer.current) clearTimeout(bannerTimer.current); };
+  }, []);
+
   // Fireworks — only on the initial mount of this screen (this effect's
   // empty deps array guarantees that), only during the holiday event, and
   // never if the guest's device has reduced motion enabled.
@@ -99,27 +126,62 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
     return () => clearInterval(id);
   }, [order.placedAt, order.estimatedMinutes]);
 
-  // Network poll — separate, slower cadence; refines currentStep upward
-  // whenever real staff status moves ahead of the time-based estimate,
-  // and picks up the assigned staff member's name once one accepts
-  useEffect(() => {
-    const poll = async () => {
-      const [realStatus, name] = await Promise.all([
-        readOrderStatus(order.id),
-        readOrderStaffName(order.id),
-      ]);
-      // "delivered" means fully complete — including the 4th step itself,
-      // which statusToStep alone can never express since it returns the
-      // last valid index (3), not "one past the end."
-      const staffStep = realStatus === "delivered" ? STEPS.length : statusToStep(realStatus);
-      setCurrentStep(prev => Math.max(prev, staffStep));
-      if (name) setStaffName(name);
-    };
+  // Refresh real staff status/name and reconcile it with the tracker. Shared
+  // by the realtime subscription (instant) and the interval poll (fallback),
+  // so both paths run identical logic and firing an alert is idempotent.
+  const refreshStatus = useCallback(async () => {
+    const [realStatus, name] = await Promise.all([
+      readOrderStatus(order.id),
+      readOrderStaffName(order.id),
+    ]);
+    // "delivered" means fully complete — including the 4th step itself, which
+    // statusToStep alone can never express since it returns the last valid
+    // index (3), not "one past the end."
+    const staffStep = realStatus === "delivered" ? STEPS.length : statusToStep(realStatus);
 
-    poll();
-    const id = setInterval(poll, 5_000);
-    return () => clearInterval(id);
-  }, [order.id]);
+    // Fire milestone alerts on upward transitions of the REAL status only.
+    // Seed the baseline on the first read so an already-advanced order (guest
+    // reopened the screen) doesn't retro-fire.
+    if (alertedStaffStep.current === null) {
+      alertedStaffStep.current = staffStep;
+    } else if (staffStep > alertedStaffStep.current) {
+      const crossedOnTheWay   = alertedStaffStep.current < 2 && staffStep >= 2;
+      const crossedDelivered  = alertedStaffStep.current < STEPS.length && staffStep >= STEPS.length;
+      if (crossedDelivered) {
+        showBanner("Delivered — enjoy your drinks!", "Your order just arrived at your seat.", true);
+      } else if (crossedOnTheWay) {
+        showBanner("Your order is on the way!", "A server is bringing it to your seat now.", false);
+      }
+      alertedStaffStep.current = staffStep;
+    }
+
+    setCurrentStep(prev => Math.max(prev, staffStep));
+    if (name) setStaffName(name);
+  }, [order.id, showBanner]);
+
+  // Realtime is the fast path: `orders` is in the supabase_realtime publication,
+  // so a status change from the staff dashboard pushes here instantly. The
+  // interval poll below is a fallback that also covers the case where the anon
+  // role can't receive row events (RLS) — if realtime silently delivers
+  // nothing, the poll keeps the tracker correct exactly as before.
+  useEffect(() => {
+    refreshStatus();
+    const id = setInterval(refreshStatus, 5_000);
+
+    const channel = supabase
+      .channel(`order-status:${order.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${order.id}` },
+        () => { refreshStatus(); },
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(id);
+      supabase.removeChannel(channel);
+    };
+  }, [order.id, refreshStatus]);
 
   const isDelivered     = currentStep >= 3;
   // currentStep can be STEPS.length (4) to mark every step done — clamp
@@ -132,6 +194,41 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
     <div className="min-h-screen bg-base flex flex-col items-center justify-start pt-12 pb-32 px-4 animate-fade-in">
       {showFireworks && <Fireworks />}
       <div className="fixed inset-0 bg-hero-glow pointer-events-none" />
+
+      {/* Milestone alert banner — fires with a chime/haptic when the real
+          order status crosses "on the way" / "delivered". Auto-dismisses. */}
+      {banner && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed top-3 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
+        >
+          <button
+            onClick={() => setBanner(null)}
+            className={cn(
+              "pointer-events-auto w-full max-w-sm flex items-center gap-3 rounded-2xl px-4 py-3.5 shadow-modal border animate-sheet-up text-left",
+              banner.bright
+                ? "bg-gold-grad border-gold-500/40"
+                : "bg-felt-grad border-felt-500/40",
+            )}
+          >
+            <div className={cn(
+              "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0",
+              banner.bright ? "bg-void/15" : "bg-white/15",
+            )}>
+              <BellRing size={18} className={banner.bright ? "text-void" : "text-white"} />
+            </div>
+            <div className="min-w-0">
+              <p className={cn("font-body font-bold text-sm leading-tight", banner.bright ? "text-void" : "text-white")}>
+                {banner.title}
+              </p>
+              <p className={cn("font-body text-xs leading-tight mt-0.5", banner.bright ? "text-void/70" : "text-white/80")}>
+                {banner.sub}
+              </p>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Quick exit — same destination as "Order More Drinks", for a guest
           who just wants back to the menu without reading this screen */}
