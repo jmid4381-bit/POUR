@@ -15,7 +15,7 @@ const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
 export type PushResult =
   | { ok: true }
-  | { ok: false; reason: "unsupported" | "denied" | "unconfigured" | "error" };
+  | { ok: false; reason: "unsupported" | "denied" | "unconfigured" | "error"; detail?: string };
 
 /** True only if this browser can actually do Web Push. */
 export function isPushSupported(): boolean {
@@ -55,20 +55,23 @@ async function getRegistration(): Promise<ServiceWorkerRegistration> {
 }
 
 /**
- * Ask for permission (if not already decided), subscribe, and register the
- * subscription against `orderId` on the server. Must be called from a user
- * gesture on iOS (the opt-in button handler).
+ * Subscribe this device and register it against `orderId` on the server.
+ *
+ * IMPORTANT (iOS): permission must already be granted before calling this —
+ * request it synchronously at the very top of the tap handler (see PushOptIn),
+ * because iOS silently ignores requestPermission() if any async work runs
+ * first. This function assumes permission is granted and only does the
+ * service-worker + subscribe + save steps.
+ *
+ * Returns a detailed reason on failure so the UI can show it on-device (push
+ * debugging is otherwise invisible on a phone).
  */
 export async function subscribeForOrder(orderId: string, guestId: string): Promise<PushResult> {
   if (!isPushSupported()) return { ok: false, reason: "unsupported" };
   if (!VAPID_PUBLIC)       return { ok: false, reason: "unconfigured" };
+  if (Notification.permission !== "granted") return { ok: false, reason: "denied" };
 
   try {
-    const permission = Notification.permission === "granted"
-      ? "granted"
-      : await Notification.requestPermission();
-    if (permission !== "granted") return { ok: false, reason: "denied" };
-
     const reg = await getRegistration();
 
     // Reuse an existing subscription if present, else create one.
@@ -85,10 +88,13 @@ export async function subscribeForOrder(orderId: string, guestId: string): Promi
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId, guestId, subscription: sub.toJSON() }),
     });
-    if (!res.ok) return { ok: false, reason: "error" };
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false, reason: "error", detail: `save failed ${res.status} ${body}`.trim() };
+    }
 
     return { ok: true };
-  } catch {
-    return { ok: false, reason: "error" };
+  } catch (e) {
+    return { ok: false, reason: "error", detail: (e as Error)?.message ?? "subscribe threw" };
   }
 }

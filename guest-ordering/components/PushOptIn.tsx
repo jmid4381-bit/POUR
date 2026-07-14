@@ -50,12 +50,31 @@ export function PushOptIn({ orderId }: { orderId: string }) {
   }, []);
 
   const enable = async () => {
-    setState("enabling");
     setError(null);
+
+    // iOS is strict: Notification.requestPermission() must run synchronously at
+    // the very START of the tap handler, before any await or heavy work, or the
+    // system prompt silently never appears. So request it here FIRST, then hand
+    // off to the (async) subscribe step.
+    let permission: NotificationPermission;
+    try {
+      permission = Notification.permission === "granted"
+        ? "granted"
+        : await Notification.requestPermission();
+    } catch (e) {
+      setError(`Permission request failed: ${(e as Error)?.message ?? "unknown"}`);
+      return;
+    }
+
+    if (permission === "denied") { setState("denied"); return; }
+    if (permission !== "granted") { setError("Notifications weren't allowed. Tap to try again."); return; }
+
+    setState("enabling");
     const res = await subscribeForOrder(orderId, getOrCreateGuestId());
     if (res.ok) { setState("enabled"); return; }
     if (res.reason === "denied") { setState("denied"); return; }
-    setError("Couldn't enable alerts. You can still track your order on this screen.");
+    // Surface the real reason on-device — push failures are otherwise invisible.
+    setError(`Couldn't enable alerts (${res.reason}${res.detail ? `: ${res.detail}` : ""}). Tap to retry.`);
     setState("prompt");
   };
 
