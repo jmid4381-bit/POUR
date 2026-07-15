@@ -196,7 +196,13 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
   const remainingMins   = Math.ceil(remainingSecs / 60);
 
   return (
-    <div className="min-h-screen bg-base flex flex-col items-center justify-start pt-12 pb-32 px-4 animate-fade-in">
+    <div
+      className="min-h-screen bg-base flex flex-col items-center justify-start pt-[calc(3rem+env(safe-area-inset-top))] px-4 animate-fade-in"
+      // Extra clearance below pb-32's base padding for the home indicator AND
+      // Stripe's floating account badge (bottom-right, fixed position) — so
+      // the last button on the page never sits flush under either.
+      style={{ paddingBottom: "calc(8rem + env(safe-area-inset-bottom))" }}
+    >
       {showFireworks && <Fireworks />}
       <div className="fixed inset-0 bg-hero-glow pointer-events-none" />
 
@@ -240,7 +246,10 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
       <button
         onClick={onOrderMore}
         aria-label="Close and return to menu"
-        className="fixed top-4 right-4 z-20 w-9 h-9 rounded-full bg-lift/90 backdrop-blur-sm border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all"
+        // top-[calc(1rem+safe-area)] keeps this clear of the iOS status bar/
+        // notch when installed to the Home Screen (viewport-fit=cover draws
+        // full-bleed otherwise). Resolves to 1rem in a normal browser tab.
+        className="fixed top-[calc(1rem+env(safe-area-inset-top))] right-4 z-20 w-9 h-9 rounded-full bg-lift/90 backdrop-blur-sm border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all"
       >
         <X size={16} />
       </button>
