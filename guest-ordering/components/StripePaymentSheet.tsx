@@ -125,7 +125,13 @@ export function StripePaymentSheet({ clientSecret, amountCents, onSuccess, onCan
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto overscroll-contain p-5">
+          <div
+            className="flex-1 overflow-y-auto overscroll-contain p-5"
+            // Extra bottom clearance so the Pay/Cancel buttons — the last thing
+            // in this sheet — don't sit flush against the home indicator when
+            // installed to the Home Screen.
+            style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+          >
             <Elements
               stripe={getStripePromise()}
               options={{

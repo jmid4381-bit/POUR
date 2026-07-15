@@ -336,7 +336,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
         aria-modal="true"
         aria-label="My Orders"
         className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-base border-t border-edge rounded-t-3xl shadow-modal animate-sheet-up"
-        style={{ maxHeight: "85dvh" }}
+        style={{ maxHeight: "85dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0" aria-hidden>
@@ -417,7 +417,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
         )}
 
         {/* Order list */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6 space-y-3">
           {orders.length === 0 ? (
             <div className="py-16 text-center">
               <p className="text-4xl mb-3" aria-hidden>🍹</p>

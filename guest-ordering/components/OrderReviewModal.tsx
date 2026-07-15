@@ -288,8 +288,11 @@ export function OrderReviewModal({
                   </div>
                 ))}
 
-                {/* Repeat confirm at bottom after scrolling through items */}
-                <div className="pt-2 pb-1 space-y-2">
+                {/* Repeat confirm at bottom after scrolling through items. Extra
+                    bottom padding + safe-area inset so this CTA (the last thing
+                    in the scrollable sheet) clears the home indicator instead of
+                    sitting flush against it when installed to the Home Screen. */}
+                <div className="pt-2 space-y-2" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
                   <div className="space-y-1 pt-2 border-t border-edge">
                     <div className="flex justify-between text-sm">
                       <span className="text-mist-400 font-body">{itemCount} drink{itemCount !== 1 ? "s" : ""}</span>
