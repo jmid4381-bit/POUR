@@ -11,7 +11,8 @@
  * Safari's toolbar can be hidden and how to reveal it.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Plus, BellRing, X, SquareArrowUp, MoveVertical } from "lucide-react";
 
 export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
@@ -21,6 +22,16 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
     document.body.classList.add("modal-open");
     return () => document.body.classList.remove("modal-open");
   }, []);
+
+  // Render via a portal straight to <body>. Callers (AlertsSetupCard,
+  // PushOptIn) render this nested inside elements with a fade-up entrance
+  // animation, whose `both` fill-mode leaves `transform: translateY(0)`
+  // applied permanently after it finishes — a CSS transform on an ancestor
+  // creates a new containing block for `position: fixed`, silently trapping
+  // this "full screen" overlay inside that small card instead of the real
+  // viewport. A portal sidesteps that regardless of where this is mounted.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const steps = [
     {
@@ -40,7 +51,9 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
     },
   ];
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       <div className="fixed inset-0 z-[80] bg-void/85 backdrop-blur-md animate-fade-in" onClick={onClose} aria-hidden />
       {/* Full-screen takeover on mobile (h-full so the body can scroll the whole
@@ -108,6 +121,7 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
