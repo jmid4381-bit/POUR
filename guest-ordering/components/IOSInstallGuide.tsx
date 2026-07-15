@@ -43,11 +43,13 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className="fixed inset-0 z-[80] bg-void/85 backdrop-blur-md animate-fade-in" onClick={onClose} aria-hidden />
-      <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center pointer-events-none sm:p-4">
-        <div className="pointer-events-auto w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl shadow-modal flex flex-col max-h-[85dvh] animate-sheet-up pb-[env(safe-area-inset-bottom)]">
+      {/* Full-screen takeover on mobile (h-full so the body can scroll the whole
+          height); a centered, rounded modal on larger screens. */}
+      <div className="fixed inset-0 z-[90] flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
+        <div className="pointer-events-auto w-full h-full sm:h-auto sm:max-w-md sm:max-h-[85vh] bg-card sm:rounded-3xl shadow-modal flex flex-col animate-sheet-up">
           <div className="h-[3px] w-full bg-gold-grad flex-shrink-0" />
 
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0 pt-[calc(0.875rem+env(safe-area-inset-top))]">
             <h3 className="font-display text-xl font-semibold text-white leading-none">Add POUR to your iPhone</h3>
             <button
               onClick={onClose}
@@ -58,7 +60,7 @@ export function IOSInstallGuide({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-3" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]" style={{ WebkitOverflowScrolling: "touch" }}>
             <p className="text-mist-400 text-xs font-body">
               iPhone only allows lock-screen alerts once POUR is on your Home Screen. It takes about 10 seconds — close this and follow these steps in Safari:
             </p>
