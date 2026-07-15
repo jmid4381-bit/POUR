@@ -22,14 +22,21 @@ CREATE INDEX IF NOT EXISTS push_subscriptions_order_id_idx
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Upsert a subscription (a device re-opening the page re-subscribes with the
--- same endpoint; keep the latest order/keys for it).
+-- same endpoint; keep the latest order/keys for it), then cap active
+-- subscriptions per guest at 5 — an existing device re-subscribing is never
+-- "new growth" (it's an UPDATE via the upsert), so this only ever trims
+-- genuinely new devices pushing older ones out. Rate-limiting audit
+-- (2026-07-15): this RPC is anon-callable with no limit today.
 CREATE OR REPLACE FUNCTION public.save_push_subscription(
   p_order_id     text,
   p_guest_id     text,
   p_endpoint     text,
   p_subscription jsonb
 ) RETURNS void
-LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_cap constant int := 5;
+BEGIN
   INSERT INTO public.push_subscriptions (order_id, guest_id, endpoint, subscription)
   VALUES (p_order_id, p_guest_id, p_endpoint, p_subscription)
   ON CONFLICT (endpoint) DO UPDATE
@@ -37,6 +44,17 @@ LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
         guest_id     = EXCLUDED.guest_id,
         subscription = EXCLUDED.subscription,
         created_at   = now();
+
+  IF p_guest_id IS NOT NULL THEN
+    DELETE FROM public.push_subscriptions
+    WHERE endpoint IN (
+      SELECT endpoint FROM public.push_subscriptions
+      WHERE guest_id = p_guest_id
+      ORDER BY created_at DESC
+      OFFSET v_cap
+    );
+  END IF;
+END;
 $$;
 
 -- Read the subscriptions to notify for an order (used by the notify webhook).

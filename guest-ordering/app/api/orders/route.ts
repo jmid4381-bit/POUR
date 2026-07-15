@@ -71,6 +71,16 @@ export async function POST(req: NextRequest) {
 
   const result = await createOrder(order, pricing.rows, pricing.surchargeAmount, pricing.surchargeLabel);
   if (!result.ok) {
+    // submit_order's own guest-scoped rate limit (2026-07-15 audit) — this is
+    // the RPC-level guard that can't be bypassed by calling Supabase directly,
+    // unlike the IP-based check above. Same friendly 429 shape as that check
+    // so the client's existing handling (lib/queue.ts) covers both.
+    if (result.error.includes("RATE_LIMITED")) {
+      return NextResponse.json(
+        { error: "Too many orders placed too quickly. Please wait a moment." },
+        { status: 429 },
+      );
+    }
     // This is the real order-write failure path — previously discarded the
     // actual Postgres error (result.error) entirely, so a failed order left
     // zero trace anywhere. Now logged with enough context to investigate.
