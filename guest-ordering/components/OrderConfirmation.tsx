@@ -207,33 +207,39 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
       <div className="fixed inset-0 bg-hero-glow pointer-events-none" />
 
       {/* Milestone alert banner — fires with a chime/haptic when the real
-          order status crosses "on the way" / "delivered". Auto-dismisses. */}
+          order status crosses "being prepared" / "on the way" / "delivered".
+          Auto-dismisses. top offset clears BOTH the status bar/notch (when
+          installed to Home Screen) AND the close (X) button's row below it —
+          previously fixed at top-3 with no safe-area awareness, so it sat
+          under the clock/battery and visually covered the X (which is z-20,
+          under this banner's z-50). */}
       {banner && (
         <div
           role="alert"
           aria-live="assertive"
-          className="fixed top-3 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
+          className="fixed inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
+          style={{ top: "calc(4rem + env(safe-area-inset-top))" }}
         >
           <button
             onClick={() => setBanner(null)}
             className={cn(
-              "pointer-events-auto w-full max-w-sm flex items-center gap-3 rounded-2xl px-4 py-3.5 shadow-modal border animate-sheet-up text-left",
+              "pointer-events-auto w-full max-w-sm flex items-center gap-3 rounded-2xl px-4 py-4 shadow-[0_8px_40px_rgba(0,0,0,0.55)] border-2 animate-sheet-up text-left",
               banner.bright
-                ? "bg-gold-grad border-gold-500/40"
-                : "bg-felt-grad border-felt-500/40",
+                ? "bg-gold-grad border-gold-300/60"
+                : "bg-felt-grad border-felt-300/60",
             )}
           >
             <div className={cn(
-              "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0",
-              banner.bright ? "bg-void/15" : "bg-white/15",
+              "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+              banner.bright ? "bg-void/20" : "bg-white/20",
             )}>
-              <BellRing size={18} className={banner.bright ? "text-void" : "text-white"} />
+              <BellRing size={20} className={banner.bright ? "text-void" : "text-white"} />
             </div>
             <div className="min-w-0">
-              <p className={cn("font-body font-bold text-sm leading-tight", banner.bright ? "text-void" : "text-white")}>
+              <p className={cn("font-body font-extrabold text-base leading-tight", banner.bright ? "text-void" : "text-white")}>
                 {banner.title}
               </p>
-              <p className={cn("font-body text-xs leading-tight mt-0.5", banner.bright ? "text-void/70" : "text-white/80")}>
+              <p className={cn("font-body text-sm leading-snug mt-1", banner.bright ? "text-void/80" : "text-white/90")}>
                 {banner.sub}
               </p>
             </div>
