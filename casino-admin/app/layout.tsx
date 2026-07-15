@@ -24,8 +24,12 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Admin Console — Casino Beverage Management",
+  title: "Admin Console — POUR",
   description: "Executive operations dashboard for casino beverage program management.",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

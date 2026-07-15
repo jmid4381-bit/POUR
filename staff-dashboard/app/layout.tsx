@@ -28,6 +28,10 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Staff Operations — POUR",
   description: "Real-time beverage order management for casino floor staff.",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
