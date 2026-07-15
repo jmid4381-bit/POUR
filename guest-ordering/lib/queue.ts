@@ -11,6 +11,7 @@
 
 import { supabase }    from "./supabase";
 import type { CartItem } from "./data";
+import { logError } from "./logger";
 
 // ─── localStorage fallback keys ───────────────────────────────────────────────
 
@@ -119,8 +120,14 @@ export async function submitOrder(order: QueuedOrder): Promise<SubmitOrderResult
 
   } catch (err) {
     // API route unreachable — fall back to localStorage so the guest still
-    // sees a confirmation screen and the order isn't silently lost
-    console.warn("Order API unavailable, falling back to localStorage:", err);
+    // sees a confirmation screen and the order isn't silently lost. But this
+    // is a FALSE success from the server's point of view — the order never
+    // reached Supabase, so log it; previously this only warned to a browser
+    // console nobody was watching.
+    logError("Order API unreachable — fell back to localStorage (server never received order)", err, {
+      orderId: order.id,
+      locationId: order.locationId,
+    });
     _submitOrderToLocalStorage(order);
     return { ok: true };
   }
@@ -177,7 +184,11 @@ export async function readAlcoholCooldownMs(guestId: string): Promise<number> {
 
     if (consumed < MAX_ALCOHOLIC_PER_WINDOW || !oldestAt) return 0;
     return Math.max(0, new Date(oldestAt).getTime() + ALCOHOL_WINDOW_MINUTES * 60_000 - Date.now());
-  } catch {
+  } catch (err) {
+    // Fails OPEN (no cooldown shown) — worth knowing about since it silently
+    // relaxes a safety check, even though order submission re-verifies
+    // server-side regardless.
+    logError("get_guest_alcohol_status failed — cooldown check failed open", err, { guestId });
     return 0;
   }
 }
@@ -198,7 +209,8 @@ export async function readAlcoholRoom(guestId: string): Promise<number> {
     const row = Array.isArray(data) ? data[0] : data;
     const consumed: number = row?.consumed ?? 0;
     return Math.max(0, MAX_ALCOHOLIC_PER_WINDOW - consumed);
-  } catch {
+  } catch (err) {
+    logError("get_guest_alcohol_status failed — alcohol room check failed open", err, { guestId });
     return MAX_ALCOHOLIC_PER_WINDOW;
   }
 }

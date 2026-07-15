@@ -28,6 +28,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { BEVERAGES, LOCATIONS, type Beverage, type Location } from "@/lib/data";
 import { readAdminBeverages, readAdminLocations } from "@/lib/queue";
+import { logMessage } from "@/lib/logger";
 
 // How often the fallback poll re-fetches the menu while a guest is actively
 // viewing it. Kept modest to limit round-trips for a small event; Realtime
@@ -181,7 +182,14 @@ export function useMenu() {
         { event: "*", schema: "public", table: "beverages" },
         scheduleRefresh,
       )
-      .subscribe();
+      .subscribe((status) => {
+        // CLOSED is expected on unmount/cleanup — not logged. CHANNEL_ERROR/
+        // TIMED_OUT are real drops the polling fallback quietly masks; log
+        // them so a Realtime outage is visible instead of silent again.
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logMessage("Realtime subscription failed: beverages-menu-changes", { status });
+        }
+      });
 
     return () => {
       if (debounce) clearTimeout(debounce);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getWebPush, isPushConfigured } from "@/lib/webpush";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
     p_order_id: orderId,
   });
   if (error) {
-    console.error("get_push_subscriptions_for_order failed:", error.message);
+    logError("get_push_subscriptions_for_order failed", new Error(error.message), { orderId });
     return NextResponse.json({ ok: true, skipped: "lookup-failed" });
   }
 
@@ -115,8 +116,15 @@ export async function POST(req: NextRequest) {
         sent++;
       } catch (err) {
         const status = (err as { statusCode?: number }).statusCode;
-        // 404/410 = subscription expired/unsubscribed — mark for cleanup.
-        if (status === 404 || status === 410) stale.push(row.endpoint);
+        // 404/410 = subscription expired/unsubscribed — mark for cleanup, not
+        // a real failure. Anything else is a genuine send failure that was
+        // previously swallowed entirely — a guest silently never gets
+        // notified with zero trace anywhere.
+        if (status === 404 || status === 410) {
+          stale.push(row.endpoint);
+        } else {
+          logError("Push send failed", err, { orderId, statusCode: status ?? null });
+        }
       }
     }),
   );

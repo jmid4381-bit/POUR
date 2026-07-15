@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { logMessage } from "@/lib/logger";
 
 interface StaffZoneRow {
   staff_name:  string;
@@ -32,7 +33,11 @@ export function useStaffZones() {
     const channel = supabase
       .channel("staff-zones-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones" }, () => fetchRows())
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logMessage("Realtime subscription failed: staff-zones-changes", { status });
+        }
+      });
     return () => { supabase.removeChannel(channel); };
   }, [fetchRows]);
 

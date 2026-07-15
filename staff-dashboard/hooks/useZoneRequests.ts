@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { logMessage } from "@/lib/logger";
 
 export type ZoneRequestType   = "switch" | "add";
 export type ZoneRequestStatus = "pending" | "approved" | "denied";
@@ -52,7 +53,11 @@ export function useZoneRequests(staffName: string) {
         { event: "*", schema: "public", table: "zone_requests", filter: `staff_name=eq.${staffName}` },
         () => fetchLatest(),
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logMessage("Realtime subscription failed: zone-requests", { status, staffName });
+        }
+      });
     return () => { supabase.removeChannel(channel); };
   }, [staffName, fetchLatest]);
 

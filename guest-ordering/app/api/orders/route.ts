@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { computeOrderCharge, type PricingItemInput } from "@/lib/pricing";
 import { createOrder, type OrderMeta } from "@/lib/createOrder";
 import { isStripeConfigured } from "@/lib/stripe";
+import { logError } from "@/lib/logger";
 
 // ─── In-memory rate limiter ────────────────────────────────────────────────
 // Best-effort: resets on cold start and isn't shared across regions/instances.
@@ -70,6 +71,14 @@ export async function POST(req: NextRequest) {
 
   const result = await createOrder(order, pricing.rows, pricing.surchargeAmount, pricing.surchargeLabel);
   if (!result.ok) {
+    // This is the real order-write failure path — previously discarded the
+    // actual Postgres error (result.error) entirely, so a failed order left
+    // zero trace anywhere. Now logged with enough context to investigate.
+    logError("Order creation failed", new Error(result.error), {
+      orderId: order.id,
+      locationId: order.locationId,
+      guestId: order.guestId ?? null,
+    });
     return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
   }
 

@@ -14,6 +14,7 @@ import {
   type LocationRow, type StaffZoneRow, type ZoneRequestRow,
 } from "./supabase-zones";
 import { logAudit } from "./audit";
+import { logError, logMessage } from "./logger";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -126,9 +127,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ]);
 
     if (ordersRes.error || beveragesRes.error) {
-      console.error("Supabase fetch failed:",
-        ordersRes.error?.message, beveragesRes.error?.message);
-      setError(ordersRes.error?.message ?? beveragesRes.error?.message ?? "Failed to load data");
+      const msg = ordersRes.error?.message ?? beveragesRes.error?.message ?? "Failed to load data";
+      logError("Admin dashboard fetchAll failed", new Error(msg), {
+        ordersError: ordersRes.error?.message ?? null,
+        beveragesError: beveragesRes.error?.message ?? null,
+      });
+      setError(msg);
     } else {
       setError(null);
       setOrders((ordersRes.data as OrderRow[]).map(rowToOrder));
@@ -161,7 +165,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "zone_requests" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "beverages" },   () => fetchAll())
-      .subscribe();
+      .subscribe((status) => {
+        // The comment below documents Realtime events connecting but not
+        // arriving during earlier testing — logging CHANNEL_ERROR/TIMED_OUT
+        // here gives an actual empirical signal on whether that's still
+        // happening, instead of relying on the 3s poll to silently mask it.
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logMessage("Realtime subscription failed: admin-dashboard-changes", { status });
+        }
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchAll]);

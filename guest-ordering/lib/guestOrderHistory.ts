@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import type { Beverage, CartItem } from "@/lib/data";
 import type { HistoryOrder } from "@/hooks/useOrderHistory";
 import type { QueuedOrderStatus } from "@/lib/queue";
+import { logError } from "@/lib/logger";
 
 // Matches the guest-ID cookie's own Max-Age and the "Welcome back" remember
 // window — a guest outside this window has already lost both, so there's
@@ -50,7 +51,14 @@ export async function fetchGuestOrderHistory(
       p_guest_id: guestId,
       p_since:    since,
     });
-    if (error || !data) return [];
+    // `!data` alone (no error) is a legitimate empty result — only a real
+    // `error` is worth logging; a returning guest just sees no past orders,
+    // indistinguishable from actually having none, so this was invisible before.
+    if (error) {
+      logError("get_guest_orders failed", new Error(error.message), { guestId });
+      return [];
+    }
+    if (!data) return [];
 
     const beverageMap = new Map(beverages.map(b => [b.id, b]));
 
@@ -88,7 +96,8 @@ export async function fetchGuestOrderHistory(
         surchargeLabel:   row.surcharge_label ?? undefined,
       };
     });
-  } catch {
+  } catch (err) {
+    logError("fetchGuestOrderHistory threw", err, { guestId });
     return [];
   }
 }

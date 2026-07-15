@@ -22,6 +22,7 @@ import { cn, fmtUSD, fmtTime } from "@/lib/utils";
 import { readOrderStatus, readOrderStaffName, type QueuedOrderStatus } from "@/lib/queue";
 import { supabase } from "@/lib/supabase";
 import { warmAudio, fireAlert } from "@/lib/notify";
+import { logMessage } from "@/lib/logger";
 import { PushOptIn } from "./PushOptIn";
 import { InstallAppCard } from "./InstallAppCard";
 import { Fireworks } from "./Fireworks";
@@ -180,7 +181,11 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
         { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${order.id}` },
         () => { refreshStatus(); },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logMessage("Realtime subscription failed: order-status", { status, orderId: order.id });
+        }
+      });
 
     return () => {
       clearInterval(id);

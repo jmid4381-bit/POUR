@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    console.error("save_push_subscription failed:", error.message);
+    logError("save_push_subscription failed", new Error(error.message), { orderId, guestId: guestId ?? null });
     return NextResponse.json({ error: "Could not save subscription" }, { status: 500 });
   }
 

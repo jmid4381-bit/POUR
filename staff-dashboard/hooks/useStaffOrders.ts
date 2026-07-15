@@ -6,6 +6,7 @@ import { OVERDUE_THRESHOLD_MINUTES } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { rowToOrder, type OrderRow } from "@/lib/supabase-orders";
 import { logAudit } from "@/lib/audit";
+import { logMessage } from "@/lib/logger";
 
 // ─── Notification type (Fix 4) ────────────────────────────────────────────────
 
@@ -119,7 +120,11 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       .channel("staff-dashboard-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" },      () => fetchOrders())
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => fetchOrders())
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logMessage("Realtime subscription failed: staff-dashboard-orders", { status });
+        }
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchOrders]);

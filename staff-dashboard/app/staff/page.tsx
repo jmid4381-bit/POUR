@@ -39,6 +39,7 @@ import { ZonePicker }           from "@/components/staff/ZonePicker";
 import { cn }                   from "@/lib/utils";
 import { fetchActiveLocations, type StaffLocation } from "@/lib/locations";
 import type { OrderStatus }     from "@/lib/types";
+import { logError }             from "@/lib/logger";
 
 const ACTIVE_ORDER_STATUSES = ["pending", "accepted", "preparing", "ready"];
 
@@ -187,11 +188,14 @@ export default function StaffDashboard() {
       .then(({ error }) => {
         // Insert failed (e.g. offline) — undo the optimistic hide so the
         // card doesn't silently vanish from a confirm that didn't stick.
-        if (error) setDismissedDelivered(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
+        if (error) {
+          logError("staff_dismissed_orders upsert failed", new Error(error.message), { staffName, orderId: id });
+          setDismissedDelivered(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        }
       });
   }, [staffName]);
 
