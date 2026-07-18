@@ -9,7 +9,10 @@
  *  2. iOS Safari in a normal tab → Web Push is impossible until the site is
  *     added to the Home Screen, so show that instruction instead of a button
  *     that can't work.
- *  3. Unsupported / already-enabled / denied → collapse to a quiet status line.
+ *  3. Already-enabled → quiet confirmation. Denied → stays visible as a
+ *     tappable card explaining how to re-enable via device settings (the
+ *     browser will never show the native prompt again on its own once truly
+ *     denied, so this opportunity should never just disappear).
  */
 
 import { useEffect, useState } from "react";
@@ -18,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { getOrCreateGuestId } from "@/lib/guestSession";
 import { isPushSupported, pushPermission, subscribeForOrder } from "@/lib/push";
 import { IOSInstallGuide } from "./IOSInstallGuide";
+import { NotificationsBlockedGuide } from "./NotificationsBlockedGuide";
 
 type UIState = "loading" | "prompt" | "enabling" | "enabled" | "denied" | "ios-install" | "unsupported";
 
@@ -37,6 +41,7 @@ export function PushOptIn({ orderId }: { orderId: string }) {
   const [state, setState] = useState<UIState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [showBlockedGuide, setShowBlockedGuide] = useState(false);
 
   useEffect(() => {
     // iOS in a normal Safari tab can't do push until installed to Home Screen.
@@ -114,15 +119,23 @@ export function PushOptIn({ orderId }: { orderId: string }) {
 
   if (state === "denied") {
     return (
-      <div className="bg-card border border-edge rounded-2xl p-4 flex items-center gap-3 animate-fade-up">
-        <div className="w-9 h-9 rounded-xl bg-lift flex items-center justify-center flex-shrink-0">
-          <BellOff size={18} className="text-mist-400" />
-        </div>
-        <div>
-          <p className="text-white font-body font-semibold text-sm">Notifications are blocked</p>
-          <p className="text-mist-500 text-xs font-body mt-0.5">Enable notifications for this site in your browser settings to get delivery alerts.</p>
-        </div>
-      </div>
+      <>
+        <button
+          onClick={() => setShowBlockedGuide(true)}
+          className="w-full text-left bg-card border border-edge rounded-2xl p-4 flex items-center gap-3 animate-fade-up active:scale-[0.99] transition-transform"
+        >
+          <div className="w-9 h-9 rounded-xl bg-lift flex items-center justify-center flex-shrink-0">
+            <BellOff size={18} className="text-mist-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-white font-body font-semibold text-sm">Notifications are blocked</p>
+            <p className="text-mist-500 text-xs font-body mt-0.5">Tap to see how to turn them back on.</p>
+          </div>
+          <ChevronRight size={18} className="text-mist-500 flex-shrink-0" />
+        </button>
+
+        {showBlockedGuide && <NotificationsBlockedGuide onClose={() => setShowBlockedGuide(false)} />}
+      </>
     );
   }
 
