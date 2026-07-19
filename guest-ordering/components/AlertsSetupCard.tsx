@@ -66,6 +66,21 @@ export function AlertsSetupCard() {
 
   useEffect(() => { compute(); }, [compute]);
 
+  // Re-check on return to the tab — the ONLY way this card's permission state
+  // can change is the guest leaving to their device/browser Settings and back
+  // (there's no in-app control for it). compute() fully re-derives the mode
+  // from scratch, so this naturally handles both directions: Settings ->
+  // Allow makes the "blocked" card disappear, and Settings -> revoke brings
+  // it back even after it had been granted.
+  useEffect(() => {
+    document.addEventListener("visibilitychange", compute);
+    window.addEventListener("focus", compute);
+    return () => {
+      document.removeEventListener("visibilitychange", compute);
+      window.removeEventListener("focus", compute);
+    };
+  }, [compute]);
+
   const enable = async () => {
     setBusy(true);
     try {

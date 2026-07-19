@@ -71,6 +71,34 @@ export function PushOptIn({ orderId }: { orderId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
+  // Re-check on return to the tab — the only way permission changes outside
+  // a tap in this UI is the guest leaving to their device/browser Settings
+  // and back. Gated to the two states where it actually matters: "denied"
+  // (Settings -> Allow should complete the real subscription, not just flip
+  // a label) and "enabled" (Settings -> revoke should bring the blocked card
+  // back even after it had been granted).
+  useEffect(() => {
+    const recheck = () => {
+      const perm = pushPermission();
+      if (state === "denied" && perm === "granted") {
+        setState("enabling");
+        subscribeForOrder(orderId, getOrCreateGuestId()).then((res) => {
+          if (res.ok) { setState("enabled"); return; }
+          setError(`Couldn't turn on alerts for this order (${res.reason}${res.detail ? `: ${res.detail}` : ""}).`);
+          setState("prompt");
+        });
+      } else if (state === "enabled" && perm === "denied") {
+        setState("denied");
+      }
+    };
+    document.addEventListener("visibilitychange", recheck);
+    window.addEventListener("focus", recheck);
+    return () => {
+      document.removeEventListener("visibilitychange", recheck);
+      window.removeEventListener("focus", recheck);
+    };
+  }, [state, orderId]);
+
   const enable = async () => {
     setError(null);
 
