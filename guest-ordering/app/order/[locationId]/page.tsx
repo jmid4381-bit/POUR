@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
-  ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock, Building2,
+  ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock, Building2, Info,
 } from "lucide-react";
 import { BeverageCard }      from "@/components/BeverageCard";
 import { BrandCard }        from "@/components/BrandCard";
@@ -364,7 +364,7 @@ export default function GuestOrderPage({ params }: Props) {
 
     if (added === 0) {
       // Nothing added (drink limit) — this is a block, not a confirm: no auto-open
-      setToast("Drink limit reached — try again shortly");
+      setToast("Limit reached: 2 alcoholic drinks per 10 min");
       setTimeout(() => setToast(null), 3500);
       return;
     }
@@ -372,7 +372,7 @@ export default function GuestOrderPage({ params }: Props) {
     // A real add happened. Show the cap toast if partial; otherwise only show
     // the small "added" toast when auto-open is off (the sheet is the confirm).
     if (capped) {
-      setToast(`Added ${added} — drink limit reached for now`);
+      setToast(`Added ${added} — limit is 2 alcoholic drinks per 10 min`);
       setTimeout(() => setToast(null), 3500);
     } else if (autoReviewDismissed.current) {
       setToast(`${beverage.name} added`);
@@ -704,14 +704,14 @@ export default function GuestOrderPage({ params }: Props) {
 
     if (resolved.length === 0) {
       setToast(droppedAlcoholicQty > 0
-        ? "Drink limit reached for now — try again shortly"
+        ? "Limit reached: 2 alcoholic drinks per 10 min"
         : "Those items are no longer available");
       setTimeout(() => setToast(null), 3500);
       return;
     }
 
     const notes: string[] = [];
-    if (droppedAlcoholicQty > 0) notes.push(`${droppedAlcoholicQty} alcoholic drink${droppedAlcoholicQty !== 1 ? "s" : ""} skipped — limit reached for now`);
+    if (droppedAlcoholicQty > 0) notes.push(`${droppedAlcoholicQty} alcoholic drink${droppedAlcoholicQty !== 1 ? "s" : ""} skipped — limit is 2 per 10 min`);
     if (unavailableCount   > 0) notes.push(`${unavailableCount} item${unavailableCount !== 1 ? "s" : ""} no longer available`);
     setReorderNote(notes.join(" · ") || null);
     setReorderRoomLeft(leftoverRoom);
@@ -954,11 +954,13 @@ export default function GuestOrderPage({ params }: Props) {
                 active; nothing to show otherwise, so it never clutters the
                 header for the common case */}
             {cooldownMs > 0 && (
-              <div
+              <button
+                onClick={() => {
+                  setToast("Limited to 2 alcoholic drinks per 10 minutes, for responsible service.");
+                  setTimeout(() => setToast(null), 4000);
+                }}
                 className="flex items-center gap-1 bg-gold-500/8 border border-gold-500/20 rounded-full px-2 py-1 flex-shrink-0"
-                role="timer"
-                aria-live="off"
-                aria-label={`Drink cooldown: ${formatCooldown(cooldownMs)} remaining`}
+                aria-label={`Drink cooldown: ${formatCooldown(cooldownMs)} remaining. Tap to learn why.`}
               >
                 <Clock size={11} className="text-gold-400 flex-shrink-0" />
                 <span className="hidden sm:inline text-[9px] font-mono text-gold-400/80 uppercase tracking-wider">
@@ -967,7 +969,8 @@ export default function GuestOrderPage({ params }: Props) {
                 <span className="text-[11px] font-mono font-semibold text-gold-300 tabular-nums">
                   {formatCooldown(cooldownMs)}
                 </span>
-              </div>
+                <Info size={10} className="text-gold-400/70 flex-shrink-0" />
+              </button>
             )}
 
             <div className="flex items-center gap-1.5 bg-felt-500/8 border border-felt-500/15 rounded-full px-2.5 py-1 flex-shrink-0">
@@ -1066,6 +1069,9 @@ export default function GuestOrderPage({ params }: Props) {
                 <p className="text-white font-body font-bold text-sm leading-tight">Drink limit reached</p>
                 <p className="text-white/80 font-mono text-xs mt-0.5">
                   {formatCooldown(cooldownMs)} until your next alcoholic drink
+                </p>
+                <p className="text-white/70 font-body text-[11px] mt-1">
+                  Limit: 2 drinks per 10 minutes, per guest.
                 </p>
               </div>
             </div>

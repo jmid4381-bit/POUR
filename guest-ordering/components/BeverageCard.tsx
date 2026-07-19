@@ -203,6 +203,17 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
         </div>
       )}
 
+      {/* Explains what "Giant" actually means (size + scarcity) before the
+          guest picks it — not decorative, since neither fact is stated
+          anywhere else on this card. */}
+      {showSizeToggle && (
+        <p className="px-3.5 pb-2 -mt-1 text-[10px] font-body text-mist-600 leading-snug">
+          {giantDisabled
+            ? "Sold out for now — limited supply per event."
+            : "Giant = larger pour, limited supply per event."}
+        </p>
+      )}
+
       {/* Bottom action bar */}
       <div className={cn(
         "flex items-center justify-between px-3.5 py-3 border-t",

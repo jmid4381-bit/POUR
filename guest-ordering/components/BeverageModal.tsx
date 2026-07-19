@@ -266,11 +266,14 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                     );
                   })}
                 </div>
-                {giantCupsAvailable === 0 && (
-                  <p className="text-[11px] text-mist-600 font-body text-center -mt-1">
-                    Giant cups currently unavailable — check back soon
-                  </p>
-                )}
+                {/* Explains what "Giant" actually means (size + scarcity) —
+                    the unavailable case already had a reason; the available
+                    case didn't state either fact anywhere. */}
+                <p className="text-[11px] text-mist-600 font-body text-center -mt-1">
+                  {giantCupsAvailable === 0
+                    ? "Giant cups currently unavailable — check back soon"
+                    : "Giant = larger pour, limited supply per event."}
+                </p>
               </>
             )}
 
