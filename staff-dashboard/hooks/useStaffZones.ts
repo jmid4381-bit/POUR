@@ -8,7 +8,7 @@
  * takes effect immediately for everyone watching, no redeploy required.
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { logMessage } from "@/lib/logger";
 
@@ -21,12 +21,21 @@ export function useStaffZones(venueId: string | null) {
   const [rows,    setRows]    = useState<StaffZoneRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Always the CURRENT venueId -- discards a response that arrives after
+  // the switcher has already moved to a different venue.
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
+  useEffect(() => { setRows([]); }, [venueId]);
+
   const fetchRows = useCallback(async () => {
     if (!venueId) { setRows([]); setLoading(false); return; }
+    const requestedVenueId = venueId;
     const { data, error } = await supabase
       .from("staff_zones")
       .select("staff_name, location_id")
       .eq("venue_id", venueId);
+    if (requestedVenueId !== venueIdRef.current) return;
     if (!error) setRows(data ?? []);
     setLoading(false);
   }, [venueId]);

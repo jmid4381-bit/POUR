@@ -127,15 +127,35 @@ export default function StaffDashboard() {
   const [giantReturning,     setGiantReturning]      = useState(false);
   const [venueName,          setVenueName]           = useState(DEFAULT_VENUE_NAME);
   const [venueAccent,        setVenueAccent]         = useState<string | null>(null);
+
+  // Always the CURRENT venueId (updated synchronously during render) --
+  // lets the poll below discard a response that arrives after the
+  // platform_admin switcher has already moved to a different venue,
+  // instead of flashing/sticking on the previous venue's name/color/cup
+  // count.
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
+  // Reset immediately on a venue change rather than waiting for the next
+  // poll tick to resolve -- otherwise the previous venue's name/color/cup
+  // count stays on screen for a beat after switching.
+  useEffect(() => {
+    setGiantCupsAvailable(GIANT_CUP_MAX);
+    setVenueName(DEFAULT_VENUE_NAME);
+    setVenueAccent(null);
+  }, [venueId]);
+
   useEffect(() => {
     if (!venueId) return;
+    const requestedVenueId = venueId;
     const fetchGiants = async () => {
       const { data, error } = await supabase
         .from("event_settings")
         .select("giant_cups_available, venues ( name, accent_color )")
-        .eq("venue_id", venueId)
+        .eq("venue_id", requestedVenueId)
         .maybeSingle();
 
+      if (requestedVenueId !== venueIdRef.current) return; // stale response, venue changed since request
       if (error || !data) return;
       if (typeof data.giant_cups_available === "number") {
         setGiantCupsAvailable(data.giant_cups_available);
@@ -492,6 +512,20 @@ export default function StaffDashboard() {
             >
               {venueName}
             </p>
+            {/* platform_admin-only venue switcher — regular staff/admin
+                accounts are pinned to one venue via app_metadata and never
+                see this; only Justin's cross-venue account does. */}
+            {isPlatformAdmin && venues.length > 0 && (
+              <select
+                value={venueId ?? ""}
+                onChange={e => chooseVenue(e.target.value)}
+                className="mt-1 bg-raised border border-border rounded-lg px-2 py-1 text-[11px] text-slate-300 font-body focus:outline-none focus:border-gold-500/40"
+              >
+                {venues.map(v => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+            )}
             {/* Greeting + staff name truncates first; "· POUR" has its own
                 shrink-resistant slot so the brand mention is never the part
                 that silently disappears (same measured-and-verified pattern

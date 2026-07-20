@@ -63,12 +63,28 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
   // until the first fetch completes, so nothing fires a false alert on mount.
   const prevOrderIdsRef = useRef<Set<string> | null>(null);
 
+  // Always the CURRENT venueId (updated synchronously during render) --
+  // lets fetchOrders discard a response that arrives after the
+  // platform_admin switcher has already moved to a different venue,
+  // instead of flashing/mixing the wrong venue's orders onto the board.
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
+  // Clear immediately on a venue change rather than waiting for the next
+  // fetch to resolve -- otherwise the previous venue's orders stay on
+  // screen for a beat after switching.
+  useEffect(() => {
+    setOrders([]);
+    prevOrderIdsRef.current = null;
+  }, [venueId]);
+
   // ── Fetch orders from Supabase ────────────────────────────────────────────
   // Bounded to the last 24h, plus any order still active regardless of age —
   // staff never need to see week-old delivered orders, but a stuck active
   // order should never silently disappear off the board.
   const fetchOrders = useCallback(async () => {
     if (!venueId) { setOrders([]); setLoading(false); return; }
+    const requestedVenueId = venueId;
     setLoading(true);
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
@@ -82,6 +98,10 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       .eq("venue_id", venueId)
       .or(`placed_at.gte.${since},status.in.(pending,accepted,preparing,ready)`)
       .order("placed_at", { ascending: true });
+
+    // The venue switcher moved on again while this was in flight -- this
+    // response belongs to a venue we're no longer viewing.
+    if (requestedVenueId !== venueIdRef.current) return;
 
     if (error) {
       setLoadError(error.message);

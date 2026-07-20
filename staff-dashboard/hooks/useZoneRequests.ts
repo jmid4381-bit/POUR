@@ -7,7 +7,7 @@
  * denied, without polling).
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { logMessage } from "@/lib/logger";
 
@@ -25,8 +25,16 @@ export function useZoneRequests(staffName: string, venueId: string | null) {
   const [latest,     setLatest]     = useState<MyZoneRequest | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Always the CURRENT venueId -- discards a response that arrives after
+  // the switcher has already moved to a different venue.
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
+  useEffect(() => { setLatest(null); }, [venueId]);
+
   const fetchLatest = useCallback(async () => {
     if (!venueId) { setLatest(null); return; }
+    const requestedVenueId = venueId;
     const { data, error } = await supabase
       .from("zone_requests")
       .select("id, request_type, requested_zone_id, status")
@@ -35,6 +43,7 @@ export function useZoneRequests(staffName: string, venueId: string | null) {
       .order("created_at", { ascending: false })
       .limit(1);
 
+    if (requestedVenueId !== venueIdRef.current) return;
     if (error || !data || data.length === 0) { setLatest(null); return; }
     const row = data[0];
     setLatest({
@@ -43,7 +52,7 @@ export function useZoneRequests(staffName: string, venueId: string | null) {
       requestedZoneId: row.requested_zone_id,
       status:          row.status,
     });
-  }, [staffName]);
+  }, [staffName, venueId]);
 
   useEffect(() => { fetchLatest(); }, [fetchLatest]);
 
