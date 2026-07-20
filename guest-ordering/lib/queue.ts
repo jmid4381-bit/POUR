@@ -69,6 +69,7 @@ export interface AdminLocation {
   section:  string;
   floor:    number;
   isActive: boolean;
+  venueId:  string | null;
 }
 
 // ─── Order submission ─────────────────────────────────────────────────────────
@@ -261,11 +262,13 @@ export function calculateETA(cartItems: CartItem[], queueDepth: number): number 
 
 // ─── Beverage menu (for useMenu hook) ────────────────────────────────────────
 
-export async function readAdminBeverages(): Promise<AdminBeverage[] | null> {
+export async function readAdminBeverages(venueId: string | null): Promise<AdminBeverage[] | null> {
+  if (!venueId) return null;
   try {
     const { data, error } = await supabase
       .from("beverages")
-      .select("id, name, tagline, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description, image_url, giant_available");
+      .select("id, name, tagline, price, is_available, is_featured, is_alcoholic, prep_minutes, category, emoji, description, image_url, giant_available")
+      .eq("venue_id", venueId);
 
     if (error) throw error;
     if (!data || data.length === 0) return null;
@@ -300,7 +303,7 @@ export async function readAdminLocations(): Promise<AdminLocation[] | null> {
   try {
     const { data, error } = await supabase
       .from("locations")
-      .select("id, name, section, floor, is_active");
+      .select("id, name, section, floor, is_active, venue_id");
 
     if (error) throw error;
     if (!data || data.length === 0) return null;
@@ -311,6 +314,7 @@ export async function readAdminLocations(): Promise<AdminLocation[] | null> {
       section:  l.section,
       floor:    l.floor,
       isActive: l.is_active,
+      venueId:  l.venue_id ?? null,
     }));
 
   } catch {

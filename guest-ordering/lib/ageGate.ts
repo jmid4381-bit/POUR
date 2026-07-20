@@ -9,9 +9,9 @@
 import { logError } from "./logger";
 
 export const LEGAL_DRINKING_AGE = 21;
-// Multi-tenant fallback — the real venue name (event_settings.venue_name) is
-// fetched and passed in by the ordering page; this only matters for a caller
-// that doesn't supply one.
+// Multi-tenant fallback — the real venue name (venues.name) is fetched and
+// passed in by the ordering page; this only matters for a caller that
+// doesn't supply one.
 export const DEFAULT_VENUE_NAME = "POUR";
 
 const VERIFIED_KEY  = "age_gate_verified";

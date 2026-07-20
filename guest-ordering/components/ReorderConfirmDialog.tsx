@@ -18,17 +18,18 @@ interface ReorderConfirmDialogProps {
   onConfirm:            () => void;
   onCancel:             () => void;
   isPlacing:            boolean;
+  locationId:           string;
 }
 
 export function ReorderConfirmDialog({
-  items, note, alcoholRoomLeft = 0, onUpdateQty, onUpdateSize, giantCupsAvailable = 4, onConfirm, onCancel, isPlacing,
+  items, note, alcoholRoomLeft = 0, onUpdateQty, onUpdateSize, giantCupsAvailable = 4, onConfirm, onCancel, isPlacing, locationId,
 }: ReorderConfirmDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
 
   const subtotal = items.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
 
-  const surchargeActive = useJuly4Surcharge();
+  const surchargeActive = useJuly4Surcharge(locationId);
   const hasAlcohol = items.some(i => i.beverage.isAlcoholic);
   const surcharge  = surchargeActive && hasAlcohol ? JULY4_SURCHARGE_AMOUNT : 0;
   const total      = subtotal + surcharge;

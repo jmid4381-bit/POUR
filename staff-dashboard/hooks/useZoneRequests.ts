@@ -21,15 +21,17 @@ export interface MyZoneRequest {
   status:           ZoneRequestStatus;
 }
 
-export function useZoneRequests(staffName: string) {
+export function useZoneRequests(staffName: string, venueId: string | null) {
   const [latest,     setLatest]     = useState<MyZoneRequest | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchLatest = useCallback(async () => {
+    if (!venueId) { setLatest(null); return; }
     const { data, error } = await supabase
       .from("zone_requests")
       .select("id, request_type, requested_zone_id, status")
       .eq("staff_name", staffName)
+      .eq("venue_id", venueId)
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -46,6 +48,7 @@ export function useZoneRequests(staffName: string) {
   useEffect(() => { fetchLatest(); }, [fetchLatest]);
 
   useEffect(() => {
+    if (!venueId) return;
     const channel = supabase
       .channel(`zone-requests-${staffName}`)
       .on(
@@ -59,20 +62,22 @@ export function useZoneRequests(staffName: string) {
         }
       });
     return () => { supabase.removeChannel(channel); };
-  }, [staffName, fetchLatest]);
+  }, [staffName, venueId, fetchLatest]);
 
   const submitRequest = useCallback(async (requestType: ZoneRequestType, requestedZoneId: string): Promise<boolean> => {
+    if (!venueId) return false;
     setSubmitting(true);
     const { error } = await supabase.from("zone_requests").insert({
       staff_name:        staffName,
       request_type:      requestType,
       requested_zone_id: requestedZoneId,
       status:            "pending",
+      venue_id:          venueId,
     });
     setSubmitting(false);
     if (!error) await fetchLatest();
     return !error;
-  }, [staffName, fetchLatest]);
+  }, [staffName, venueId, fetchLatest]);
 
   // Lets the UI dismiss a resolved (approved/denied) request from view once
   // the staff member has seen it, so the banner doesn't linger forever.

@@ -55,18 +55,44 @@ export type PricingResult =
  * status) instead of throwing, so callers can map it straight to a response.
  */
 export async function computeOrderCharge(
-  items:   PricingItemInput[],
-  guestId: string | null,
+  items:      PricingItemInput[],
+  guestId:    string | null,
+  locationId: string,
 ): Promise<PricingResult> {
   if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS) {
     return { ok: false, status: 400, error: "Invalid order payload" };
   }
 
-  // Real prices/flags come from the DB — never from the client.
+  // Venue is derived from the location, never trusted from the client —
+  // same rule as submit_order (guest-ordering/supabase/multi_tenancy_phase3).
+  const { data: locationRow, error: locErr } = await supabase
+    .from("locations")
+    .select("venue_id")
+    .eq("id", locationId)
+    .maybeSingle();
+  if (locErr || !locationRow?.venue_id) {
+    return { ok: false, status: 400, error: "Unknown location" };
+  }
+  const venueId = locationRow.venue_id as string;
+
+  // event_settings has no direct anon read policy (guest-facing reads all
+  // go through this RPC, same pattern as get_guest_age_status etc.) — one
+  // fetch up front, reused by both the surcharge and giant-cup checks below.
+  const { data: eventRows } = await supabase
+    .rpc("get_event_settings_for_location", { p_location_id: locationId });
+  const eventSettings = (Array.isArray(eventRows) ? eventRows[0] : eventRows) as {
+    july4_started_at:        string | null;
+    july4_surcharge_enabled: boolean | null;
+    giant_cups_available:    number | null;
+  } | undefined;
+
+  // Real prices/flags come from the DB — never from the client. Scoped to
+  // this venue so a beverage id from another venue can't be priced/ordered.
   const beverageIds = [...new Set(items.map(i => String(i.beverage.id)))];
   const { data: beverages, error: bevErr } = await supabase
     .from("beverages")
     .select("id, name, price, is_available, is_alcoholic")
+    .eq("venue_id", venueId)
     .in("id", beverageIds);
 
   if (bevErr || !beverages) {
@@ -127,15 +153,10 @@ export async function computeOrderCharge(
   let surchargeAmount = 0;
   let surchargeLabel: string | null = null;
   if (alcoholicQty > 0) {
-    const { data: eventRow } = await supabase
-      .from("event_settings")
-      .select("july4_started_at, july4_surcharge_enabled")
-      .eq("id", 1)
-      .maybeSingle();
     if (
-      eventRow?.july4_surcharge_enabled &&
-      eventRow.july4_started_at &&
-      Date.now() - new Date(eventRow.july4_started_at).getTime() >= JULY4_SURCHARGE_DELAY_MS
+      eventSettings?.july4_surcharge_enabled &&
+      eventSettings.july4_started_at &&
+      Date.now() - new Date(eventSettings.july4_started_at).getTime() >= JULY4_SURCHARGE_DELAY_MS
     ) {
       surchargeAmount = JULY4_SURCHARGE_AMOUNT;
       surchargeLabel = JULY4_SURCHARGE_LABEL;
@@ -147,12 +168,7 @@ export async function computeOrderCharge(
     item.size === "giant" ? sum + Math.min(8, Math.max(1, Number(item.quantity) || 1)) : sum, 0
   );
   if (giantCount > 0) {
-    const { data: cupRow } = await supabase
-      .from("event_settings")
-      .select("giant_cups_available")
-      .eq("id", 1)
-      .maybeSingle();
-    const available = typeof cupRow?.giant_cups_available === "number" ? cupRow.giant_cups_available : 0;
+    const available = typeof eventSettings?.giant_cups_available === "number" ? eventSettings.giant_cups_available : 0;
     if (available < giantCount) {
       return { ok: false, status: 409, error: "Giant cups are no longer available — please order Regular instead." };
     }

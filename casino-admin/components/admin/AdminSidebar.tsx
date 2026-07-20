@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,6 +11,9 @@ import { cn, fmtUSD } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { supabase } from "@/lib/supabase";
 import { ConfirmDialog } from "@/components/ui/Modal";
+import { useStore } from "@/lib/store";
+
+const DEFAULT_VENUE_NAME = "POUR";
 
 const NAV = [
   { href: "/admin/overview",  icon: LayoutDashboard, label: "Overview",       sub: "Executive dashboard"   },
@@ -23,6 +26,17 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const a = useAnalytics();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const { venueId, isPlatformAdmin, venues, chooseVenue } = useStore();
+  const [venueName, setVenueName] = useState(DEFAULT_VENUE_NAME);
+
+  useEffect(() => {
+    if (!venueId) return;
+    supabase.from("venues").select("name, accent_color").eq("id", venueId).maybeSingle().then(({ data }) => {
+      if (!data) return;
+      setVenueName((data.name ?? "").trim() || DEFAULT_VENUE_NAME);
+      if (data.accent_color) document.documentElement.style.setProperty("--venue-accent", data.accent_color);
+    });
+  }, [venueId]);
 
   return (
     <aside className="hidden lg:flex flex-col w-64 flex-shrink-0 bg-sidebar-surface border-r border-edge min-h-screen shadow-[1px_0_0_rgba(255,255,255,0.03)]">
@@ -30,14 +44,28 @@ export function AdminSidebar() {
       {/* Logo */}
       <div className="px-5 py-6 border-b border-edge">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gold-gradient rounded-xl flex items-center justify-center shadow-gold-sm flex-shrink-0">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-gold-sm flex-shrink-0"
+            style={{ background: "var(--venue-accent, #C9A030)" }}
+          >
             <Wine size={18} className="text-void" strokeWidth={2.5} />
           </div>
           <div>
             <p className="font-display font-semibold text-white text-base leading-none">Admin Console</p>
-            <p className="text-[10px] font-mono text-gold-500/70 tracking-[0.18em] uppercase mt-0.5">POUR</p>
+            <p className="text-[10px] font-mono text-gold-500/70 tracking-[0.18em] uppercase mt-0.5">{venueName}</p>
           </div>
         </div>
+        {isPlatformAdmin && venues.length > 0 && (
+          <select
+            value={venueId ?? ""}
+            onChange={e => chooseVenue(e.target.value)}
+            className="mt-3 w-full bg-raised border border-edge rounded-lg px-2.5 py-1.5 text-xs text-ink-300 font-body focus:outline-none focus:border-gold-500/40"
+          >
+            {venues.map(v => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Live operational metrics */}

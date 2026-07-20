@@ -27,7 +27,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { BEVERAGES, LOCATIONS, type Beverage, type Location } from "@/lib/data";
-import { readAdminBeverages, readAdminLocations } from "@/lib/queue";
+import { readAdminBeverages, readAdminLocations, type AdminLocation } from "@/lib/queue";
 import { logMessage } from "@/lib/logger";
 
 // How often the fallback poll re-fetches the menu while a guest is actively
@@ -43,8 +43,8 @@ const MENU_POLL_MS = 8_000;
 // A beverage added directly in Supabase/admin without a matching static
 // entry still appears (using its live fields, with empty rich-content
 // fields) instead of silently vanishing from the menu.
-async function mergedBeverages(): Promise<Beverage[]> {
-  const liveData = await readAdminBeverages();
+async function mergedBeverages(venueId: string | null): Promise<Beverage[]> {
+  const liveData = await readAdminBeverages(venueId);
   if (!liveData || liveData.length === 0) return BEVERAGES;
 
   const staticById = new Map(BEVERAGES.map(b => [b.id, b]));
@@ -90,17 +90,24 @@ async function mergedBeverages(): Promise<Beverage[]> {
   });
 }
 
-async function mergedLocations(): Promise<Location[]> {
+// Returns both the merged Location[] (what the rest of the app consumes)
+// and the raw live rows (which still carry venue_id) — callers use the raw
+// rows to resolve which venue the current locationId belongs to, without a
+// second Supabase round trip.
+async function mergedLocations(): Promise<{ locations: Location[]; raw: AdminLocation[] | null }> {
   const liveLocs = await readAdminLocations();
-  if (!liveLocs || liveLocs.length === 0) return LOCATIONS;
+  if (!liveLocs || liveLocs.length === 0) return { locations: LOCATIONS, raw: null };
 
-  return liveLocs.map(l => ({
-    id:       l.id,
-    name:     l.name,
-    section:  l.section,
-    floor:    l.floor,
-    isActive: l.isActive,
-  }));
+  return {
+    locations: liveLocs.map(l => ({
+      id:       l.id,
+      name:     l.name,
+      section:  l.section,
+      floor:    l.floor,
+      isActive: l.isActive,
+    })),
+    raw: liveLocs,
+  };
 }
 
 // Module-level cache — persists across remounts within the same tab (e.g.
@@ -108,19 +115,24 @@ async function mergedLocations(): Promise<Location[]> {
 // Supabase round-trip every time. Window focus always forces a fresh fetch
 // regardless of TTL, so an admin price/availability change still shows up
 // promptly when a guest returns to the tab.
-let cachedBeverages: Beverage[] | null = null;
-let cachedLocations: Location[] | null = null;
+// Keyed by venueId — a guest only ever visits one location/venue per
+// session in practice, but keying by venue (rather than one shared slot)
+// means a stale cross-venue read is structurally impossible even if that
+// ever changes.
+let cachedBeverages:  Beverage[] | null = null;
+let cachedLocations:  Location[] | null = null;
+let cachedLocationId: string | undefined;
 let cachedAt = 0;
 const CACHE_TTL_MS = 60_000;
 
-export function useMenu() {
+export function useMenu(locationId?: string) {
   const [beverages,  setBeverages]  = useState<Beverage[]>(cachedBeverages ?? BEVERAGES);
   const [locations,  setLocations]  = useState<Location[]>(cachedLocations ?? LOCATIONS);
   const [loading,    setLoading]    = useState(!cachedBeverages);
   const [lastSynced, setLastSynced] = useState<Date | null>(cachedAt ? new Date(cachedAt) : null);
 
   const refresh = useCallback(async (force = false) => {
-    const fresh = Date.now() - cachedAt < CACHE_TTL_MS;
+    const fresh = Date.now() - cachedAt < CACHE_TTL_MS && cachedLocationId === locationId;
     if (!force && fresh && cachedBeverages && cachedLocations) {
       setBeverages(cachedBeverages);
       setLocations(cachedLocations);
@@ -130,12 +142,14 @@ export function useMenu() {
     }
 
     try {
-      const [bevs, locs] = await Promise.all([
-        mergedBeverages(),
-        mergedLocations(),
-      ]);
-      cachedBeverages = bevs;
-      cachedLocations = locs;
+      const { locations: locs, raw } = await mergedLocations();
+      const venueId = locationId
+        ? raw?.find(l => l.id === locationId)?.venueId ?? null
+        : null;
+      const bevs = await mergedBeverages(venueId);
+      cachedBeverages  = bevs;
+      cachedLocations  = locs;
+      cachedLocationId = locationId;
       cachedAt = Date.now();
       setBeverages(bevs);
       setLocations(locs);
@@ -145,7 +159,7 @@ export function useMenu() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [locationId]);
 
   // Initial fetch — serves from cache if still fresh
   useEffect(() => { refresh(); }, [refresh]);

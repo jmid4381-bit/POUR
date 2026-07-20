@@ -22,8 +22,8 @@ export type July4MilestoneDisplay = ToastDisplay | CountdownDisplay;
 // queue (most-recent only) and show the instant it goes false again; the
 // live countdown simply isn't rendered while suppressed and resumes
 // wherever real time actually is once it's lifted (no replay).
-export function useJuly4Milestones(suppressed: boolean): July4MilestoneDisplay | null {
-  const { startedAt, enabled } = useJuly4EventSettings();
+export function useJuly4Milestones(suppressed: boolean, locationId?: string): July4MilestoneDisplay | null {
+  const { startedAt, enabled } = useJuly4EventSettings(locationId);
   const firedRef = useRef<Set<string>>(new Set());
   const [pending, setPending] = useState<ToastDisplay | null>(null);
   const [visible, setVisible] = useState<ToastDisplay | null>(null);

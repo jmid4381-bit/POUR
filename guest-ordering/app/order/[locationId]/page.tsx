@@ -55,7 +55,7 @@ function formatCooldown(ms: number): string {
 export default function GuestOrderPage({ params }: Props) {
   const { locationId } = React.use(params);
 
-  const { beverages, locations, loading: menuLoading } = useMenu();
+  const { beverages, locations, loading: menuLoading } = useMenu(locationId);
   const location = locations.find(l => l.id === locationId);
 
   // Persistent guest identifier — a UUID cookie that survives refresh and
@@ -801,14 +801,18 @@ export default function GuestOrderPage({ params }: Props) {
   // those are two separate conditional returns below, and a hook called
   // inside a component that gets unmounted/remounted on that switch would
   // otherwise reset and replay milestones that already happened.
-  const july4Milestone = useJuly4Milestones(anyModalOpen);
-  const { giantCupsAvailable, venueName } = useJuly4EventSettings();
+  const july4Milestone = useJuly4Milestones(anyModalOpen, locationId);
+  const { giantCupsAvailable, venueName, accentColor } = useJuly4EventSettings(locationId);
 
-  // Multi-tenant: reflect the venue name in the browser tab too, once it's
-  // loaded from event_settings (falls back to the static default until then).
+  // Multi-tenant: reflect the venue name in the browser tab, and its accent
+  // color as a CSS variable consumed by the header/logo, once loaded (falls
+  // back to the static default until then).
   useEffect(() => {
     document.title = `Order Beverages — ${venueName}`;
   }, [venueName]);
+  useEffect(() => {
+    document.documentElement.style.setProperty("--venue-accent", accentColor);
+  }, [accentColor]);
 
   // Lock body scroll when any overlay is open
   useEffect(() => {
@@ -875,6 +879,7 @@ export default function GuestOrderPage({ params }: Props) {
             onConfirm={confirmReorder}
             onCancel={cancelReorder}
             isPlacing={placingOrder}
+            locationId={locationId}
           />
         )}
         <July4MilestoneOverlay display={july4Milestone} />
@@ -1111,7 +1116,7 @@ export default function GuestOrderPage({ params }: Props) {
               (The hero above already shows the specific location; this line
               identifies which venue/property this deployment belongs to.) */}
           <div className="flex items-start justify-center gap-1.5 text-mist-400 animate-fade-up max-w-[92%] mx-auto" style={{ animationDelay:"0.05s" }}>
-            <Building2 size={12} className="text-felt-500 flex-shrink-0 mt-0.5" />
+            <Building2 size={12} className="flex-shrink-0 mt-0.5" style={{ color: "var(--venue-accent, #4ade80)" }} />
             <span className="text-sm font-body text-center break-words">{venueName}</span>
           </div>
           {isUnderage && (
@@ -1290,6 +1295,7 @@ export default function GuestOrderPage({ params }: Props) {
           onConfirm={confirmReorder}
           onCancel={cancelReorder}
           isPlacing={placingOrder}
+          locationId={locationId}
         />
       )}
 
@@ -1303,6 +1309,7 @@ export default function GuestOrderPage({ params }: Props) {
           onClose={() => { setShowReview(false); autoReviewDismissed.current = true; }}
           onRemoveItem={removeFromCart}
           onUpdateQty={updateCartQty}
+          locationId={locationId}
         />
       )}
 

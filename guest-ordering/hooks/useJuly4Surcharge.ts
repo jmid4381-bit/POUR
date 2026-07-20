@@ -9,8 +9,8 @@ export const JULY4_SURCHARGE_LABEL  = "4th of July Post Hour Surcharge";
 // Mirrors the server-side check in app/api/orders/route.ts, so the cart can
 // show/hide the surcharge line live as the guest edits their order — the
 // API route remains the real authority on what actually gets charged.
-export function useJuly4Surcharge() {
-  const { startedAt, enabled } = useJuly4EventSettings();
+export function useJuly4Surcharge(locationId?: string) {
+  const { startedAt, enabled } = useJuly4EventSettings(locationId);
   const [isActive, setIsActive] = useState(false);
 
   // Recompute every second so the surcharge appears the instant the 1-hour

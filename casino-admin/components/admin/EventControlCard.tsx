@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Sparkles, Play, Square, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/store";
 
 const SURCHARGE_DELAY_MS = 60 * 60_000;
 const POLL_MS            = 3_000;
@@ -14,23 +15,25 @@ interface EventState {
 }
 
 export function EventControlCard() {
+  const { venueId } = useStore();
   const [state,   setState]   = useState<EventState>({ startedAt: null, enabled: true });
   const [now,     setNow]     = useState(Date.now());
   const [busy,    setBusy]    = useState(false);
   const [loaded,  setLoaded]  = useState(false);
 
   const refresh = useCallback(async () => {
+    if (!venueId) return;
     const { data } = await supabase
       .from("event_settings")
       .select("july4_started_at, july4_surcharge_enabled")
-      .eq("id", 1)
+      .eq("venue_id", venueId)
       .maybeSingle();
     setState({
       startedAt: data?.july4_started_at ?? null,
       enabled:   data?.july4_surcharge_enabled ?? true,
     });
     setLoaded(true);
-  }, []);
+  }, [venueId]);
 
   useEffect(() => {
     refresh();
@@ -50,32 +53,35 @@ export function EventControlCard() {
   const remainingMin = Math.ceil(remainingMs / 60_000);
 
   const handleStart = async () => {
+    if (!venueId) return;
     setBusy(true);
     const nowIso = new Date().toISOString();
     await supabase
       .from("event_settings")
       .update({ july4_started_at: nowIso, july4_surcharge_enabled: true })
-      .eq("id", 1);
+      .eq("venue_id", venueId);
     await refresh();
     setBusy(false);
   };
 
   const handleStop = async () => {
+    if (!venueId) return;
     setBusy(true);
     await supabase
       .from("event_settings")
       .update({ july4_surcharge_enabled: false })
-      .eq("id", 1);
+      .eq("venue_id", venueId);
     await refresh();
     setBusy(false);
   };
 
   const handleReset = async () => {
+    if (!venueId) return;
     setBusy(true);
     await supabase
       .from("event_settings")
       .update({ july4_started_at: null, july4_surcharge_enabled: true })
-      .eq("id", 1);
+      .eq("venue_id", venueId);
     await refresh();
     setBusy(false);
   };

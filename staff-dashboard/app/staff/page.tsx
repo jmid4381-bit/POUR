@@ -31,6 +31,7 @@ import { useOnlineStatus }      from "@/hooks/useOnlineStatus";
 import { useGuestCooldowns }    from "@/hooks/useGuestCooldowns";
 import { useStaffZones }        from "@/hooks/useStaffZones";
 import { useZoneRequests }      from "@/hooks/useZoneRequests";
+import { useSessionVenue }      from "@/hooks/useSessionVenue";
 import { KanbanColumn }         from "@/components/staff/KanbanColumn";
 import { StatCard }             from "@/components/staff/StatCard";
 import { StaffLogin }           from "@/components/staff/StaffLogin";
@@ -93,8 +94,22 @@ function fmtAvgWait(seconds: number): string {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function StaffDashboard() {
-  // Fix 6 — Staff identity gate
+  // Which venue this signed-in account operates in — regular staff/admin
+  // accounts are pinned via app_metadata.venue_id; platform_admin (Justin)
+  // picks one via the switcher rendered below when nothing's selected yet.
+  const {
+    venueId, isPlatformAdmin, displayName,
+    venues, selectedVenueId, chooseVenue, resolving: venueResolving,
+  } = useSessionVenue();
+
+  // Fix 6 — Staff identity gate. A session with app_metadata.display_name
+  // set (see multi_tenancy_phase1a onboarding runbook) skips the picker
+  // entirely — the picker only exists as a fallback for accounts that
+  // don't have one set.
   const [staffName,  setStaffName]  = useState<string | null>(null);
+  useEffect(() => {
+    if (displayName) setStaffName(displayName);
+  }, [displayName]);
   const [mobileCol,  setMobileCol]  = useState<ColKey>("pending");
   // Stats grid is collapsed by default on mobile so the order board gets the
   // full screen; staff tap to expand when they want the numbers. Desktop /
@@ -103,57 +118,54 @@ export default function StaffDashboard() {
   const [notifOpen,  setNotifOpen]  = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
 
-  // Giant cup tracker — polls event_settings every 10s. Multi-tenant venue
-  // name rides along on the same row/poll, so no extra Supabase round trip.
+  // Giant cup tracker — polls this venue's event_settings row every 10s.
+  // Venue name + accent color ride along via the venues FK embed, so no
+  // extra Supabase round trip.
   const GIANT_CUP_MAX = 4;
   const DEFAULT_VENUE_NAME = "POUR";
   const [giantCupsAvailable, setGiantCupsAvailable] = useState(GIANT_CUP_MAX);
   const [giantReturning,     setGiantReturning]      = useState(false);
   const [venueName,          setVenueName]           = useState(DEFAULT_VENUE_NAME);
+  const [venueAccent,        setVenueAccent]         = useState<string | null>(null);
   useEffect(() => {
+    if (!venueId) return;
     const fetchGiants = async () => {
       const { data, error } = await supabase
         .from("event_settings")
-        .select("giant_cups_available, venue_name")
-        .eq("id", 1)
+        .select("giant_cups_available, venues ( name, accent_color )")
+        .eq("venue_id", venueId)
         .maybeSingle();
 
-      // PostgREST fails the whole query if venue_name doesn't exist yet on
-      // this deployment (pending migration) — fall back so the giant-cup
-      // counter (which already depends on this same poll) never breaks.
-      if (error) {
-        const { data: fallback } = await supabase
-          .from("event_settings")
-          .select("giant_cups_available")
-          .eq("id", 1)
-          .maybeSingle();
-        if (fallback && typeof fallback.giant_cups_available === "number") {
-          setGiantCupsAvailable(fallback.giant_cups_available);
-        }
-        setVenueName(DEFAULT_VENUE_NAME);
-        return;
-      }
-
-      if (data && typeof data.giant_cups_available === "number") {
+      if (error || !data) return;
+      if (typeof data.giant_cups_available === "number") {
         setGiantCupsAvailable(data.giant_cups_available);
       }
-      if (data) setVenueName((data.venue_name ?? "").trim() || DEFAULT_VENUE_NAME);
+      const venue = data.venues as unknown as { name: string; accent_color: string } | null;
+      if (venue) {
+        setVenueName((venue.name ?? "").trim() || DEFAULT_VENUE_NAME);
+        setVenueAccent(venue.accent_color ?? null);
+      }
     };
     fetchGiants();
     const id = setInterval(fetchGiants, 10_000);
     return () => clearInterval(id);
-  }, []);
+  }, [venueId]);
 
-  // Reflect the venue name in the browser tab too.
+  // Reflect the venue name in the browser tab, and its accent color as a
+  // CSS variable consumed by the header/logo (see StaffLogin.tsx).
   useEffect(() => {
     document.title = `Staff Operations — ${venueName}`;
   }, [venueName]);
+  useEffect(() => {
+    if (venueAccent) document.documentElement.style.setProperty("--venue-accent", venueAccent);
+  }, [venueAccent]);
   const markGiantReturned = useCallback(async () => {
+    if (!venueId) return;
     setGiantReturning(true);
-    const { error } = await supabase.rpc("increment_giant_cup");
+    const { error } = await supabase.rpc("increment_giant_cup", { p_venue_id: venueId });
     if (!error) setGiantCupsAvailable(prev => Math.min(GIANT_CUP_MAX, prev + 1));
     setGiantReturning(false);
-  }, []);
+  }, [venueId]);
   const [zonePickerOpen, setZonePickerOpen] = useState(false);
   const [zoneToast, setZoneToast] = useState<string | null>(null);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -201,8 +213,8 @@ export default function StaffDashboard() {
 
   // Live (Supabase-backed) zone assignment — replaces the old static config
   // so an admin-approved switch takes effect immediately, no redeploy.
-  const zones = useStaffZones();
-  const zoneRequests = useZoneRequests(staffName ?? "Staff");
+  const zones = useStaffZones(venueId);
+  const zoneRequests = useZoneRequests(staffName ?? "Staff", venueId);
 
   // Hooks
   const {
@@ -214,12 +226,12 @@ export default function StaffDashboard() {
     dismissAlert, markNotificationsRead,
     registerSyncCallback,
     refreshOrders,
-  } = useStaffOrders(staffName ?? "Staff", zones.isVisible);
+  } = useStaffOrders(staffName ?? "Staff", zones.isVisible, venueId);
 
-  // All active locations, for the zone picker — fetched once, doesn't need
-  // to be realtime itself (locations rarely change mid-event).
+  // All active locations, for the zone picker — fetched once per venue,
+  // doesn't need to be realtime itself (locations rarely change mid-event).
   const [allLocations, setAllLocations] = useState<StaffLocation[]>([]);
-  useEffect(() => { fetchActiveLocations().then(setAllLocations); }, []);
+  useEffect(() => { fetchActiveLocations(venueId).then(setAllLocations); }, [venueId]);
 
   // Live order-pressure count per zone, across ALL locations (not just this
   // staff member's), so the picker can show where help is actually needed.
@@ -354,6 +366,32 @@ export default function StaffDashboard() {
 
   // ─────────────────────────────────────────────────────────────────────────
 
+  // platform_admin has no fixed venue — must pick one before anything else
+  // can load (every query below is venue-scoped and no-ops without it).
+  if (isPlatformAdmin && venueResolving) {
+    return (
+      <div className="fixed inset-0 z-50 bg-void flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-surface border border-border rounded-2xl p-5 space-y-4">
+          <p className="text-white font-body text-lg text-center">Select a venue</p>
+          <div className="space-y-2">
+            {venues.map(v => (
+              <button
+                key={v.id}
+                onClick={() => chooseVenue(v.id)}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-raised text-slate-200 hover:border-rim hover:text-white text-sm font-body font-medium transition-colors"
+              >
+                {v.name}
+              </button>
+            ))}
+            {venues.length === 0 && (
+              <p className="text-slate-500 text-sm font-body text-center">No venues found.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Fix 6 — block the dashboard until staff identifies themselves
   if (!staffName) {
     return <StaffLogin onLogin={setStaffName} />;
@@ -448,7 +486,10 @@ export default function StaffDashboard() {
               Casino" needs ~180-245px depending on size, but only ~146px is
               available next to the mobile icon row at 375px. */}
           <div className="min-w-0">
-            <p className="font-display font-bold text-xl sm:text-2xl leading-tight tracking-wide bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+            <p
+              className="font-display font-bold text-xl sm:text-2xl leading-tight tracking-wide [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
+              style={{ color: "var(--venue-accent, #eab308)" }}
+            >
               {venueName}
             </p>
             {/* Greeting + staff name truncates first; "· POUR" has its own

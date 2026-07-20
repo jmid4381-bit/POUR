@@ -3,43 +3,53 @@
 /**
  * VenueSettingsCard — multi-tenant branding control.
  *
- * Lets an admin set the venue name shown to guests (ordering page) and staff
- * (dashboard header) for this deployment, without any code change or redeploy.
- * Backed by `event_settings.venue_name` — the same row/table already polled
- * elsewhere in the app, so this adds no new infrastructure.
+ * Lets an admin set the venue name and accent color shown to guests
+ * (ordering page) and staff (dashboard header) for this venue, without any
+ * code change or redeploy. Backed by the `venues` table — one row per
+ * venue, scoped to whichever venue this admin (or platform_admin via the
+ * sidebar switcher) is currently viewing.
  */
 
 import { useState, useEffect, useCallback } from "react";
 import { Building2, Save, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/store";
 
 const MAX_VENUE_NAME_LEN = 50;
 export const DEFAULT_VENUE_NAME = "POUR";
+const DEFAULT_ACCENT = "#C9A030";
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const POLL_MS = 3_000;
 
 export function VenueSettingsCard() {
-  const [savedName,  setSavedName]  = useState<string>(DEFAULT_VENUE_NAME);
-  const [draft,      setDraft]      = useState<string>("");
+  const { venueId } = useStore();
+  const [savedName,   setSavedName]   = useState<string>(DEFAULT_VENUE_NAME);
+  const [savedAccent, setSavedAccent] = useState<string>(DEFAULT_ACCENT);
+  const [draftName,   setDraftName]   = useState<string>("");
+  const [draftAccent, setDraftAccent] = useState<string>(DEFAULT_ACCENT);
   const [loaded,     setLoaded]     = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (!venueId) return;
     const { data } = await supabase
-      .from("event_settings")
-      .select("venue_name")
-      .eq("id", 1)
+      .from("venues")
+      .select("name, accent_color")
+      .eq("id", venueId)
       .maybeSingle();
-    const name = (data?.venue_name ?? "").trim() || DEFAULT_VENUE_NAME;
+    const name   = (data?.name ?? "").trim() || DEFAULT_VENUE_NAME;
+    const accent = data?.accent_color && HEX_COLOR_RE.test(data.accent_color) ? data.accent_color : DEFAULT_ACCENT;
     setSavedName(name);
-    // Only seed the editable field on first load — later polls shouldn't
+    setSavedAccent(accent);
+    // Only seed the editable fields on first load — later polls shouldn't
     // clobber whatever the admin is actively typing.
     setLoaded(prev => {
-      if (!prev) setDraft(name);
+      if (!prev) { setDraftName(name); setDraftAccent(accent); }
       return true;
     });
-  }, []);
+  }, [venueId]);
 
   useEffect(() => {
     refresh();
@@ -47,24 +57,27 @@ export function VenueSettingsCard() {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const trimmedDraft = draft.trim();
-  const isDirty = loaded && trimmedDraft !== savedName;
+  const trimmedDraftName = draftName.trim();
+  const validAccent = HEX_COLOR_RE.test(draftAccent) ? draftAccent : null;
+  const isDirty = loaded && (trimmedDraftName !== savedName || (validAccent ?? savedAccent) !== savedAccent);
 
   const handleSave = async () => {
-    if (saving) return;
+    if (saving || !venueId || !validAccent) return;
     setSaving(true);
-    const clean = trimmedDraft.slice(0, MAX_VENUE_NAME_LEN);
+    const clean = trimmedDraftName.slice(0, MAX_VENUE_NAME_LEN) || DEFAULT_VENUE_NAME;
     await supabase
-      .from("event_settings")
-      .update({ venue_name: clean || null }) // empty → null → guest/staff apps fall back to "POUR"
-      .eq("id", 1);
+      .from("venues")
+      .update({ name: clean, accent_color: validAccent })
+      .eq("id", venueId);
+    document.documentElement.style.setProperty("--venue-accent", validAccent);
     await refresh();
     setSaving(false);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2500);
   };
 
-  const previewName = trimmedDraft || DEFAULT_VENUE_NAME;
+  const previewName = trimmedDraftName || DEFAULT_VENUE_NAME;
+  const previewAccent = validAccent ?? savedAccent;
 
   return (
     <div className="bg-surface border border-edge rounded-2xl overflow-hidden shadow-card">
@@ -83,7 +96,7 @@ export function VenueSettingsCard() {
       <div className="p-5 space-y-4">
         <p className="text-ink-400 text-xs font-body leading-relaxed">
           Shown to guests on the ordering page and to staff on their dashboard. Changes apply within
-          seconds across every device — no redeploy needed. Leave blank to use the default, &quot;{DEFAULT_VENUE_NAME}&quot;.
+          seconds across every device — no redeploy needed.
         </p>
 
         <div>
@@ -92,15 +105,41 @@ export function VenueSettingsCard() {
           </label>
           <input
             id="venue-name-input"
-            value={draft}
-            onChange={e => setDraft(e.target.value.slice(0, MAX_VENUE_NAME_LEN))}
+            value={draftName}
+            onChange={e => setDraftName(e.target.value.slice(0, MAX_VENUE_NAME_LEN))}
             placeholder="e.g. The Grand Casino"
             maxLength={MAX_VENUE_NAME_LEN}
             className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-ink-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
           />
           <p className="text-[10px] font-mono text-ink-600 mt-1 text-right">
-            {draft.length}/{MAX_VENUE_NAME_LEN}
+            {draftName.length}/{MAX_VENUE_NAME_LEN}
           </p>
+        </div>
+
+        <div>
+          <label htmlFor="venue-accent-input" className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1.5 block">
+            Accent Color
+          </label>
+          <div className="flex items-center gap-2.5">
+            <input
+              type="color"
+              value={validAccent ?? savedAccent}
+              onChange={e => setDraftAccent(e.target.value)}
+              className="w-10 h-10 rounded-lg border border-edge bg-raised cursor-pointer"
+              aria-label="Pick accent color"
+            />
+            <input
+              id="venue-accent-input"
+              value={draftAccent}
+              onChange={e => setDraftAccent(e.target.value)}
+              placeholder="#C9A030"
+              maxLength={7}
+              className="flex-1 bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-ink-600 font-mono focus:outline-none focus:border-gold-500/40 transition-colors"
+            />
+          </div>
+          {!validAccent && (
+            <p className="text-[10px] font-mono text-red-400 mt-1">Enter a valid hex color, e.g. #C9A030</p>
+          )}
         </div>
 
         {/* Live preview — mirrors the exact markup used on the guest header's
@@ -110,9 +149,9 @@ export function VenueSettingsCard() {
             Guest Page Preview
           </p>
           <div className="bg-base border border-edge rounded-xl px-4 py-4 text-center">
-            <p className="font-display text-lg font-semibold text-white leading-tight">Swim Up Pool Side</p>
+            <p className="font-display text-lg font-semibold" style={{ color: previewAccent }}>Swim Up Pool Side</p>
             <div className="flex items-center justify-center gap-1.5 mt-1">
-              <Building2 size={11} className="text-felt-500" />
+              <Building2 size={11} style={{ color: previewAccent }} />
               <span className="text-xs font-body text-ink-400">{previewName}</span>
             </div>
           </div>
@@ -120,10 +159,10 @@ export function VenueSettingsCard() {
 
         <button
           onClick={handleSave}
-          disabled={!isDirty || saving}
+          disabled={!isDirty || saving || !validAccent}
           className={cn(
             "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-body font-bold text-sm transition-all disabled:opacity-50",
-            isDirty && !saving
+            isDirty && !saving && validAccent
               ? "bg-gold-gradient text-void shadow-gold-sm hover:brightness-110"
               : "bg-raised border border-edge text-ink-600 cursor-not-allowed",
           )}
@@ -132,7 +171,7 @@ export function VenueSettingsCard() {
             ? <><CheckCircle2 size={14} /> Saved</>
             : saving
             ? "Saving…"
-            : <><Save size={14} /> Save Venue Name</>}
+            : <><Save size={14} /> Save Venue Branding</>}
         </button>
       </div>
     </div>

@@ -11,58 +11,52 @@ export const GIANT_CUP_MAX = 4;
 // Multi-tenant fallback — shown whenever the venue hasn't set a name (or
 // cleared it back to empty) for this deployment.
 export const DEFAULT_VENUE_NAME = "POUR";
+const DEFAULT_ACCENT = "#C9A030";
 
 export interface July4EventSettings {
   startedAt:           string | null;
   enabled:             boolean;
   giantCupsAvailable:  number;
   venueName:           string;
+  accentColor:         string;
 }
 
-// Shared read of the event_settings singleton row — the surcharge check,
-// the milestone countdown, AND the venue branding all derive from this same
+// Shared read of this venue's event_settings row — the surcharge check, the
+// milestone countdown, AND the venue branding all derive from this same
 // poll so there's only one Supabase round trip per guest, not one per
-// consumer.
-export function useJuly4EventSettings(): July4EventSettings {
+// consumer. Keyed by locationId (the only venue identity anon has — see
+// get_event_settings_for_location, guest-ordering/supabase/multi_tenancy_
+// phase3_submit_order.sql) rather than a hardcoded singleton row.
+export function useJuly4EventSettings(locationId?: string): July4EventSettings {
   const [startedAt,          setStartedAt]          = useState<string | null>(null);
   const [enabled,            setEnabled]             = useState(false);
   const [giantCupsAvailable, setGiantCupsAvailable] = useState(GIANT_CUP_MAX);
   const [venueName,          setVenueName]          = useState(DEFAULT_VENUE_NAME);
+  const [accentColor,        setAccentColor]        = useState(DEFAULT_ACCENT);
 
   const refresh = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("event_settings")
-      .select("july4_started_at, july4_surcharge_enabled, giant_cups_available, venue_name")
-      .eq("id", 1)
-      .maybeSingle();
+    if (!locationId) return;
+    const { data: rows, error } = await supabase
+      .rpc("get_event_settings_for_location", { p_location_id: locationId });
 
-    // PostgREST fails the WHOLE query if any requested column doesn't exist
-    // yet (e.g. venue_name before its migration has been run on this
-    // deployment). Fall back to the fields that do exist so a pending
-    // migration can never take down the surcharge/giant-cup logic that
-    // already depends on this same poll.
-    if (error) {
-      const { data: fallback } = await supabase
-        .from("event_settings")
-        .select("july4_started_at, july4_surcharge_enabled, giant_cups_available")
-        .eq("id", 1)
-        .maybeSingle();
-      setStartedAt(fallback?.july4_started_at ?? null);
-      setEnabled(Boolean(fallback?.july4_surcharge_enabled));
-      if (typeof fallback?.giant_cups_available === "number") {
-        setGiantCupsAvailable(fallback.giant_cups_available);
-      }
-      setVenueName(DEFAULT_VENUE_NAME);
-      return;
-    }
+    if (error || !rows) return;
+    const data = (Array.isArray(rows) ? rows[0] : rows) as {
+      july4_started_at:        string | null;
+      july4_surcharge_enabled: boolean | null;
+      giant_cups_available:    number | null;
+      venue_name:              string | null;
+      accent_color:            string | null;
+    } | undefined;
+    if (!data) return;
 
-    setStartedAt(data?.july4_started_at ?? null);
-    setEnabled(Boolean(data?.july4_surcharge_enabled));
-    if (typeof data?.giant_cups_available === "number") {
+    setStartedAt(data.july4_started_at ?? null);
+    setEnabled(Boolean(data.july4_surcharge_enabled));
+    if (typeof data.giant_cups_available === "number") {
       setGiantCupsAvailable(data.giant_cups_available);
     }
-    setVenueName((data?.venue_name ?? "").trim() || DEFAULT_VENUE_NAME);
-  }, []);
+    setVenueName((data.venue_name ?? "").trim() || DEFAULT_VENUE_NAME);
+    setAccentColor(data.accent_color || DEFAULT_ACCENT);
+  }, [locationId]);
 
   useEffect(() => {
     refresh();
@@ -70,5 +64,5 @@ export function useJuly4EventSettings(): July4EventSettings {
     return () => clearInterval(id);
   }, [refresh]);
 
-  return { startedAt, enabled, giantCupsAvailable, venueName };
+  return { startedAt, enabled, giantCupsAvailable, venueName, accentColor };
 }

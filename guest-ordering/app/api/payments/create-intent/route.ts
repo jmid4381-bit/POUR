@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid order payload" }, { status: 400 });
   }
 
-  const pricing = await computeOrderCharge(order.items, order.guestId ?? null);
+  const pricing = await computeOrderCharge(order.items, order.guestId ?? null, order.locationId);
   if (!pricing.ok) {
     return NextResponse.json(
       { error: pricing.error, ...(pricing.cooldownMs != null ? { cooldownMs: pricing.cooldownMs } : {}) },

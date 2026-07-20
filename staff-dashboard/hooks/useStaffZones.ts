@@ -17,29 +17,34 @@ interface StaffZoneRow {
   location_id: string;
 }
 
-export function useStaffZones() {
+export function useStaffZones(venueId: string | null) {
   const [rows,    setRows]    = useState<StaffZoneRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRows = useCallback(async () => {
-    const { data, error } = await supabase.from("staff_zones").select("staff_name, location_id");
+    if (!venueId) { setRows([]); setLoading(false); return; }
+    const { data, error } = await supabase
+      .from("staff_zones")
+      .select("staff_name, location_id")
+      .eq("venue_id", venueId);
     if (!error) setRows(data ?? []);
     setLoading(false);
-  }, []);
+  }, [venueId]);
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
   useEffect(() => {
+    if (!venueId) return;
     const channel = supabase
-      .channel("staff-zones-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones" }, () => fetchRows())
+      .channel(`staff-zones-changes-${venueId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones", filter: `venue_id=eq.${venueId}` }, () => fetchRows())
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           logMessage("Realtime subscription failed: staff-zones-changes", { status });
         }
       });
     return () => { supabase.removeChannel(channel); };
-  }, [fetchRows]);
+  }, [fetchRows, venueId]);
 
   const byStaff = useMemo(() => {
     const map = new Map<string, Set<string>>();

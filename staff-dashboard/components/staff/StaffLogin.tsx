@@ -32,7 +32,10 @@ export function StaffLogin({ onLogin }: StaffLoginProps) {
       <div className="relative z-10 w-full max-w-sm animate-fade-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-gold-grad rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_4px_24px_rgba(201,160,48,0.3)]">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_4px_24px_rgba(201,160,48,0.3)]"
+            style={{ background: "var(--venue-accent, #C9A030)" }}
+          >
             <Zap size={24} className="text-void" strokeWidth={2.5} />
           </div>
           <h1 className="font-display font-bold text-2xl text-white mb-1">Staff Operations</h1>

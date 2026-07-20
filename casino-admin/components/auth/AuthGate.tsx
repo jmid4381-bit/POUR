@@ -67,7 +67,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <ResetPasswordScreen onDone={() => setRecovering(false)} />;
   }
 
-  if (session.user.app_metadata.role !== "admin") {
+  const role = session.user.app_metadata.role;
+  if (role !== "admin" && role !== "platform_admin") {
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-white font-body text-lg">This account doesn&apos;t have admin access.</p>

@@ -36,7 +36,7 @@ export interface OrderStats {
 // signature, but now backed by the live staff_zones table via
 // useStaffZones() — an admin-approved zone switch takes effect on the next
 // realtime tick, no redeploy.
-export function useStaffOrders(staffName = "Staff", isVisible: (locationId: string | undefined, staffName: string) => boolean) {
+export function useStaffOrders(staffName = "Staff", isVisible: (locationId: string | undefined, staffName: string) => boolean, venueId: string | null) {
   const [rawOrders,     setOrders]       = useState<StaffOrder[]>([]);
 
   // Only orders from this staff member's assigned locations — plus any
@@ -68,6 +68,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
   // staff never need to see week-old delivered orders, but a stuck active
   // order should never silently disappear off the board.
   const fetchOrders = useCallback(async () => {
+    if (!venueId) { setOrders([]); setLoading(false); return; }
     setLoading(true);
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
@@ -78,6 +79,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
         location_id, guest_id, guest_name, location_name,
         order_items ( beverage_name, quantity, note )
       `)
+      .eq("venue_id", venueId)
       .or(`placed_at.gte.${since},status.in.(pending,accepted,preparing,ready)`)
       .order("placed_at", { ascending: true });
 
@@ -108,17 +110,21 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       onOrdersChange.current?.();
     }
     setLoading(false);
-  }, []);
+  }, [venueId]);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
   // ── Realtime — refetch when any order or item changes ────────────────────
+  // order_items has no venue_id column (see plan), so its subscription
+  // stays unfiltered — it just triggers the same fetchOrders(), which is
+  // already venue-scoped above.
   useEffect(() => {
+    if (!venueId) return;
     const channel = supabase
-      .channel("staff-dashboard-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" },      () => fetchOrders())
+      .channel(`staff-dashboard-orders-${venueId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venueId}` }, () => fetchOrders())
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => fetchOrders())
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
@@ -127,7 +133,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       });
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchOrders]);
+  }, [fetchOrders, venueId]);
 
   // ── Accept ────────────────────────────────────────────────────────────────
   const acceptOrder = useCallback(async (id: string) => {
@@ -144,7 +150,8 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     const { error } = await supabase
       .from("orders")
       .update({ status: "accepted", accepted_at: acceptedAt, staff_name: staffName.slice(0, 80) })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("venue_id", venueId ?? "");
     if (error) {
       console.error("Failed to accept order:", error.message);
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
@@ -152,7 +159,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     } else {
       logAudit("accept_order", "orders", id, { staffName });
     }
-  }, [staffName]);
+  }, [staffName, venueId]);
 
   // ── Mark preparing ────────────────────────────────────────────────────────
   const markPreparing = useCallback(async (id: string) => {
@@ -168,7 +175,8 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     const { error } = await supabase
       .from("orders")
       .update({ status: "preparing" })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("venue_id", venueId ?? "");
     if (error) {
       console.error("Failed to mark order preparing:", error.message);
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
@@ -176,7 +184,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     } else {
       logAudit("mark_preparing", "orders", id);
     }
-  }, []);
+  }, [venueId]);
 
   // ── Mark ready ────────────────────────────────────────────────────────────
   const markReady = useCallback(async (id: string) => {
@@ -193,7 +201,8 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     const { error } = await supabase
       .from("orders")
       .update({ status: "ready", ready_at: readyAt })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("venue_id", venueId ?? "");
     if (error) {
       console.error("Failed to mark order ready:", error.message);
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
@@ -201,7 +210,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     } else {
       logAudit("mark_ready", "orders", id);
     }
-  }, []);
+  }, [venueId]);
 
   // ── Deliver ───────────────────────────────────────────────────────────────
   const deliverOrder = useCallback(async (id: string) => {
@@ -218,7 +227,8 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     const { error } = await supabase
       .from("orders")
       .update({ status: "delivered", delivered_at: deliveredAt })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("venue_id", venueId ?? "");
     if (error) {
       console.error("Failed to deliver order:", error.message);
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
@@ -226,7 +236,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     } else {
       logAudit("deliver_order", "orders", id);
     }
-  }, []);
+  }, [venueId]);
 
   // ── Cancel with reason (Fix 7) ────────────────────────────────────────────
   const cancelOrder = useCallback(async (id: string, reason?: string) => {
@@ -242,7 +252,8 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     const { error } = await supabase
       .from("orders")
       .update({ status: "cancelled", cancel_reason: cancelReason })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("venue_id", venueId ?? "");
     if (error) {
       console.error("Failed to cancel order:", error.message);
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
@@ -250,7 +261,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
     } else {
       logAudit("cancel_order", "orders", id, { reason: cancelReason });
     }
-  }, []);
+  }, [venueId]);
 
   // ── Notifications (Fix 4) ─────────────────────────────────────────────────
   const dismissAlert        = useCallback(() => setNewAlert(null), []);

@@ -16,11 +16,12 @@ interface OrderReviewModalProps {
   onClose:      () => void;
   onRemoveItem: (beverageId: string) => void;
   onUpdateQty:  (beverageId: string, delta: number) => void;
+  locationId:   string;
 }
 
 export function OrderReviewModal({
   cart, locationName, isSubmitting,
-  onConfirm, onClose, onRemoveItem, onUpdateQty,
+  onConfirm, onClose, onRemoveItem, onUpdateQty, locationId,
 }: OrderReviewModalProps) {
   const [showItems, setShowItems] = useState(true);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -72,7 +73,7 @@ export function OrderReviewModal({
   const itemCount   = cart.reduce((s, i) => s + i.quantity, 0);
   const uniqueCount = cart.length;
 
-  const surchargeActive = useJuly4Surcharge();
+  const surchargeActive = useJuly4Surcharge(locationId);
   const hasAlcohol  = cart.some(i => i.beverage.isAlcoholic);
   const surcharge   = surchargeActive && hasAlcohol ? JULY4_SURCHARGE_AMOUNT : 0;
   const total       = subtotal + surcharge;

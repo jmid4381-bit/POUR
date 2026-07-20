@@ -15,6 +15,7 @@ import {
 } from "./supabase-zones";
 import { logAudit } from "./audit";
 import { logError, logMessage } from "./logger";
+import { useSessionVenue, type VenueOption } from "@/hooks/useSessionVenue";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,13 @@ interface StoreCtx {
   approveZoneRequest: (req: ZoneRequest) => Promise<void>;
   denyZoneRequest:    (id: string) => Promise<void>;
   removeStaffZone:    (staffName: string, locationId: string) => Promise<void>;
+  // Venue context — which venue this signed-in admin is scoped to, and (for
+  // platform_admin only) the means to switch which one is being viewed.
+  venueId:          string | null;
+  isPlatformAdmin:  boolean;
+  venues:           VenueOption[];
+  chooseVenue:      (venueId: string) => void;
+  venueResolving:   boolean;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -62,6 +70,9 @@ const Ctx = createContext<StoreCtx | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const {
+    venueId, isPlatformAdmin, venues, chooseVenue, resolving: venueResolving,
+  } = useSessionVenue();
   const [orders,       setOrders]       = useState<Order[]>([]);
   const [rawBeverages, setRawBeverages] = useState<Beverage[]>([]);
   const [locations,    setLocations]    = useState<Location[]>([]);
@@ -93,6 +104,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── Load orders (rolling window) + beverages + zones from Supabase ────────
   const fetchAll = useCallback(async () => {
+    if (!venueId) { setLoading(false); return; }
     const fetchStartedAt = Date.now();
     if (!hasLoadedOnce.current) setLoading(true);
     const since = new Date(Date.now() - ORDER_WINDOW_DAYS * 86_400_000).toISOString();
@@ -106,23 +118,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           guest_name, location_name, surcharge_amount, surcharge_label,
           order_items ( beverage_id, beverage_name, unit_price, quantity, note )
         `)
+        .eq("venue_id", venueId)
         .gte("placed_at", since)
         .order("placed_at", { ascending: false }),
       // beverages: every column here is actually consumed by rowToBeverage,
       // so select("*") is intentional, not an oversight
       supabase
         .from("beverages")
-        .select("*"),
+        .select("*")
+        .eq("venue_id", venueId),
       supabase
         .from("locations")
         .select("id, name, section, floor, is_active")
+        .eq("venue_id", venueId)
         .order("id"),
       supabase
         .from("staff_zones")
-        .select("staff_name, location_id"),
+        .select("staff_name, location_id")
+        .eq("venue_id", venueId),
       supabase
         .from("zone_requests")
         .select("id, staff_name, request_type, requested_zone_id, status, created_at, resolved_at")
+        .eq("venue_id", venueId)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -149,22 +166,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     hasLoadedOnce.current = true;
     setLoading(false);
-  }, []);
+  }, [venueId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // ── Realtime — refetch on any order / item / beverage / zone change ───────
   // Kept alongside the polling fallback below in case the project's Realtime
   // events start arriving reliably (push is instant when it works; polling
-  // is the guaranteed floor).
+  // is the guaranteed floor). order_items has no venue_id column (see plan),
+  // so its subscription stays unfiltered — it just triggers the same
+  // fetchAll(), which is already venue-scoped above.
   useEffect(() => {
+    if (!venueId) return;
     const channel = supabase
-      .channel("admin-dashboard-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" },      () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones" },   () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "zone_requests" }, () => fetchAll())
+      .channel(`admin-dashboard-changes-${venueId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venueId}` },      () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff_zones", filter: `venue_id=eq.${venueId}` },   () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "zone_requests", filter: `venue_id=eq.${venueId}` }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "beverages" },   () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "beverages", filter: `venue_id=eq.${venueId}` },   () => fetchAll())
       .subscribe((status) => {
         // The comment below documents Realtime events connecting but not
         // arriving during earlier testing — logging CHANNEL_ERROR/TIMED_OUT
@@ -176,7 +196,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchAll]);
+  }, [fetchAll, venueId]);
 
   // ── Polling fallback ────────────────────────────────────────────────────────
   // Realtime postgres_changes events were confirmed connecting (status:
@@ -199,6 +219,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ── Beverage CRUD ───────────────────────────────────────────────────────────
 
   const addBeverage = useCallback(async (b: Omit<Beverage, "id" | "ordersTotal" | "createdAt">) => {
+    if (!venueId) return;
     const id = `bev-${uid()}`;
     const createdAt = new Date().toISOString();
     // Optimistic insert -- the new drink appears in the table instantly
@@ -208,14 +229,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setRawBeverages(prev => [...prev, { ...b, id, createdAt, ordersTotal: 0 }]);
     const { error: err } = await supabase
       .from("beverages")
-      .insert({ id, ...beverageToRow(b) });
+      .insert({ id, venue_id: venueId, ...beverageToRow(b) });
     if (err) {
       console.error("Failed to add beverage:", err.message);
       setRawBeverages(prev => prev.filter(x => x.id !== id));
       return;
     }
     logAudit("add_beverage", "beverages", id, { name: b.name, price: b.price });
-  }, []);
+  }, [venueId]);
 
   const updateBeverage = useCallback(async (b: Beverage) => {
     lastBevMutationAt.current = Date.now();
@@ -263,13 +284,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // they already have. Either way the request itself is marked resolved in
   // the same action so it disappears from the pending list immediately.
   const approveZoneRequest = useCallback(async (req: ZoneRequest) => {
+    if (!venueId) return;
     if (req.requestType === "switch") {
-      const { error: delErr } = await supabase.from("staff_zones").delete().eq("staff_name", req.staffName);
+      const { error: delErr } = await supabase.from("staff_zones").delete().eq("staff_name", req.staffName).eq("venue_id", venueId);
       if (delErr) { console.error("Failed to clear existing zones:", delErr.message); return; }
     }
     const { error: insErr } = await supabase
       .from("staff_zones")
-      .upsert({ staff_name: req.staffName, location_id: req.requestedZoneId }, { onConflict: "staff_name,location_id" });
+      .upsert({ staff_name: req.staffName, location_id: req.requestedZoneId, venue_id: venueId }, { onConflict: "staff_name,location_id" });
     if (insErr) { console.error("Failed to assign new zone:", insErr.message); return; }
 
     const { error: updErr } = await supabase
@@ -278,7 +300,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .eq("id", req.id);
     if (!updErr) logAudit("approve_zone_request", "zone_requests", req.id, { staffName: req.staffName, zone: req.requestedZoneId });
     await fetchAll();
-  }, [fetchAll]);
+  }, [fetchAll, venueId]);
 
   const denyZoneRequest = useCallback(async (id: string) => {
     const { error: err } = await supabase
@@ -307,6 +329,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       state, loading, error, refresh: fetchAll,
       addBeverage, updateBeverage, deleteBeverage, updatePrice, toggleAvailable,
       approveZoneRequest, denyZoneRequest, removeStaffZone,
+      venueId, isPlatformAdmin, venues, chooseVenue, venueResolving,
     }}>
       {children}
     </Ctx.Provider>
