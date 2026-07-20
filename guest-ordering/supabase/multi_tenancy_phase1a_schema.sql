@@ -28,6 +28,12 @@ VALUES ('00000000-0000-0000-0000-000000000001', 'POUR', '#C9A030')
 ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE public.venues ENABLE ROW LEVEL SECURITY;
+-- KNOWN GAP, already hit and patched live (2026-07-20): this enables RLS
+-- with zero policies, which denies every role by default — the venue
+-- switcher and AdminSidebar's branding read both came back empty
+-- ("No venues found") until multi_tenancy_phase4b_venues_policy_hotfix.sql
+-- was run. That hotfix (same policies phase7 also creates) must run
+-- immediately after this file, not deferred to phase7 with everything else.
 
 -- ── venue_id columns, nullable for now ──────────────────────────────────
 ALTER TABLE public.locations             ADD COLUMN IF NOT EXISTS venue_id uuid REFERENCES public.venues(id);
