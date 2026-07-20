@@ -6,6 +6,8 @@
  * configurable, not hardcoded.
  */
 
+import { logError } from "./logger";
+
 export const LEGAL_DRINKING_AGE = 21;
 // Multi-tenant fallback — the real venue name (event_settings.venue_name) is
 // fetched and passed in by the ordering page; this only matters for a caller
@@ -99,9 +101,28 @@ export function clearRememberedVerification(): void {
 // Applies a remembered bracket/flag to THIS session — equivalent to what
 // recordVerification() would set, but without re-asking for a birthdate.
 // Still only reachable via an explicit "Yes, that's me" tap in the UI.
-export function applyRememberedVerification(rv: RememberedVerification): void {
+export function applyRememberedVerification(rv: RememberedVerification, guestId: string): void {
   markVerified({ ageBracket: rv.ageBracket, verifiedAt: new Date().toISOString() });
   markUnderageSession(rv.isUnderage);
+  reportAgeVerification(guestId, rv.ageBracket, rv.isUnderage);
+}
+
+// Fire-and-forget server-side log of this verification outcome — never the
+// birthdate, just the bracket + a SERVER-set timestamp (see
+// supabase/age_verification.sql), tied to the guest's cookie id. Two jobs:
+// (1) a compliance audit trail independent of whether an order is ever
+// placed, and (2) the authoritative source computeOrderCharge checks
+// server-side before allowing alcoholic items — closing the gap where only
+// a client-side sessionStorage flag decided this. Not awaited by callers;
+// a network hiccup here must never block the guest from continuing.
+export function reportAgeVerification(guestId: string, bracket: string, isUnderage: boolean): void {
+  fetch("/api/age-verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ guestId, ageBracket: bracket, isUnderage }),
+  }).catch(err => {
+    logError("Failed to report age verification", err, { guestId });
+  });
 }
 
 function markUnderageSession(isUnderage: boolean): void {
@@ -156,6 +177,7 @@ export function ageBracket(age: number, legalAge: number): string {
 export function recordVerification(
   age: number,
   legalAge: number,
+  guestId: string,
 ): { isUnderage: boolean; meta: AgeVerificationMeta } {
   const bracket     = ageBracket(age, legalAge);
   const isUnderage  = age < legalAge;
@@ -163,6 +185,7 @@ export function recordVerification(
 
   markVerified(meta);
   markUnderageSession(isUnderage);
+  reportAgeVerification(guestId, bracket, isUnderage);
 
   // Mirror into the longer-lived "remember me" slot too, so a returning
   // guest gets the "Welcome back" prompt instead of retyping their

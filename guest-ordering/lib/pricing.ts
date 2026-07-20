@@ -87,6 +87,23 @@ export async function computeOrderCharge(
     return bev?.is_alcoholic ? sum + (Number(item.quantity) || 0) : sum;
   }, 0);
 
+  // Age-gate enforcement (2026-07-15): look up the guest's most recent
+  // server-side verification record (supabase/age_verification.sql), not a
+  // client-supplied flag — closes the gap where only the menu's client-side
+  // filter decided whether alcohol was orderable. If no record is found
+  // (e.g. the fire-and-forget logging call from the age gate never reached
+  // the server), this fails OPEN rather than blocking a legitimate 21+
+  // guest over a network hiccup — the real compliance backstop is staff
+  // checking ID at delivery either way, not this check.
+  if (alcoholicQty > 0 && guestId) {
+    const { data: ageRows } = await supabase
+      .rpc("get_guest_age_status", { p_guest_id: String(guestId) });
+    const ageStatus = Array.isArray(ageRows) ? ageRows[0] : ageRows;
+    if (ageStatus?.is_underage === true) {
+      return { ok: false, status: 403, error: "You must be 21+ to order alcoholic beverages." };
+    }
+  }
+
   if (alcoholicQty > 0 && guestId) {
     const { data: statusRows, error: statusErr } = await supabase
       .rpc("get_guest_alcohol_status", {

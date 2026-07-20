@@ -25,7 +25,7 @@ import {
   type RememberedVerification,
 } from "@/lib/ageGate";
 import { setGuestName, getRememberedGuestName, clearRememberedGuestName } from "@/lib/guestName";
-import { resetGuestId } from "@/lib/guestSession";
+import { resetGuestId, getOrCreateGuestId } from "@/lib/guestSession";
 
 export { hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession } from "@/lib/ageGate";
 export { getGuestName } from "@/lib/guestName";
@@ -62,6 +62,7 @@ export function AgeGate({
   const [year,  setYear]  = useState("");
   const [error, setError] = useState<string | null>(null);
   const [name,  setName]  = useState("");
+  const [justVerifiedUnderage, setJustVerifiedUnderage] = useState(false);
 
   const dayRef  = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
@@ -69,7 +70,7 @@ export function AgeGate({
 
   const handleConfirmReturning = () => {
     if (!remembered || !rememberedName) return;
-    applyRememberedVerification(remembered);
+    applyRememberedVerification(remembered, getOrCreateGuestId());
     setGuestName(rememberedName);
     onConfirm();
   };
@@ -110,7 +111,8 @@ export function AgeGate({
 
     setError(null);
     const age = calculateAge(y, m, d);
-    recordVerification(age, legalAge);
+    const { isUnderage } = recordVerification(age, legalAge, getOrCreateGuestId());
+    setJustVerifiedUnderage(isUnderage);
 
     // Both 21+ and underage guests move on to the name step — everyone
     // gets addressed by name, only the menu differs by age.
@@ -199,9 +201,14 @@ export function AgeGate({
                 >
                   Age Verification
                 </h2>
-                <p id="age-gate-desc" className="text-mist-300 text-sm font-body leading-relaxed">
-                  This service includes alcoholic beverages.
-                  <br />Please enter your date of birth to continue.
+                {/* Direct legal statement, not onboarding copy — this is the
+                    line that actually matters, so it leads and carries more
+                    visual weight than the functional instruction below it. */}
+                <p id="age-gate-desc" className="text-mist-100 text-base font-body font-semibold leading-snug">
+                  You must be {legalAge}+ to order alcoholic beverages.
+                </p>
+                <p className="text-mist-400 text-xs font-body mt-1.5">
+                  Enter your date of birth to continue.
                 </p>
               </div>
 
@@ -249,11 +256,13 @@ export function AgeGate({
                 )}
               </div>
 
-              {/* Staff verification disclaimer */}
-              <div className="bg-lift/60 border border-edge rounded-xl px-4 py-3">
-                <p className="text-mist-500 text-xs font-body leading-relaxed">
-                  Service staff will verify ID upon delivery. Any order found to be placed by a guest under
-                  the legal age of <strong className="text-mist-300">{legalAge}</strong> will be voided immediately.
+              {/* Staff verification disclaimer — amber, not neutral gray, so
+                  this reads as a legal notice rather than incidental fine
+                  print alongside a casual onboarding step. */}
+              <div className="bg-amber-400/8 border border-amber-400/25 rounded-xl px-4 py-3">
+                <p className="text-amber-100/90 text-xs font-body leading-relaxed text-left">
+                  Staff will verify photo ID upon delivery. Any order placed by a guest under{" "}
+                  <strong className="text-amber-100 font-semibold">{legalAge}</strong> will be voided immediately.
                 </p>
               </div>
 
@@ -287,6 +296,14 @@ export function AgeGate({
                   So our staff can greet you by name when your order arrives.
                 </p>
               </div>
+
+              {/* Underage-only note — avoids confusion a moment later when
+                  the menu shows no alcoholic drinks at all. */}
+              {justVerifiedUnderage && (
+                <p className="text-mist-500 text-xs font-body -mt-2">
+                  You'll see our non-alcoholic menu.
+                </p>
+              )}
 
               {/* Name input */}
               <input

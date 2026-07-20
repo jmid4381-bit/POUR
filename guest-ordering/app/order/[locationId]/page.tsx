@@ -528,6 +528,17 @@ export default function GuestOrderPage({ params }: Props) {
       return false;
     }
 
+    // Server-side age-gate rejection. Must show this honestly — falling
+    // through to the network-failure catch below would fake a "success"
+    // confirmation for an order that was correctly refused.
+    if (result.ageBlocked) {
+      setPlacingOrder(false);
+      isConfirming.current = false;
+      setToast(result.ageBlockedMessage ?? "You must be 21+ to order alcoholic beverages.");
+      setTimeout(() => setToast(null), 4500);
+      return false;
+    }
+
     // Order has a real charge — the free path returned 402. Fetch a Stripe
     // PaymentIntent and hand off to the payment sheet; the order is created
     // server-side only once payment succeeds.

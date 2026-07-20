@@ -79,6 +79,12 @@ export interface SubmitOrderResult {
   cooldownBlocked?: boolean;
   cooldownMs?:      number;
   giantUnavailable?: boolean;
+  // Server-side age-gate rejection (2026-07-15) — the guest's most recent
+  // verification record says they're under 21 and this order contains
+  // alcohol. Must be surfaced honestly, NOT treated as a network failure
+  // that falls back to a fake localStorage "success" below.
+  ageBlocked?:      boolean;
+  ageBlockedMessage?: string;
   // Set when the server determined the order has a real charge and must go
   // through the Stripe payment flow instead of the free path.
   paymentRequired?: boolean;
@@ -112,6 +118,10 @@ export async function submitOrder(order: QueuedOrder): Promise<SubmitOrderResult
     if (res.status === 402) {
       const body = await res.json().catch(() => ({}));
       return { ok: false, paymentRequired: true, amountCents: body.amountCents ?? 0 };
+    }
+    if (res.status === 403) {
+      const body = await res.json().catch(() => ({}));
+      return { ok: false, ageBlocked: true, ageBlockedMessage: body.error ?? "You must be 21+ to order alcoholic beverages." };
     }
     if (!res.ok) throw new Error(`Order submission failed: ${res.status}`);
 
