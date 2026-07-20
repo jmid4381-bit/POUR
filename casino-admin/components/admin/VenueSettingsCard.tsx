@@ -10,7 +10,7 @@
  * sidebar switcher) is currently viewing.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Building2, Save, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -32,23 +32,48 @@ export function VenueSettingsCard() {
   const [saving,     setSaving]     = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
+  // Always the CURRENT venueId (updated synchronously during render) --
+  // lets refresh() detect "the switcher moved on again while I was in
+  // flight" and discard its own response, instead of flashing a stale
+  // venue's branding over the one actually being viewed now.
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
+  // Which venue's data the draft fields were last seeded from. Distinct
+  // from `loaded` (which only ever needed to be "seed once, then never
+  // again during same-venue polling") -- this also re-seeds on a genuine
+  // venue SWITCH, which the old loaded-boolean version didn't: `loaded`
+  // stayed true forever after the very first mount, so switching venues
+  // updated the "Live: X" badge (from savedName) but left the editable
+  // Venue Name / Accent Color fields and the preview stuck on whichever
+  // venue was loaded first.
+  const seededVenueIdRef = useRef<string | null>(null);
+
   const refresh = useCallback(async () => {
     if (!venueId) return;
+    const requestedVenueId = venueId;
     const { data } = await supabase
       .from("venues")
       .select("name, accent_color")
       .eq("id", venueId)
       .maybeSingle();
+
+    if (requestedVenueId !== venueIdRef.current) return; // stale response, venue changed since request
+
     const name   = (data?.name ?? "").trim() || DEFAULT_VENUE_NAME;
     const accent = data?.accent_color && HEX_COLOR_RE.test(data.accent_color) ? data.accent_color : DEFAULT_ACCENT;
     setSavedName(name);
     setSavedAccent(accent);
-    // Only seed the editable fields on first load — later polls shouldn't
-    // clobber whatever the admin is actively typing.
-    setLoaded(prev => {
-      if (!prev) { setDraftName(name); setDraftAccent(accent); }
-      return true;
-    });
+    // Only re-seed the editable fields when this is a different venue than
+    // last seeded -- a same-venue background poll shouldn't clobber
+    // whatever the admin is actively typing, but a genuine venue switch
+    // must always re-seed.
+    if (seededVenueIdRef.current !== requestedVenueId) {
+      seededVenueIdRef.current = requestedVenueId;
+      setDraftName(name);
+      setDraftAccent(accent);
+    }
+    setLoaded(true);
   }, [venueId]);
 
   useEffect(() => {

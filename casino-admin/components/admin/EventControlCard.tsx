@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Sparkles, Play, Square, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -21,13 +21,23 @@ export function EventControlCard() {
   const [busy,    setBusy]    = useState(false);
   const [loaded,  setLoaded]  = useState(false);
 
+  // Always the CURRENT venueId -- lets refresh() discard a response that
+  // arrives after the switcher has already moved on to a different venue,
+  // instead of flashing the wrong venue's surcharge state on screen.
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
   const refresh = useCallback(async () => {
     if (!venueId) return;
+    const requestedVenueId = venueId;
     const { data } = await supabase
       .from("event_settings")
       .select("july4_started_at, july4_surcharge_enabled")
       .eq("venue_id", venueId)
       .maybeSingle();
+
+    if (requestedVenueId !== venueIdRef.current) return; // stale response, venue changed since request
+
     setState({
       startedAt: data?.july4_started_at ?? null,
       enabled:   data?.july4_surcharge_enabled ?? true,

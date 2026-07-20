@@ -102,9 +102,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // so much worse.
   const hasLoadedOnce = useRef(false);
 
+  // Always holds the CURRENT venueId, updated synchronously during render
+  // (not on effect-cleanup timing) -- lets fetchAll detect "the venue
+  // changed again while I was in flight" and discard its own response
+  // instead of overwriting newer data with a stale one, when a platform_admin
+  // switches venues quickly (see the venue-switcher glitch this fixes).
+  const venueIdRef = useRef(venueId);
+  venueIdRef.current = venueId;
+
+  // Clear all venue-scoped state THE INSTANT venueId changes, rather than
+  // waiting for the next fetchAll() to resolve -- otherwise the previous
+  // venue's already-rendered orders/beverages/etc. stay on screen for a
+  // beat after switching, which is exactly the "flashes the other venue"
+  // symptom reported when using the switcher.
+  useEffect(() => {
+    setOrders([]);
+    setRawBeverages([]);
+    setLocations([]);
+    setStaffZones([]);
+    setZoneRequests([]);
+  }, [venueId]);
+
   // ── Load orders (rolling window) + beverages + zones from Supabase ────────
   const fetchAll = useCallback(async () => {
     if (!venueId) { setLoading(false); return; }
+    const requestedVenueId = venueId;
     const fetchStartedAt = Date.now();
     if (!hasLoadedOnce.current) setLoading(true);
     const since = new Date(Date.now() - ORDER_WINDOW_DAYS * 86_400_000).toISOString();
@@ -142,6 +164,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .eq("venue_id", venueId)
         .order("created_at", { ascending: false }),
     ]);
+
+    // The venue switcher moved on again while these requests were in
+    // flight -- this response belongs to a venue we're no longer viewing,
+    // applying it would flash/overwrite the newer venue's data.
+    if (requestedVenueId !== venueIdRef.current) return;
 
     if (ordersRes.error || beveragesRes.error) {
       const msg = ordersRes.error?.message ?? beveragesRes.error?.message ?? "Failed to load data";

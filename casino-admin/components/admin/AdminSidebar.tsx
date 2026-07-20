@@ -31,11 +31,15 @@ export function AdminSidebar() {
 
   useEffect(() => {
     if (!venueId) return;
+    let cancelled = false;
     supabase.from("venues").select("name, accent_color").eq("id", venueId).maybeSingle().then(({ data }) => {
-      if (!data) return;
+      // Venue switched again before this resolved -- don't apply a stale
+      // venue's name/color over whichever one is being viewed now.
+      if (cancelled || !data) return;
       setVenueName((data.name ?? "").trim() || DEFAULT_VENUE_NAME);
       if (data.accent_color) document.documentElement.style.setProperty("--venue-accent", data.accent_color);
     });
+    return () => { cancelled = true; };
   }, [venueId]);
 
   return (
