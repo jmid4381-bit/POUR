@@ -30,3 +30,32 @@ export function setStoredSwitcherVenueId(venueId: string): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(SWITCHER_STORAGE_KEY, venueId);
 }
+
+// Last-known venue branding, cached so a fresh page load can paint the
+// CORRECT venue name/color on the very first render instead of the
+// hardcoded "POUR" default while the real value is still being resolved
+// (session load -> venueId -> Supabase fetch, all async). Read via a
+// useState lazy initializer (synchronous on first render) rather than an
+// effect, which is what actually eliminates the flash.
+export interface CachedVenueBranding {
+  venueId:     string;
+  name:        string;
+  accentColor: string;
+}
+
+const BRANDING_CACHE_KEY = "pour_last_venue_branding";
+
+export function getCachedVenueBranding(): CachedVenueBranding | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(BRANDING_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CachedVenueBranding) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedVenueBranding(branding: CachedVenueBranding): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(branding));
+}

@@ -15,6 +15,7 @@ import { Building2, Save, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { getCachedVenueBranding, setCachedVenueBranding } from "@/lib/currentVenue";
 
 const MAX_VENUE_NAME_LEN = 50;
 export const DEFAULT_VENUE_NAME = "POUR";
@@ -24,10 +25,14 @@ const POLL_MS = 3_000;
 
 export function VenueSettingsCard() {
   const { venueId } = useStore();
-  const [savedName,   setSavedName]   = useState<string>(DEFAULT_VENUE_NAME);
-  const [savedAccent, setSavedAccent] = useState<string>(DEFAULT_ACCENT);
-  const [draftName,   setDraftName]   = useState<string>("");
-  const [draftAccent, setDraftAccent] = useState<string>(DEFAULT_ACCENT);
+  // Lazy initializers -- seed from the cached last-known venue branding
+  // (synchronous on first render) instead of the hardcoded POUR default,
+  // so opening this card right after a refresh doesn't flash "POUR" while
+  // the real fetch for the actual current venue is still in flight.
+  const [savedName,   setSavedName]   = useState<string>(() => getCachedVenueBranding()?.name ?? DEFAULT_VENUE_NAME);
+  const [savedAccent, setSavedAccent] = useState<string>(() => getCachedVenueBranding()?.accentColor ?? DEFAULT_ACCENT);
+  const [draftName,   setDraftName]   = useState<string>(() => getCachedVenueBranding()?.name ?? "");
+  const [draftAccent, setDraftAccent] = useState<string>(() => getCachedVenueBranding()?.accentColor ?? DEFAULT_ACCENT);
   const [loaded,     setLoaded]     = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -64,6 +69,7 @@ export function VenueSettingsCard() {
     const accent = data?.accent_color && HEX_COLOR_RE.test(data.accent_color) ? data.accent_color : DEFAULT_ACCENT;
     setSavedName(name);
     setSavedAccent(accent);
+    setCachedVenueBranding({ venueId: requestedVenueId, name, accentColor: accent });
     // Only re-seed the editable fields when this is a different venue than
     // last seeded -- a same-venue background poll shouldn't clobber
     // whatever the admin is actively typing, but a genuine venue switch

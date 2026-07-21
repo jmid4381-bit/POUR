@@ -16,7 +16,7 @@
  *  Fixes 2, 7 resolved in ClockContext / KanbanCard respectively.
  */
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import {
   WifiOff, Wifi, AlertTriangle,
   Bell, X, Package, CheckCircle2,
@@ -32,6 +32,7 @@ import { useGuestCooldowns }    from "@/hooks/useGuestCooldowns";
 import { useStaffZones }        from "@/hooks/useStaffZones";
 import { useZoneRequests }      from "@/hooks/useZoneRequests";
 import { useSessionVenue }      from "@/hooks/useSessionVenue";
+import { getCachedVenueBranding, setCachedVenueBranding } from "@/lib/currentVenue";
 import { KanbanColumn }         from "@/components/staff/KanbanColumn";
 import { StatCard }             from "@/components/staff/StatCard";
 import { StaffLogin }           from "@/components/staff/StaffLogin";
@@ -123,10 +124,22 @@ export default function StaffDashboard() {
   // extra Supabase round trip.
   const GIANT_CUP_MAX = 4;
   const DEFAULT_VENUE_NAME = "POUR";
+  const DEFAULT_ACCENT     = "#C9A030";
   const [giantCupsAvailable, setGiantCupsAvailable] = useState(GIANT_CUP_MAX);
   const [giantReturning,     setGiantReturning]      = useState(false);
-  const [venueName,          setVenueName]           = useState(DEFAULT_VENUE_NAME);
-  const [venueAccent,        setVenueAccent]         = useState<string | null>(null);
+  // Lazy initializers -- run synchronously on the very first render, so a
+  // refresh paints the LAST REAL venue seen (cached from a prior successful
+  // fetch) instead of the hardcoded "POUR" default while session/venueId/
+  // the actual Supabase fetch are all still resolving asynchronously.
+  const [venueName,   setVenueName]   = useState(() => getCachedVenueBranding()?.name ?? DEFAULT_VENUE_NAME);
+  const [venueAccent, setVenueAccent] = useState<string>(() => getCachedVenueBranding()?.accentColor ?? DEFAULT_ACCENT);
+
+  // useLayoutEffect (not useEffect) so the cached accent color lands on the
+  // CSS var before the browser paints, not after.
+  useLayoutEffect(() => {
+    const cached = getCachedVenueBranding();
+    if (cached) document.documentElement.style.setProperty("--venue-accent", cached.accentColor);
+  }, []);
 
   // Always the CURRENT venueId (updated synchronously during render) --
   // lets the poll below discard a response that arrives after the
@@ -135,15 +148,6 @@ export default function StaffDashboard() {
   // count.
   const venueIdRef = useRef(venueId);
   venueIdRef.current = venueId;
-
-  // Reset immediately on a venue change rather than waiting for the next
-  // poll tick to resolve -- otherwise the previous venue's name/color/cup
-  // count stays on screen for a beat after switching.
-  useEffect(() => {
-    setGiantCupsAvailable(GIANT_CUP_MAX);
-    setVenueName(DEFAULT_VENUE_NAME);
-    setVenueAccent(null);
-  }, [venueId]);
 
   useEffect(() => {
     if (!venueId) return;
@@ -162,8 +166,11 @@ export default function StaffDashboard() {
       }
       const venue = data.venues as unknown as { name: string; accent_color: string } | null;
       if (venue) {
-        setVenueName((venue.name ?? "").trim() || DEFAULT_VENUE_NAME);
-        setVenueAccent(venue.accent_color ?? null);
+        const name   = (venue.name ?? "").trim() || DEFAULT_VENUE_NAME;
+        const accent = venue.accent_color || DEFAULT_ACCENT;
+        setVenueName(name);
+        setVenueAccent(accent);
+        setCachedVenueBranding({ venueId: requestedVenueId, name, accentColor: accent });
       }
     };
     fetchGiants();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,8 +12,10 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { supabase } from "@/lib/supabase";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useStore } from "@/lib/store";
+import { getCachedVenueBranding, setCachedVenueBranding } from "@/lib/currentVenue";
 
-const DEFAULT_VENUE_NAME = "POUR";
+const DEFAULT_VENUE_NAME  = "POUR";
+const DEFAULT_ACCENT      = "#C9A030";
 
 const NAV = [
   { href: "/admin/overview",  icon: LayoutDashboard, label: "Overview",       sub: "Executive dashboard"   },
@@ -27,7 +29,20 @@ export function AdminSidebar() {
   const a = useAnalytics();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const { venueId, isPlatformAdmin, venues, chooseVenue } = useStore();
-  const [venueName, setVenueName] = useState(DEFAULT_VENUE_NAME);
+  // Lazy initializer -- runs synchronously on the very first render, so a
+  // refresh paints the LAST REAL venue seen (cached from a prior successful
+  // fetch) instead of the hardcoded "POUR" default while session/venueId/
+  // the actual Supabase fetch are all still resolving asynchronously.
+  const [venueName, setVenueName] = useState(() => getCachedVenueBranding()?.name ?? DEFAULT_VENUE_NAME);
+
+  // useLayoutEffect (not useEffect) so the cached accent color is applied
+  // to the CSS var before the browser paints, not after -- otherwise the
+  // logo swatch's `var(--venue-accent, #C9A030)` fallback would flash gold
+  // for one frame even though we already know the real cached color.
+  useLayoutEffect(() => {
+    const cached = getCachedVenueBranding();
+    if (cached) document.documentElement.style.setProperty("--venue-accent", cached.accentColor);
+  }, []);
 
   useEffect(() => {
     if (!venueId) return;
@@ -36,8 +51,11 @@ export function AdminSidebar() {
       // Venue switched again before this resolved -- don't apply a stale
       // venue's name/color over whichever one is being viewed now.
       if (cancelled || !data) return;
-      setVenueName((data.name ?? "").trim() || DEFAULT_VENUE_NAME);
-      if (data.accent_color) document.documentElement.style.setProperty("--venue-accent", data.accent_color);
+      const name   = (data.name ?? "").trim() || DEFAULT_VENUE_NAME;
+      const accent = data.accent_color || DEFAULT_ACCENT;
+      setVenueName(name);
+      document.documentElement.style.setProperty("--venue-accent", accent);
+      setCachedVenueBranding({ venueId, name, accentColor: accent });
     });
     return () => { cancelled = true; };
   }, [venueId]);
