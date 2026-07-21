@@ -882,6 +882,18 @@ export default function GuestOrderPage({ params }: Props) {
             locationId={locationId}
           />
         )}
+        {/* A reorder placed from THIS screen can also need payment — without
+            this, pendingPayment gets set but nothing renders it until the
+            guest leaves the confirmation screen (see the main branch below,
+            the only other place this was previously mounted). */}
+        {pendingPayment && (
+          <StripePaymentSheet
+            clientSecret={pendingPayment.clientSecret}
+            amountCents={pendingPayment.amountCents}
+            onSuccess={handlePaymentSuccess}
+            onCancel={handlePaymentCancel}
+          />
+        )}
         <July4MilestoneOverlay display={july4Milestone} />
       </>
     );
