@@ -52,7 +52,6 @@ function fmtTime(iso: string) {
 export function KanbanCard({
   order, onAccept, onReady, onDeliver, onCancel, onConfirmDelivered, feedback, isNewArrival, cooldownExpiry, isOutsideZone,
 }: KanbanCardProps) {
-  const [busy,         setBusy]         = useState(false);
   const [showCancelDlg,setShowCancelDlg]= useState(false);
 
   // Live countdown rides the shared ClockContext tick — no per-card interval.
@@ -93,13 +92,6 @@ export function KanbanCard({
     order.status === "preparing" ? "shadow-active-glow"   :
     order.status === "ready"     ? "shadow-ready-glow"    :
     "";
-
-  const act = async (fn: () => void) => {
-    setBusy(true);
-    await new Promise(r => setTimeout(r, 300));
-    fn();
-    setBusy(false);
-  };
 
   const handleCancelConfirm = (_reasonId: CancelReasonId, fullReason: string) => {
     onCancel(order.id, fullReason);
@@ -179,7 +171,7 @@ export function KanbanCard({
           <div className="bg-raised/60 border border-border/50 rounded-lg px-2.5 py-2 space-y-1.5">
             {order.items.map((item, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="font-mono text-[10px] text-slate-500 w-5 text-right flex-shrink-0 mt-0.5">
+                <span className="font-mono text-[10px] text-slate-400 w-5 text-right flex-shrink-0 mt-0.5">
                   ×{item.qty}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -191,8 +183,8 @@ export function KanbanCard({
               </div>
             ))}
             <div className="pt-1 border-t border-border/40 flex items-center justify-between">
-              <span className="text-[10px] font-mono text-slate-600">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
-              <div className="flex items-center gap-1 text-[10px] font-mono text-slate-600">
+              <span className="text-[10px] font-mono text-slate-400">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-1 text-[10px] font-mono text-slate-400">
                 <Clock size={9} />
                 {fmtTime(order.placedAt)}
               </div>
@@ -209,7 +201,7 @@ export function KanbanCard({
 
           {/* Staff attribution */}
           {order.staffName && order.status !== "delivered" && (
-            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-600">
+            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-400">
               <User size={9} />
               <span>{order.staffName}</span>
               {order.acceptedAt && <span>· accepted {fmtTime(order.acceptedAt)}</span>}
@@ -241,25 +233,20 @@ export function KanbanCard({
           {order.status === "pending" && (
             <div className="flex gap-2 pt-0.5">
               <button
-                onClick={() => act(() => onAccept(order.id))}
-                disabled={busy}
+                onClick={() => onAccept(order.id)}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl",
                   "font-body font-bold text-sm transition-all active:scale-[0.97]",
                   "bg-emerald-500 hover:bg-emerald-400 text-white shadow-btn-accept",
-                  busy && "opacity-60 cursor-wait",
                 )}
               >
-                {busy
-                  ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : <CheckCircle2 size={16} />
-                }
+                <CheckCircle2 size={16} />
                 Accept
               </button>
               <button
                 onClick={() => setShowCancelDlg(true)}
                 aria-label="Cancel order"
-                className="w-12 h-12 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all text-lg"
+                className="w-12 h-12 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all text-lg"
               >
                 ×
               </button>
@@ -269,25 +256,20 @@ export function KanbanCard({
           {(order.status === "accepted" || order.status === "preparing") && (
             <div className="flex gap-2 pt-0.5">
               <button
-                onClick={() => act(() => onReady(order.id))}
-                disabled={busy}
+                onClick={() => onReady(order.id)}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl",
                   "font-body font-bold text-sm transition-all active:scale-[0.97]",
                   "bg-violet-500 hover:bg-violet-400 text-white shadow-btn-ready",
-                  busy && "opacity-60 cursor-wait",
                 )}
               >
-                {busy
-                  ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : <Package size={16} />
-                }
+                <Package size={16} />
                 Mark Ready
               </button>
               <button
                 onClick={() => setShowCancelDlg(true)}
                 aria-label="Cancel order"
-                className="w-12 h-12 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all text-lg"
+                className="w-12 h-12 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all text-lg"
               >
                 ×
               </button>
@@ -297,25 +279,20 @@ export function KanbanCard({
           {order.status === "ready" && (
             <div className="flex gap-2 pt-0.5">
               <button
-                onClick={() => act(() => onDeliver(order.id))}
-                disabled={busy}
+                onClick={() => onDeliver(order.id)}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl",
                   "font-body font-bold text-sm transition-all active:scale-[0.97]",
                   "bg-blue-500 hover:bg-blue-400 text-white shadow-btn-deliver",
-                  busy && "opacity-60 cursor-wait",
                 )}
               >
-                {busy
-                  ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : <Truck size={16} />
-                }
+                <Truck size={16} />
                 Deliver
               </button>
               <button
                 onClick={() => setShowCancelDlg(true)}
                 aria-label="Cancel order"
-                className="w-12 h-12 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all text-lg"
+                className="w-12 h-12 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all text-lg"
               >
                 ×
               </button>
@@ -347,7 +324,7 @@ export function KanbanCard({
 
           {order.status === "cancelled" && order.cancelReason && (
             <div className="flex items-start gap-1.5 bg-slate-500/8 border border-slate-500/20 rounded-lg px-2.5 py-2">
-              <span className="text-[10px] text-slate-500 font-mono">CANCELLED: {order.cancelReason}</span>
+              <span className="text-[10px] text-slate-400 font-mono">CANCELLED: {order.cancelReason}</span>
             </div>
           )}
 

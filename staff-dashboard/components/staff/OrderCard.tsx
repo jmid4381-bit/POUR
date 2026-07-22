@@ -109,7 +109,7 @@ export function OrderCard({
           {/* Left: order ID + location */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="font-mono text-[11px] text-slate-500 tracking-wider">{order.id}</span>
+              <span className="font-mono text-[11px] text-slate-400 tracking-wider">{order.id}</span>
               {/* Status badge */}
               <span className={cn(
                 "inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border tracking-wide uppercase",
@@ -141,13 +141,13 @@ export function OrderCard({
           {/* Right: timer + expand */}
           <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
             <LiveTimer placedAt={order.placedAt} status={order.status} />
-            <div className="flex items-center gap-1 text-slate-500">
+            <div className="flex items-center gap-1 text-slate-400">
               <Clock size={10} />
               <span className="text-[10px] font-mono">{fmtTime(order.placedAt)}</span>
             </div>
             {expanded
-              ? <ChevronUp size={14} className="text-slate-600" />
-              : <ChevronDown size={14} className="text-slate-600" />
+              ? <ChevronUp size={14} className="text-slate-400" />
+              : <ChevronDown size={14} className="text-slate-400" />
             }
           </div>
         </div>
@@ -166,7 +166,7 @@ export function OrderCard({
 
           {/* Items list */}
           <div>
-            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">
+            <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-2">
               Order Items
             </p>
             <div className="space-y-2">
@@ -176,7 +176,7 @@ export function OrderCard({
                   className="flex items-start justify-between gap-3 bg-raised/60 border border-border/60 rounded-xl px-3 py-2.5"
                 >
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                    <span className="font-mono text-xs text-slate-500 mt-0.5 flex-shrink-0">
+                    <span className="font-mono text-xs text-slate-400 mt-0.5 flex-shrink-0">
                       ×{item.qty}
                     </span>
                     <div>
@@ -207,7 +207,7 @@ export function OrderCard({
 
           {/* Staff info (if accepted/delivered) */}
           {order.staffName && (
-            <div className="flex items-center gap-2 text-xs text-slate-500 font-body">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-body">
               <User size={11} />
               <span>Handled by <strong className="text-slate-300">{order.staffName}</strong></span>
               {order.acceptedAt && (
@@ -243,7 +243,7 @@ export function OrderCard({
               {/* Cancel trigger */}
               <button
                 onClick={() => setShowConfirm(true)}
-                className="w-11 h-11 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all"
+                className="w-11 h-11 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all"
               >
                 <X size={15} />
               </button>
@@ -272,7 +272,7 @@ export function OrderCard({
 
               <button
                 onClick={() => setShowConfirm(true)}
-                className="w-11 h-11 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all"
+                className="w-11 h-11 rounded-xl bg-raised border border-border flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all"
               >
                 <X size={15} />
               </button>

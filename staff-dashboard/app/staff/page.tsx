@@ -18,9 +18,9 @@
 
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import {
-  WifiOff, Wifi, AlertTriangle,
+  WifiOff, AlertTriangle,
   Bell, X, Package, CheckCircle2,
-  TrendingUp, ClipboardList, LayoutGrid, Volume2, VolumeX,
+  TrendingUp, ClipboardList, LayoutGrid,
   Truck, RefreshCw, Search, MapPin, Clock, LogOut, GlassWater, Undo2,
   ChevronDown,
 } from "lucide-react";
@@ -37,6 +37,7 @@ import { KanbanColumn }         from "@/components/staff/KanbanColumn";
 import { StatCard }             from "@/components/staff/StatCard";
 import { StaffLogin }           from "@/components/staff/StaffLogin";
 import { NotificationCenter }   from "@/components/staff/NotificationCenter";
+import { AudioSettingsMenu }    from "@/components/staff/AudioSettingsMenu";
 import { ZonePicker }           from "@/components/staff/ZonePicker";
 import { cn }                   from "@/lib/utils";
 import { fetchActiveLocations, type StaffLocation } from "@/lib/locations";
@@ -117,6 +118,7 @@ export default function StaffDashboard() {
   // tablet always show the stats regardless of this flag.
   const [statsCollapsed, setStatsCollapsed] = useState(true);
   const [notifOpen,  setNotifOpen]  = useState(false);
+  const [audioMenuOpen, setAudioMenuOpen] = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
 
   // Giant cup tracker — polls this venue's event_settings row every 10s.
@@ -411,7 +413,7 @@ export default function StaffDashboard() {
               </button>
             ))}
             {venues.length === 0 && (
-              <p className="text-slate-500 text-sm font-body text-center">No venues found.</p>
+              <p className="text-slate-400 text-sm font-body text-center">No venues found.</p>
             )}
           </div>
         </div>
@@ -440,11 +442,20 @@ export default function StaffDashboard() {
   const emptyLabel = (base: string) =>
     guestSearch.trim() ? `No orders found for "${guestSearch.trim()}"` : base;
 
+  // Auto-advance the mobile single-column view to wherever an order just
+  // moved — without this, accepting an order on mobile left staff staring
+  // at a column that order no longer belongs to, requiring a manual tab
+  // tap just to keep tracking it. No effect on desktop/tablet, which show
+  // every column at once and never read mobileCol.
+  const handleAccept = useCallback((id: string) => { acceptOrder(id); setMobileCol("accepted"); }, [acceptOrder]);
+  const handleReady  = useCallback((id: string) => { markReady(id);   setMobileCol("ready");     }, [markReady]);
+  const handleDeliver = useCallback((id: string) => { deliverOrder(id); setMobileCol("delivered"); }, [deliverOrder]);
+
   // Shared column props
   const colProps = {
-    onAccept:  acceptOrder,
-    onReady:   markReady,
-    onDeliver: deliverOrder,
+    onAccept:  handleAccept,
+    onReady:   handleReady,
+    onDeliver: handleDeliver,
     onCancel:  cancelOrder,
     onConfirmDelivered: confirmDelivered,
     feedback:  actionFeedback,
@@ -489,7 +500,7 @@ export default function StaffDashboard() {
                   {newOrderAlert.items.map(i => `${i.qty}× ${i.name}`).join(", ")}
                 </p>
               </div>
-              <button onClick={dismissAlert} className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
+              <button onClick={dismissAlert} className="text-slate-400 hover:text-white transition-colors flex-shrink-0">
                 <X size={14} />
               </button>
             </div>
@@ -541,7 +552,7 @@ export default function StaffDashboard() {
               <p className="text-xs sm:text-sm font-body font-medium text-slate-300 truncate min-w-0">
                 {greeting()} · {staffName}
               </p>
-              <span className="text-slate-500 text-xs sm:text-sm font-body flex-shrink-0">
+              <span className="text-slate-400 text-xs sm:text-sm font-body flex-shrink-0">
                 · POUR
               </span>
             </div>
@@ -560,11 +571,17 @@ export default function StaffDashboard() {
               </div>
             )}
 
-            {/* Fix 9 — connectivity status */}
-            <div className={cn(
-              "hidden sm:flex items-center gap-1.5 rounded-full px-2 py-1 border text-[10px] font-mono",
-              connColor,
-            )}>
+            {/* Fix 9 — connectivity status. The dot alone is always visible
+                (even on the phones staff actually carry floor-side) so a
+                gone-stale/offline connection is never silently invisible;
+                the text label only adds itself once there's room at sm+. */}
+            <div
+              title={connLabel}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-2 py-1 border text-[10px] font-mono",
+                connColor,
+              )}
+            >
               <span className="relative flex h-1.5 w-1.5">
                 {conn.state === "live" && (
                   <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -576,7 +593,7 @@ export default function StaffDashboard() {
                   "bg-red-500"
                 )} />
               </span>
-              {connLabel}
+              <span className="hidden sm:inline">{connLabel}</span>
             </div>
 
             {/* Zones — request a switch/add, with a pending-request indicator */}
@@ -584,11 +601,11 @@ export default function StaffDashboard() {
               onClick={() => setZonePickerOpen(true)}
               title="Request a zone change"
               className={cn(
-                "relative w-8 h-8 rounded-xl flex items-center justify-center transition-all border",
+                "relative w-10 h-10 rounded-xl flex items-center justify-center transition-all border",
                 "bg-surface border-border text-slate-400 hover:text-white",
               )}
             >
-              <MapPin size={13} />
+              <MapPin size={15} />
               {zoneRequests.latest?.status === "pending" && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-base flex items-center justify-center">
                   <Clock size={6} className="text-void" />
@@ -602,46 +619,37 @@ export default function StaffDashboard() {
               title="Refresh orders"
               disabled={loading}
               className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center transition-all border",
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-all border",
                 "bg-surface border-border text-slate-400 hover:text-white",
                 loading && "opacity-60 cursor-wait",
               )}
             >
-              <RefreshCw size={13} className={cn(loading && "animate-spin")} />
+              <RefreshCw size={15} className={cn(loading && "animate-spin")} />
             </button>
 
-            {/* Fix 1 — audio toggle */}
-            <button
-              onClick={audio.toggle}
-              title={audio.enabled ? "Mute notifications" : "Unmute notifications"}
-              className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center transition-all border",
-                audio.enabled
-                  ? "bg-surface border-border text-slate-400 hover:text-white"
-                  : "bg-slate-500/10 border-slate-500/20 text-slate-600",
-              )}
-            >
-              {audio.enabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-            </button>
+            {/* Fix 1 — per-chime audio settings (was one master mute) */}
+            <AudioSettingsMenu
+              enabled={audio.enabled}
+              anyEnabled={audio.anyEnabled}
+              isOpen={audioMenuOpen}
+              onOpen={() => setAudioMenuOpen(true)}
+              onClose={() => setAudioMenuOpen(false)}
+              onToggle={audio.toggle}
+            />
 
             {/* Fix 4 — notification bell */}
             <NotificationCenter
               notifications={notifications}
               unreadCount={unreadCount}
               isOpen={notifOpen}
-              onOpen={() => { setNotifOpen(true); markNotificationsRead(); }}
-              onClose={() => setNotifOpen(false)}
+              // Marked read on CLOSE, not on open — marking read the instant
+              // the bell is tapped meant a quick glance-and-close lost the
+              // "you have unseen orders" signal before anything was actually
+              // read. Closing the panel is a much better proxy for "seen."
+              onOpen={() => setNotifOpen(true)}
+              onClose={() => { setNotifOpen(false); markNotificationsRead(); }}
               onMarkAllRead={markNotificationsRead}
             />
-
-            {/* On/Off duty */}
-            <button
-              onClick={() => {}} // extend: would update server presence state
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-            >
-              <Wifi size={11} />
-              On Duty
-            </button>
 
             <button
               onClick={() => setConfirmSignOut(true)}
@@ -677,16 +685,38 @@ export default function StaffDashboard() {
           <span className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-widest">
             <ClipboardList size={13} className="text-gold-400" />
             Stats
-            <span className="text-slate-500 normal-case tracking-normal font-body">
+            <span className="text-slate-400 normal-case tracking-normal font-body">
               · {stats.totalActive} active · {stats.totalPending} new
               {stats.overdueCount > 0 && <span className="text-red-400"> · {stats.overdueCount} late</span>}
             </span>
           </span>
           <ChevronDown
             size={16}
-            className={cn("text-slate-500 transition-transform", !statsCollapsed && "rotate-180")}
+            className={cn("text-slate-400 transition-transform", !statsCollapsed && "rotate-180")}
           />
         </button>
+
+        {/* Giant-cup quick return — always reachable in one tap on mobile,
+            not buried behind expanding the full Stats grid first. Only
+            shown when a cup is actually out to return. The detailed Giants
+            stat card (with the same action) still lives in the grid below
+            for the full picture. */}
+        {statsCollapsed && giantCupsAvailable < GIANT_CUP_MAX && (
+          <button
+            onClick={markGiantReturned}
+            disabled={giantReturning}
+            className="sm:hidden flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-blue-500/8 border border-blue-500/20 text-left flex-shrink-0 active:scale-[0.99] transition-all disabled:opacity-50"
+          >
+            <span className="flex items-center gap-2 text-xs font-mono font-semibold text-blue-300">
+              <GlassWater size={13} />
+              {GIANT_CUP_MAX - giantCupsAvailable} giant cup{GIANT_CUP_MAX - giantCupsAvailable !== 1 ? "s" : ""} out
+            </span>
+            <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-blue-400">
+              <Undo2 size={11} />
+              Cup Returned
+            </span>
+          </button>
+        )}
 
         {/* ── Stats row ── */}
         <div className={cn(
@@ -746,16 +776,16 @@ export default function StaffDashboard() {
             <div className="h-[2px] w-full bg-blue-400" />
             <div className="p-3.5">
               <div className="flex items-start justify-between gap-2 mb-2.5">
-                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.12em] leading-none mt-0.5">Giants</p>
+                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-[0.12em] leading-none mt-0.5">Giants</p>
                 <div className="w-7 h-7 rounded-xl border flex items-center justify-center flex-shrink-0 text-blue-400 bg-blue-400/10 border-blue-400/20">
                   <GlassWater size={13} strokeWidth={1.8} />
                 </div>
               </div>
               <p className="font-mono font-bold text-3xl text-blue-300 leading-none">
                 {GIANT_CUP_MAX - giantCupsAvailable}
-                <span className="text-slate-500 text-sm font-mono font-normal">/{GIANT_CUP_MAX}</span>
+                <span className="text-slate-400 text-sm font-mono font-normal">/{GIANT_CUP_MAX}</span>
               </p>
-              <p className="text-[10px] text-slate-500 font-body mt-1">Out with guests</p>
+              <p className="text-[10px] text-slate-400 font-body mt-1">Out with guests</p>
               <button
                 onClick={markGiantReturned}
                 disabled={giantReturning || giantCupsAvailable >= GIANT_CUP_MAX}
@@ -768,19 +798,21 @@ export default function StaffDashboard() {
           </div>
         </div>
 
-        {/* ── Guest name search ── */}
-        <div className="relative flex-shrink-0">
+        {/* ── Guest name search — sticky so it's always one reach away, not
+            scrolled out of view mid-column during a rush when a guest is
+            standing there asking about their order. ── */}
+        <div className="relative flex-shrink-0 sticky top-0 z-20 bg-void -mx-3 px-3 py-1">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold-500/70 pointer-events-none" />
           <input
             value={guestSearch}
             onChange={e => setGuestSearch(e.target.value)}
             placeholder="Search by guest name or order #…"
-            className="w-full bg-raised border border-gold-500/25 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-slate-500 font-body focus:outline-none focus:border-gold-500/60 focus:bg-surface transition-colors shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
+            className="w-full bg-raised border border-gold-500/25 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-slate-400 font-body focus:outline-none focus:border-gold-500/60 focus:bg-surface transition-colors shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
           />
           {guestSearch && (
             <button
               onClick={() => setGuestSearch("")}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
             >
               <X size={13} />
             </button>
@@ -801,7 +833,7 @@ export default function StaffDashboard() {
                 key={key}
                 onClick={() => setMobileCol(key)}
                 className={cn(
-                  "flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-body font-semibold",
+                  "relative flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-body font-semibold",
                   "border transition-all active:scale-95",
                   isActive
                     ? key === "pending"  ? "bg-amber-400/10  border-amber-400/25  text-amber-300"
@@ -811,11 +843,20 @@ export default function StaffDashboard() {
                     : "bg-surface border-border text-slate-400 hover:text-slate-200",
                 )}
               >
+                {/* Overdue cue that survives switching tabs — on mobile only
+                    one column is visible at a time, so without this a
+                    bartender viewing Preparing/Ready has no way to notice
+                    New Orders has an overdue order except the small header
+                    badge. Shown on the New Orders tab specifically, even
+                    while another tab is active. */}
+                {key === "pending" && !isActive && stats.overdueCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-red border-2 border-base" />
+                )}
                 {label}
                 {count > 0 && (
                   <span className={cn(
                     "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center",
-                    isActive ? "bg-white/15 text-current" : "bg-raised text-slate-500",
+                    isActive ? "bg-white/15 text-current" : "bg-raised text-slate-400",
                   )}>
                     {count}
                   </span>

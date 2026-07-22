@@ -74,7 +74,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <p className="text-white font-body text-lg">This account doesn&apos;t have staff access.</p>
         <button
           onClick={() => supabase.auth.signOut()}
-          className="px-4 py-2 rounded-xl bg-raised border border-border text-slate-500 hover:text-white hover:border-rim transition-colors text-sm font-body"
+          className="px-4 py-2 rounded-xl bg-raised border border-border text-slate-400 hover:text-white hover:border-rim transition-colors text-sm font-body"
         >
           Sign out
         </button>

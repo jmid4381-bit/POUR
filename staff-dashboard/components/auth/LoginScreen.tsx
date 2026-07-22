@@ -81,7 +81,7 @@ export function LoginScreen() {
                   <CheckCircle2 size={22} className="text-emerald-400" />
                 </div>
                 <p className="text-white font-body font-semibold text-sm">Check your email</p>
-                <p className="text-slate-500 text-xs font-body leading-relaxed">
+                <p className="text-slate-400 text-xs font-body leading-relaxed">
                   If an account exists for {resetEmail}, a password reset link is on its way.
                 </p>
                 <button
@@ -97,7 +97,7 @@ export function LoginScreen() {
                   Enter your account email and we&apos;ll send you a link to set a new password.
                 </p>
                 <div>
-                  <p className="text-[10px] font-mono text-slate-600 uppercase tracking-wider mb-1.5">Email</p>
+                  <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">Email</p>
                   <input
                     type="email"
                     value={resetEmail}
@@ -106,7 +106,7 @@ export function LoginScreen() {
                     autoComplete="email"
                     autoFocus
                     placeholder="you@company.com"
-                    className="w-full bg-raised border border-border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
+                    className="w-full bg-raised border border-border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-400 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
                   />
                 </div>
 
@@ -124,7 +124,7 @@ export function LoginScreen() {
                     "w-full py-3.5 rounded-xl font-body font-bold text-base flex items-center justify-center gap-2",
                     "transition-all active:scale-[0.98]",
                     resetLoading
-                      ? "bg-raised border border-border text-slate-600 cursor-not-allowed"
+                      ? "bg-raised border border-border text-slate-400 cursor-not-allowed"
                       : "bg-gold-grad text-void shadow-[0_2px_16px_rgba(201,160,48,0.3)] hover:brightness-110",
                   )}
                 >
@@ -135,7 +135,7 @@ export function LoginScreen() {
                 <button
                   type="button"
                   onClick={() => setShowForgot(false)}
-                  className="w-full text-center text-slate-500 hover:text-white text-xs font-body font-semibold transition-colors inline-flex items-center justify-center gap-1"
+                  className="w-full text-center text-slate-400 hover:text-white text-xs font-body font-semibold transition-colors inline-flex items-center justify-center gap-1"
                 >
                   <ArrowLeft size={12} /> Back to sign in
                 </button>
@@ -145,7 +145,7 @@ export function LoginScreen() {
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
 
               <div>
-                <p className="text-[10px] font-mono text-slate-600 uppercase tracking-wider mb-1.5">Email</p>
+                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">Email</p>
                 <input
                   type="email"
                   value={email}
@@ -154,13 +154,13 @@ export function LoginScreen() {
                   autoComplete="email"
                   autoFocus
                   placeholder="you@company.com"
-                  className="w-full bg-raised border border-border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
+                  className="w-full bg-raised border border-border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-400 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">Password</p>
+                  <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Password</p>
                   <button
                     type="button"
                     onClick={() => setShowForgot(true)}
@@ -176,7 +176,7 @@ export function LoginScreen() {
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full bg-raised border border-border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
+                  className="w-full bg-raised border border-border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-400 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
                 />
               </div>
 
@@ -194,7 +194,7 @@ export function LoginScreen() {
                   "w-full py-3.5 rounded-xl font-body font-bold text-base flex items-center justify-center gap-2",
                   "transition-all active:scale-[0.98]",
                   loading
-                    ? "bg-raised border border-border text-slate-600 cursor-not-allowed"
+                    ? "bg-raised border border-border text-slate-400 cursor-not-allowed"
                     : "bg-gold-grad text-void shadow-[0_2px_16px_rgba(201,160,48,0.3)] hover:brightness-110",
                 )}
               >
@@ -205,7 +205,7 @@ export function LoginScreen() {
           )}
         </div>
 
-        <p className="text-center text-[11px] text-slate-600 font-mono mt-4">
+        <p className="text-center text-[11px] text-slate-400 font-mono mt-4">
           Authorized personnel only.
         </p>
       </div>

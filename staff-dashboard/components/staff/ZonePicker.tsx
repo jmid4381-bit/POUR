@@ -12,6 +12,10 @@ import { cn } from "@/lib/utils";
 import type { StaffLocation } from "@/lib/locations";
 import type { MyZoneRequest, ZoneRequestType } from "@/hooks/useZoneRequests";
 
+function minutesAgo(iso: string): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+}
+
 interface ZonePickerProps {
   locations:        StaffLocation[];
   myZoneIds:        Set<string>;
@@ -42,7 +46,7 @@ export function ZonePicker({
         <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-shrink-0">
           <div>
             <h2 className="font-display font-semibold text-white text-lg leading-none">Zones</h2>
-            <p className="text-slate-500 text-[11px] font-mono mt-0.5">Request to switch or add a zone</p>
+            <p className="text-slate-400 text-[11px] font-mono mt-0.5">Request to switch or add a zone</p>
           </div>
           <button
             onClick={onClose}
@@ -57,7 +61,8 @@ export function ZonePicker({
           <div className="flex items-center gap-2 px-5 py-2.5 bg-amber-400/8 border-b border-amber-400/15 flex-shrink-0">
             <Clock size={12} className="text-amber-400 flex-shrink-0" />
             <p className="text-amber-300 text-xs font-body">
-              Waiting on admin approval for your last request…
+              Waiting on admin approval — sent {minutesAgo(pending.createdAt)}m ago.
+              {" "}Mis-tapped? Request a different zone below to replace it.
             </p>
           </div>
         )}
@@ -66,7 +71,10 @@ export function ZonePicker({
           {locations.map(loc => {
             const isMine = myZoneIds.has(loc.id);
             const count  = orderCountByZone.get(loc.id) ?? 0;
-            const disabled = submitting || (pending?.status === "pending");
+            // Submitting again while a request is already pending is
+            // allowed (not blocked) — it's the fastest way to correct a
+            // mis-tap without waiting for the first request to resolve.
+            const disabled = submitting;
 
             return (
               <div
@@ -78,41 +86,47 @@ export function ZonePicker({
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <MapPin size={11} className={isMine ? "text-gold-400" : "text-slate-500"} />
+                    <MapPin size={11} className={isMine ? "text-gold-400" : "text-slate-400"} />
                     <p className="text-white font-body font-medium text-sm truncate">{loc.name}</p>
                     {isMine && (
                       <span className="text-[9px] font-mono text-gold-400 uppercase tracking-wide flex-shrink-0">Yours</span>
                     )}
                   </div>
-                  <p className="text-slate-500 text-[10px] font-mono mt-0.5">{loc.section} · Floor {loc.floor}</p>
+                  <p className="text-slate-400 text-[10px] font-mono mt-0.5">{loc.section} · Floor {loc.floor}</p>
                 </div>
 
                 <span className={cn(
                   "font-mono font-bold text-sm px-2 py-1 rounded-lg flex-shrink-0",
-                  count >= 4 ? "text-red-400 bg-red-400/10" : count > 0 ? "text-amber-400 bg-amber-400/10" : "text-slate-600 bg-raised",
+                  count >= 4 ? "text-red-400 bg-red-400/10" : count > 0 ? "text-amber-400 bg-amber-400/10" : "text-slate-400 bg-raised",
                 )}>
                   {count}
                 </span>
 
                 {!isMine && (
+                  // Text labels, not icon-only — "Add" (keep your current
+                  // zone(s), plus this one) and "Switch" (drop everything
+                  // else, reassign fully to this one) have very different
+                  // consequences and looked too similar at a glance before.
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       onClick={() => onSubmit("add", loc.id)}
                       disabled={disabled}
                       aria-label={`Add ${loc.name} as an additional zone`}
                       title="Add this zone alongside your current one(s)"
-                      className="w-8 h-8 rounded-lg bg-blue-400/10 border border-blue-400/20 text-blue-400 hover:bg-blue-400/20 flex items-center justify-center transition-all disabled:opacity-40"
+                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-blue-400/10 border border-blue-400/20 text-blue-400 hover:bg-blue-400/20 transition-all disabled:opacity-40 text-[11px] font-mono font-bold"
                     >
-                      <Plus size={14} />
+                      <Plus size={12} />
+                      Add
                     </button>
                     <button
                       onClick={() => onSubmit("switch", loc.id)}
                       disabled={disabled}
-                      aria-label={`Switch to ${loc.name}`}
-                      title="Switch fully to this zone"
-                      className="w-8 h-8 rounded-lg bg-felt-500/15 border border-felt-500/25 text-felt-400 hover:bg-felt-500/25 flex items-center justify-center transition-all disabled:opacity-40"
+                      aria-label={`Switch fully to ${loc.name}, dropping your other zones`}
+                      title="Switch fully to this zone — drops your other zone(s)"
+                      className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-felt-500/15 border border-felt-500/25 text-felt-400 hover:bg-felt-500/25 transition-all disabled:opacity-40 text-[11px] font-mono font-bold"
                     >
-                      <ArrowLeftRight size={13} />
+                      <ArrowLeftRight size={12} />
+                      Switch
                     </button>
                   </div>
                 )}

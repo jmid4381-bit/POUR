@@ -45,7 +45,7 @@ export function StatCard({ label, value, sub, icon: Icon, accent, pulse, onClick
       )} />
       <div className="p-3.5">
         <div className="flex items-start justify-between gap-2 mb-2.5">
-          <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.12em] leading-none mt-0.5">
+          <p className="text-[10px] font-mono text-slate-400 uppercase tracking-[0.12em] leading-none mt-0.5">
             {label}
           </p>
           <div className={cn("w-7 h-7 rounded-xl border flex items-center justify-center flex-shrink-0", a.icon)}>
@@ -65,7 +65,7 @@ export function StatCard({ label, value, sub, icon: Icon, accent, pulse, onClick
             </span>
           )}
         </div>
-        {sub && <p className="text-[10px] text-slate-500 font-body mt-1">{sub}</p>}
+        {sub && <p className="text-[10px] text-slate-400 font-body mt-1">{sub}</p>}
       </div>
     </button>
   );

@@ -19,6 +19,7 @@ export interface MyZoneRequest {
   requestType:      ZoneRequestType;
   requestedZoneId:  string;
   status:           ZoneRequestStatus;
+  createdAt:        string;
 }
 
 export function useZoneRequests(staffName: string, venueId: string | null) {
@@ -37,7 +38,7 @@ export function useZoneRequests(staffName: string, venueId: string | null) {
     const requestedVenueId = venueId;
     const { data, error } = await supabase
       .from("zone_requests")
-      .select("id, request_type, requested_zone_id, status")
+      .select("id, request_type, requested_zone_id, status, created_at")
       .eq("staff_name", staffName)
       .eq("venue_id", venueId)
       .order("created_at", { ascending: false })
@@ -51,6 +52,7 @@ export function useZoneRequests(staffName: string, venueId: string | null) {
       requestType:     row.request_type,
       requestedZoneId: row.requested_zone_id,
       status:          row.status,
+      createdAt:       row.created_at,
     });
   }, [staffName, venueId]);
 

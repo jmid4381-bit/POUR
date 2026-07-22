@@ -85,12 +85,12 @@ export function NotificationCenter({
               {unreadCount > 0 && (
                 <button
                   onClick={onMarkAllRead}
-                  className="text-[10px] font-mono text-slate-500 hover:text-slate-300 transition-colors"
+                  className="text-[10px] font-mono text-slate-400 hover:text-slate-300 transition-colors"
                 >
                   Mark all read
                 </button>
               )}
-              <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+              <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
                 <X size={14} />
               </button>
             </div>
@@ -100,8 +100,8 @@ export function NotificationCenter({
           <div className="max-h-80 overflow-y-auto overscroll-contain">
             {notifications.length === 0 ? (
               <div className="py-10 text-center">
-                <Bell size={24} className="text-slate-700 mx-auto mb-2" />
-                <p className="text-slate-600 text-sm font-body">No notifications yet</p>
+                <Bell size={24} className="text-slate-400 mx-auto mb-2" />
+                <p className="text-slate-400 text-sm font-body">No notifications yet</p>
               </div>
             ) : (
               <div className="divide-y divide-border/60">
@@ -125,13 +125,13 @@ export function NotificationCenter({
                           <p className="text-white text-sm font-body font-medium truncate">
                             {notif.locationName}
                           </p>
-                          <span className="text-[10px] font-mono text-slate-600 ml-auto flex-shrink-0 flex items-center gap-0.5">
+                          <span className="text-[10px] font-mono text-slate-400 ml-auto flex-shrink-0 flex items-center gap-0.5">
                             <Clock size={9} />
                             {timeAgo(notif.arrivedAt)}
                           </span>
                         </div>
                         <p className="text-slate-400 text-xs font-body truncate">{notif.itemSummary}</p>
-                        <p className="text-[10px] font-mono text-slate-600 mt-0.5">{notif.orderId}</p>
+                        <p className="text-[10px] font-mono text-slate-400 mt-0.5">{notif.orderId}</p>
                       </div>
                     </div>
                   </div>

@@ -37,9 +37,15 @@ const CHIMES: Record<ChimeType, Array<{ freq: number; start: number; duration: n
   ],
 };
 
+// Per-chime mute, not one global on/off — a bartender on a loud floor wants
+// to keep new-order/overdue alarms live while silencing the lower-priority
+// "delivered" ding, which a single master toggle couldn't express.
+type ChimeEnabledMap = Record<ChimeType, boolean>;
+const DEFAULT_ENABLED: ChimeEnabledMap = { "new-order": true, "overdue": true, "delivered": true };
+
 export function useAudio() {
   const ctxRef          = useRef<AudioContext | null>(null);
-  const [enabled, setEnabled]   = useState(true);
+  const [enabled, setEnabled]   = useState<ChimeEnabledMap>(DEFAULT_ENABLED);
   const [unlocked, setUnlocked] = useState(false);
 
   // Unlock audio on first user interaction (browser autoplay policy)
@@ -67,7 +73,7 @@ export function useAudio() {
   }, [unlocked]);
 
   const play = useCallback((type: ChimeType) => {
-    if (!enabled) return;
+    if (!enabled[type]) return;
     try {
       if (!ctxRef.current) {
         ctxRef.current = new AudioContext();
@@ -102,7 +108,13 @@ export function useAudio() {
     } catch { /* AudioContext not supported or blocked */ }
   }, [enabled]);
 
-  const toggle = useCallback(() => setEnabled(e => !e), []);
+  const toggle = useCallback((type: ChimeType) => {
+    setEnabled(prev => ({ ...prev, [type]: !prev[type] }));
+  }, []);
 
-  return { play, enabled, toggle, unlocked };
+  // Convenience for a single header icon: shows "muted" only once every
+  // category is off, "on" if any category still plays.
+  const anyEnabled = enabled["new-order"] || enabled["overdue"] || enabled["delivered"];
+
+  return { play, enabled, toggle, anyEnabled, unlocked };
 }

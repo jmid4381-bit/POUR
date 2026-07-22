@@ -73,13 +73,13 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
                 <h3 className="font-display font-bold text-white text-base leading-tight">
                   Cancel Order
                 </h3>
-                <p className="text-slate-500 text-xs font-body mt-0.5 truncate max-w-[200px]">
+                <p className="text-slate-400 text-xs font-body mt-0.5 truncate max-w-[200px]">
                   {orderLocation}
                 </p>
               </div>
               <button
                 onClick={onDismiss}
-                className="text-slate-500 hover:text-white transition-colors flex-shrink-0"
+                className="text-slate-400 hover:text-white transition-colors flex-shrink-0"
               >
                 <X size={15} />
               </button>
@@ -87,7 +87,7 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
 
             {/* Reason options */}
             <div>
-              <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">
+              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-2">
                 Reason for cancellation
               </p>
               <div className="space-y-1.5">
@@ -107,13 +107,13 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
                       "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
                       selected === id
                         ? "bg-red-500/15 text-red-400"
-                        : "bg-surface text-slate-500",
+                        : "bg-surface text-slate-400",
                     )}>
                       <Icon size={13} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-body font-semibold leading-tight">{label}</p>
-                      <p className="text-[11px] text-slate-500 font-body">{desc}</p>
+                      <p className="text-[11px] text-slate-400 font-body">{desc}</p>
                     </div>
                     {selected === id && (
                       <div className="ml-auto w-4 h-4 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
@@ -134,7 +134,7 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
                   onChange={e => setNote(e.target.value)}
                   placeholder="Optional: add details…"
                   maxLength={120}
-                  className="w-full bg-raised border border-border rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 font-body resize-none focus:outline-none focus:border-red-500/30 transition-colors"
+                  className="w-full bg-raised border border-border rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-400 font-body resize-none focus:outline-none focus:border-red-500/30 transition-colors"
                 />
               </div>
             )}
@@ -151,7 +151,7 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
                 "flex-1 py-3 rounded-xl font-body font-bold text-sm transition-all active:scale-[0.97]",
                 canSubmit
                   ? "bg-red-600 hover:bg-red-500 text-white"
-                  : "bg-raised border border-border text-slate-600 cursor-not-allowed",
+                  : "bg-raised border border-border text-slate-400 cursor-not-allowed",
               )}
             >
               {busy ? "Cancelling…" : "Confirm Cancel"}

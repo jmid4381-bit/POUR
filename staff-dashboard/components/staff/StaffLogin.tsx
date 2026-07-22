@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { Zap, ChevronRight, User } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // Only real staff members may appear here — no placeholder/test names,
 // and no free-text entry, so no other name can ever be selected.
@@ -13,13 +11,6 @@ interface StaffLoginProps {
 }
 
 export function StaffLogin({ onLogin }: StaffLoginProps) {
-  const [selected, setSelected] = useState<string | null>(null);
-
-  const handleSubmit = () => {
-    if (!selected) return;
-    onLogin(selected);
-  };
-
   return (
     <div className="fixed inset-0 z-50 bg-void flex items-center justify-center p-4">
       {/* Atmosphere */}
@@ -50,46 +41,30 @@ export function StaffLogin({ onLogin }: StaffLoginProps) {
           <div className="p-5 space-y-5">
 
             <div>
-              <p className="text-[11px] font-mono text-slate-500 uppercase tracking-widest mb-3">
+              <p className="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-3">
                 Who are you?
               </p>
+              {/* One tap signs in — a separate "Start Shift" confirm step
+                  after picking a name was pure friction (nothing here is
+                  destructive or hard to undo; wrong name is a re-tap away). */}
               <div className="grid grid-cols-2 gap-2">
                 {STAFF_NAMES.map(n => (
                   <button
                     key={n}
-                    onClick={() => setSelected(n)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-3.5 rounded-xl border text-sm font-body font-medium transition-all active:scale-95",
-                      selected === n
-                        ? "bg-gold-400/15 border-gold-400/30 text-gold-300"
-                        : "bg-raised border-border text-slate-300 hover:border-rim hover:text-white",
-                    )}
+                    onClick={() => onLogin(n)}
+                    className="flex items-center gap-2 px-3 py-3.5 rounded-xl border text-sm font-body font-medium transition-all active:scale-95 bg-raised border-border text-slate-300 hover:border-rim hover:text-white"
                   >
                     <User size={14} className="flex-shrink-0" />
                     <span className="truncate">{n}</span>
+                    <ChevronRight size={14} className="ml-auto flex-shrink-0 text-slate-400" />
                   </button>
                 ))}
               </div>
             </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={!selected}
-              className={cn(
-                "w-full py-3.5 rounded-xl font-body font-bold text-base flex items-center justify-center gap-2",
-                "transition-all active:scale-[0.98]",
-                selected
-                  ? "bg-gold-grad text-void shadow-[0_2px_16px_rgba(201,160,48,0.3)] hover:brightness-110"
-                  : "bg-raised border border-border text-slate-600 cursor-not-allowed",
-              )}
-            >
-              Start Shift
-              <ChevronRight size={18} />
-            </button>
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-600 font-mono mt-4">
+        <p className="text-center text-[11px] text-slate-400 font-mono mt-4">
           Your name will appear on all order actions during this session.
         </p>
       </div>

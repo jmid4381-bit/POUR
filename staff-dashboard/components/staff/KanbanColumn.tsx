@@ -8,6 +8,7 @@
  * staff know the full count without seeing all records rendered.
  */
 
+import { CheckCircle2, Package, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KanbanCard } from "./KanbanCard";
 import type { StaffOrder } from "@/lib/types";
@@ -55,6 +56,18 @@ export function KanbanColumn({
     : orders;
   const hiddenCount   = isDelivered ? Math.max(0, orders.length - DELIVERED_CAP) : 0;
 
+  // Bulk action — during a rush, several orders often reach the same
+  // status at once (a run of drinks all finish prepping together, a batch
+  // gets delivered in one trip); acting on them one card at a time is the
+  // slowest part of the board under real load. Only shown once there's
+  // more than one order to act on — a single order already has its own
+  // one-touch button right on the card.
+  const bulkAction =
+    orders.length > 1 && status === "pending"  ? { label: "Accept All",  Icon: CheckCircle2, run: () => visibleOrders.forEach(o => onAccept(o.id)) } :
+    orders.length > 1 && status === "accepted" ? { label: "Ready All",   Icon: Package,      run: () => visibleOrders.forEach(o => onReady(o.id)) } :
+    orders.length > 1 && status === "ready"    ? { label: "Deliver All", Icon: Truck,        run: () => visibleOrders.forEach(o => onDeliver(o.id)) } :
+    null;
+
   const statusDotClass =
     isNew && hasOrders           ? "bg-amber-400 animate-ping-slow" :
     status === "accepted"        ? "bg-blue-400"   :
@@ -83,14 +96,25 @@ export function KanbanColumn({
             {title}
           </h2>
         </div>
-        <span className={cn(
-          "font-mono font-bold text-sm min-w-[24px] h-6 rounded-lg flex items-center justify-center px-2",
-          count > 0
-            ? `${accentColor} bg-white/8 border border-white/10`
-            : "text-slate-600 bg-surface border border-border",
-        )}>
-          {count}
-        </span>
+        <div className="flex items-center gap-2">
+          {bulkAction && (
+            <button
+              onClick={bulkAction.run}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+            >
+              <bulkAction.Icon size={11} />
+              {bulkAction.label}
+            </button>
+          )}
+          <span className={cn(
+            "font-mono font-bold text-sm min-w-[24px] h-6 rounded-lg flex items-center justify-center px-2",
+            count > 0
+              ? `${accentColor} bg-white/8 border border-white/10`
+              : "text-slate-400 bg-surface border border-border",
+          )}>
+            {count}
+          </span>
+        </div>
       </div>
 
       {/* Scrollable cards — Fix 8: flex-1 + min-h-0 replaces magic-number calc() */}
@@ -116,10 +140,10 @@ export function KanbanColumn({
             {/* Fix 3 — overflow notice */}
             {hiddenCount > 0 && (
               <div className="text-center py-3 border border-border/40 rounded-xl bg-raised/30">
-                <p className="text-[11px] font-mono text-slate-600">
+                <p className="text-[11px] font-mono text-slate-400">
                   {hiddenCount} older record{hiddenCount !== 1 ? "s" : ""} not shown
                 </p>
-                <p className="text-[10px] text-slate-700 font-body mt-0.5">
+                <p className="text-[10px] text-slate-400 font-body mt-0.5">
                   View full history in the reports tab
                 </p>
               </div>
@@ -128,9 +152,9 @@ export function KanbanColumn({
         ) : (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center mb-2.5">
-              <span className="text-slate-600 text-lg">—</span>
+              <span className="text-slate-400 text-lg">—</span>
             </div>
-            <p className="text-slate-600 text-xs font-body">{emptyLabel}</p>
+            <p className="text-slate-400 text-xs font-body">{emptyLabel}</p>
           </div>
         )}
       </div>

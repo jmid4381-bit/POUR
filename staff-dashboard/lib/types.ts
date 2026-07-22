@@ -78,7 +78,7 @@ export const STATUS_META: Record<
   preparing: { label: "Preparing", color: "text-blue-400",    bg: "bg-blue-400/10",    border: "border-blue-400/20",    glow: "shadow-active-glow"   },
   ready:     { label: "Ready",     color: "text-violet-400",  bg: "bg-violet-400/10",  border: "border-violet-400/20",  glow: "shadow-ready-glow"    },
   delivered: { label: "Delivered", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", glow: "shadow-delivered-glow"},
-  cancelled: { label: "Cancelled", color: "text-slate-500",   bg: "bg-slate-500/10",   border: "border-slate-500/20",   glow: ""                     },
+  cancelled: { label: "Cancelled", color: "text-slate-400",   bg: "bg-slate-500/10",   border: "border-slate-500/20",   glow: ""                     },
 };
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
