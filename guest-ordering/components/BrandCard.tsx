@@ -91,7 +91,7 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
 
         <p className={cn(
           "text-[10px] font-mono uppercase tracking-widest mb-2 font-semibold",
-          HOLIDAY_THEME_ACTIVE ? "text-blue-200/80" : "text-mist-500",
+          HOLIDAY_THEME_ACTIVE ? "text-blue-200/80" : "text-mist-400",
         )}>Pick a flavor</p>
         <div className="flex flex-wrap gap-2">
           {beverages.map(bev => {
@@ -131,12 +131,12 @@ export function BrandCard({ brand, emoji, beverages, cartQuantityMap, onClick, s
           <span className="font-mono font-bold text-lg text-white">{fmtUSD(price)}</span>
           <p className={cn(
             "text-[10px] font-mono",
-            HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600",
+            HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-400",
           )}>per drink</p>
         </div>
         <p className={cn(
           "text-[11px] font-body",
-          HOLIDAY_THEME_ACTIVE ? "text-blue-200/80" : "text-mist-500",
+          HOLIDAY_THEME_ACTIVE ? "text-blue-200/80" : "text-mist-400",
         )}>Tap a flavor to order</p>
       </div>
     </div>

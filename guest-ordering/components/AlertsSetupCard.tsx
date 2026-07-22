@@ -11,18 +11,32 @@
  * unsupported) — there's nothing left to do at that point. A "denied"
  * outcome stays visible as a tappable card explaining how to re-enable via
  * device settings, since the browser will never show the native prompt
- * again on its own; that opportunity should never just vanish. Deliberately
- * NOT dismissible either way — a guest who closes it would lose the chance
- * to enable alerts before ordering, since this card doesn't reappear on
- * refresh (there'd be no way back to it this session).
+ * again on its own; that opportunity should never just vanish, and an
+ * explicit "Not now" dismiss never applies to it either — it's a real,
+ * fixable problem, not a soft ask.
+ *
+ * The soft "enable"/"ios-install" ask, though, IS explicitly dismissible via
+ * "Not now" (localStorage, survives across visits) — without it, a guest who
+ * simply doesn't want notifications sees this card at the top of the menu
+ * on every single future visit, forever, with no way to say stop. Within a
+ * session it still doesn't reappear once closed (there'd be no way back to
+ * it), same as before "Not now" existed — the persisted flag just makes
+ * that hold across sessions too, instead of resetting on every fresh visit.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { BellRing, ChevronRight, BellOff } from "lucide-react";
+import { BellRing, ChevronRight, BellOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPushSupported, pushPermission } from "@/lib/push";
 import { IOSInstallGuide } from "./IOSInstallGuide";
 import { NotificationsBlockedGuide } from "./NotificationsBlockedGuide";
+
+const DISMISSED_KEY = "pour_alerts_card_dismissed";
+
+function isDismissed(): boolean {
+  try { return localStorage.getItem(DISMISSED_KEY) === "true"; }
+  catch { return false; }
+}
 
 function isIOS(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -46,23 +60,34 @@ export function AlertsSetupCard() {
 
   const compute = useCallback(() => {
     if (typeof window === "undefined") return;
+    const dismissed = isDismissed();
 
     // iOS Safari (not installed) can't do push at all until added to Home Screen.
-    if (isIOS() && !isStandalone() && !isPushSupported()) { setMode("ios-install"); return; }
+    if (isIOS() && !isStandalone() && !isPushSupported()) {
+      setMode(dismissed ? "hidden" : "ios-install");
+      return;
+    }
 
     if (isPushSupported()) {
       const perm = pushPermission();
       // "granted" collapses (nothing left to do — the per-order subscribe on
       // the confirmation screen is silent from here on). "denied" stays
-      // visible — tapping it explains how to re-enable via device settings,
-      // since the browser will never show the native prompt again on its own.
-      if (perm === "default") setMode("enable");
+      // visible regardless of "Not now" — it's a real fixable problem, not
+      // a soft ask, and tapping it explains how to re-enable via device
+      // settings, since the browser will never show the native prompt
+      // again on its own.
+      if (perm === "default") setMode(dismissed ? "hidden" : "enable");
       else if (perm === "denied") setMode("denied");
       else setMode("hidden");
       return;
     }
     setMode("hidden");
   }, []);
+
+  const dismiss = () => {
+    try { localStorage.setItem(DISMISSED_KEY, "true"); } catch { /* ignore */ }
+    setMode("hidden");
+  };
 
   useEffect(() => { compute(); }, [compute]);
 
@@ -121,6 +146,13 @@ export function AlertsSetupCard() {
               <p className="text-mist-400 text-xs font-body mt-0.5 leading-snug">Add POUR to your Home Screen — tap to see how.</p>
             </button>
             <ChevronRight size={18} className="text-gold-400 flex-shrink-0" onClick={() => setShowGuide(true)} />
+            <button
+              onClick={dismiss}
+              aria-label="Not now — don't ask again"
+              className="w-8 h-8 -mr-1 flex items-center justify-center text-mist-500 hover:text-white transition-colors flex-shrink-0"
+            >
+              <X size={15} />
+            </button>
           </>
         ) : mode === "denied" ? (
           <>
@@ -128,7 +160,7 @@ export function AlertsSetupCard() {
               <p className="text-white font-body font-semibold text-sm leading-tight">Notifications are blocked</p>
               <p className="text-mist-400 text-xs font-body mt-0.5 leading-snug">Tap to see how to turn them back on.</p>
             </button>
-            <ChevronRight size={18} className="text-mist-500 flex-shrink-0" onClick={() => setShowBlockedGuide(true)} />
+            <ChevronRight size={18} className="text-mist-400 flex-shrink-0" onClick={() => setShowBlockedGuide(true)} />
           </>
         ) : (
           <>
@@ -141,10 +173,18 @@ export function AlertsSetupCard() {
               disabled={busy}
               className={cn(
                 "flex-shrink-0 px-3.5 py-2 rounded-xl font-body font-bold text-xs transition-all active:scale-95",
-                busy ? "bg-lift border border-edge text-mist-500" : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
+                busy ? "bg-lift border border-edge text-mist-400" : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
               )}
             >
               {busy ? "…" : "Turn on"}
+            </button>
+            <button
+              onClick={dismiss}
+              disabled={busy}
+              aria-label="Not now — don't ask again"
+              className="w-8 h-8 -mr-1 flex items-center justify-center text-mist-500 hover:text-white transition-colors flex-shrink-0"
+            >
+              <X size={15} />
             </button>
           </>
         )}

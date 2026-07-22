@@ -18,7 +18,7 @@ interface BeverageModalProps {
   onOrder:             (beverage: Beverage, qty: number, note: string, size: "regular" | "giant") => void;
 }
 
-type BtnState = "idle" | "loading" | "done";
+type BtnState = "idle" | "done";
 
 export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }: BeverageModalProps) {
   const [qty,      setQty]      = useState(1);
@@ -63,13 +63,15 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
     });
   }, []);
 
+  // Adding to the cart is a local, synchronous state update — there's no
+  // network call to wait on, so the add happens immediately. A brief "done"
+  // flash still confirms the tap registered before the modal closes, but
+  // there's no artificial "loading" pause in front of it.
   const handleOrder = async () => {
     if (!beverage || btnState !== "idle") return;
-    setBtnState("loading");
-    await new Promise(r => setTimeout(r, 750));
     onOrder(beverage, qty, note, size);
     setBtnState("done");
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 350));
     onClose();
   };
 
@@ -207,7 +209,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
 
               {/* Ingredients */}
               <div className="bg-lift/60 border border-edge rounded-2xl px-4 py-3">
-                <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest mb-2">Ingredients</p>
+                <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest mb-2">Ingredients</p>
                 <ul className="space-y-1.5">
                   {beverage.ingredients.map(ing => (
                     <li key={ing} className="flex items-center gap-2.5 text-sm text-mist-200 font-body">
@@ -221,7 +223,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
 
               {/* Pairing note */}
               {beverage.pairsWith && (
-                <p className="text-[11px] text-mist-500 font-body italic leading-relaxed">
+                <p className="text-[11px] text-mist-400 font-body italic leading-relaxed">
                   {beverage.pairsWith}
                 </p>
               )}
@@ -269,7 +271,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                 {/* Explains what "Giant" actually means (size + scarcity) —
                     the unavailable case already had a reason; the available
                     case didn't state either fact anywhere. */}
-                <p className="text-[11px] text-mist-600 font-body text-center -mt-1">
+                <p className="text-[11px] text-mist-400 font-body text-center -mt-1">
                   {giantCupsAvailable === 0
                     ? "Giant cups currently unavailable — check back soon"
                     : "Giant = larger pour, limited supply per event."}
@@ -316,7 +318,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                   "flex items-center gap-1.5 text-xs font-body px-3 py-2 rounded-xl border transition-all",
                   showNote
                     ? "border-felt-600/40 text-felt-400 bg-felt-600/10"
-                    : "border-edge text-mist-500 hover:text-mist-200 hover:border-rim",
+                    : "border-edge text-mist-400 hover:text-mist-200 hover:border-rim",
                 )}
               >
                 {showNote ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -333,7 +335,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                 onChange={e => setNote(e.target.value)}
                 maxLength={160}
                 placeholder="e.g. extra ice, no sugar, lighter on the mixer, neat…"
-                className="w-full bg-lift border border-edge rounded-2xl px-4 py-3 text-sm text-mist-100 placeholder-mist-600 font-body resize-none focus:outline-none focus:border-felt-600/50 transition-colors animate-fade-in"
+                className="w-full bg-lift border border-edge rounded-2xl px-4 py-3 text-sm text-mist-100 placeholder-mist-400 font-body resize-none focus:outline-none focus:border-felt-600/50 transition-colors animate-fade-in"
               />
             )}
 
@@ -354,19 +356,17 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                 btnState !== "idle" && "cursor-default",
               )}
             >
-              {btnState === "loading" && <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-              {btnState === "done"    && <Check size={19} className="animate-scale-in" />}
-              {btnState === "idle"   && <ShoppingBag size={19} />}
+              {btnState === "done" && <Check size={19} className="animate-scale-in" />}
+              {btnState === "idle" && <ShoppingBag size={19} />}
               <span>
-                {btnState === "idle"    && `Add to Order${qty > 1 ? ` ×${qty}` : ""} — ${fmtUSD(effectivePrice * qty)}`}
-                {btnState === "loading" && "Adding to your order…"}
-                {btnState === "done"    && "Added to your order!"}
+                {btnState === "idle" && `Add to Order${qty > 1 ? ` ×${qty}` : ""} — ${fmtUSD(effectivePrice * qty)}`}
+                {btnState === "done" && "Added to your order!"}
               </span>
             </button>
 
             {/* Reassurance */}
             {btnState === "idle" && (
-              <p className="text-center text-[11px] text-mist-600 font-body -mt-1">
+              <p className="text-center text-[11px] text-mist-400 font-body -mt-1">
                 Delivered to your seat · No payment needed now
               </p>
             )}

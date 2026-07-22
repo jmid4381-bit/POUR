@@ -218,7 +218,7 @@ export function CategoryNav({ tabs, activeCategory, onSelect }: CategoryNavProps
                 {meta.shortLabel}
                 <span className={cn(
                   "text-[10px] font-mono rounded-full px-1.5 py-0",
-                  active ? "bg-white/20 text-white" : "bg-lift text-mist-500",
+                  active ? "bg-white/20 text-white" : "bg-lift text-mist-400",
                 )}>
                   {count}
                 </span>

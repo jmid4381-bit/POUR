@@ -160,10 +160,10 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
             {beverage.tagline}
           </p>
           <div className="flex items-center gap-1 mt-1.5">
-            <Info size={10} className={HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600"} />
+            <Info size={10} className={HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-400"} />
             <span className={cn(
               "text-[10px] font-body",
-              HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600",
+              HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-400",
             )}>Tap for details</span>
           </div>
         </div>
@@ -180,7 +180,7 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
                 ? "bg-felt-500/30 border-felt-400 text-felt-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
                 : HOLIDAY_THEME_ACTIVE
                 ? "bg-white/5 border-white/25 text-blue-100/80 hover:text-white hover:border-white/40"
-                : "bg-transparent border-edge text-mist-500 hover:text-mist-300",
+                : "bg-transparent border-edge text-mist-400 hover:text-mist-300",
             )}
           >
             Regular
@@ -194,7 +194,7 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
                 ? "bg-blue-500/30 border-blue-400 text-blue-100 shadow-[0_0_12px_rgba(59,130,246,0.4)]"
                 : HOLIDAY_THEME_ACTIVE
                 ? "bg-white/5 border-white/25 text-blue-100/80 hover:text-white hover:border-white/40"
-                : "bg-transparent border-edge text-mist-500 hover:text-mist-300",
+                : "bg-transparent border-edge text-mist-400 hover:text-mist-300",
               giantDisabled && "opacity-40 cursor-not-allowed",
             )}
           >
@@ -207,7 +207,7 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
           guest picks it — not decorative, since neither fact is stated
           anywhere else on this card. */}
       {showSizeToggle && (
-        <p className="px-3.5 pb-2 -mt-1 text-[10px] font-body text-mist-600 leading-snug">
+        <p className="px-3.5 pb-2 -mt-1 text-[10px] font-body text-mist-400 leading-snug">
           {giantDisabled
             ? "Sold out for now — limited supply per event."
             : "Giant = larger pour, limited supply per event."}
@@ -228,7 +228,7 @@ export function BeverageCard({ beverage, onClick, onQuickAdd, cartQuantity = 0, 
           </span>
           <p className={cn(
             "text-[10px] font-mono",
-            HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-600",
+            HOLIDAY_THEME_ACTIVE ? "text-blue-300/70" : "text-mist-400",
           )}>per drink</p>
         </div>
 

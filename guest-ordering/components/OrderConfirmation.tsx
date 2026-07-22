@@ -292,11 +292,11 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest">Order</p>
+                <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest">Order</p>
                 <p className="font-mono text-sm text-white font-semibold">{order.id}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest">Placed</p>
+                <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest">Placed</p>
                 <p className="font-mono text-sm text-mist-200">{fmtTime(order.placedAt)}</p>
               </div>
             </div>
@@ -318,7 +318,7 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
                         {item.size === "giant" && (
                           <span className="ml-1.5 text-[9px] font-mono font-bold text-blue-400 bg-blue-400/15 border border-blue-400/30 rounded px-1 py-0.5 align-middle">GIANT</span>
                         )}
-                        {item.quantity > 1 && <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>}
+                        {item.quantity > 1 && <span className="text-mist-400 font-mono ml-1">×{item.quantity}</span>}
                       </span>
                     </div>
                     <span className="font-mono text-mist-300 flex-shrink-0">
@@ -399,7 +399,7 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
           aria-label={`Order status: ${STEPS[displayStep].ariaLabel}`}
           aria-live="polite"
         >
-          <p className="text-[10px] font-mono text-mist-500 uppercase tracking-widest mb-4">Order Progress</p>
+          <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest mb-4">Order Progress</p>
           <div className="flex items-center">
             {STEPS.map((step, i) => {
               const isDone   = i < currentStep;
@@ -411,13 +411,13 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
                       "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500",
                       isDone   ? "bg-felt-grad text-white shadow-btn-felt" :
                       isActive ? "border-2 border-felt-500 text-felt-400 animate-pulse-dot" :
-                                 "bg-lift border border-edge text-mist-600",
+                                 "bg-lift border border-edge text-mist-400",
                     )}>
                       {isDone ? "✓" : i + 1}
                     </div>
                     <span className={cn(
                       "text-[9px] font-mono uppercase tracking-wide whitespace-nowrap",
-                      isDone || isActive ? "text-felt-400" : "text-mist-600",
+                      isDone || isActive ? "text-felt-400" : "text-mist-400",
                     )}>
                       {step.label}
                     </span>
@@ -464,7 +464,7 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
           </button>
         </div>
 
-        <p className="text-center text-[11px] text-mist-600 font-body animate-fade-up" style={{ animationDelay:"0.3s" }}>
+        <p className="text-center text-[11px] text-mist-400 font-body animate-fade-up" style={{ animationDelay:"0.3s" }}>
           A server will bring your order directly to your seat.
           <br />No need to wait at the bar.
         </p>

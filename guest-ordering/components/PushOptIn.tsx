@@ -157,9 +157,9 @@ export function PushOptIn({ orderId }: { orderId: string }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-white font-body font-semibold text-sm">Notifications are blocked</p>
-            <p className="text-mist-500 text-xs font-body mt-0.5">Tap to see how to turn them back on.</p>
+            <p className="text-mist-400 text-xs font-body mt-0.5">Tap to see how to turn them back on.</p>
           </div>
-          <ChevronRight size={18} className="text-mist-500 flex-shrink-0" />
+          <ChevronRight size={18} className="text-mist-400 flex-shrink-0" />
         </button>
 
         {showBlockedGuide && <NotificationsBlockedGuide onClose={() => setShowBlockedGuide(false)} />}
@@ -210,7 +210,7 @@ export function PushOptIn({ orderId }: { orderId: string }) {
         className={cn(
           "w-full mt-3 py-2.5 rounded-xl font-body font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
           state === "enabling"
-            ? "bg-lift border border-edge text-mist-500 cursor-not-allowed"
+            ? "bg-lift border border-edge text-mist-400 cursor-not-allowed"
             : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
         )}
       >

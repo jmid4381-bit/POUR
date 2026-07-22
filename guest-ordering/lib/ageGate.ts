@@ -15,7 +15,6 @@ export const LEGAL_DRINKING_AGE = 21;
 export const DEFAULT_VENUE_NAME = "POUR";
 
 const VERIFIED_KEY  = "age_gate_verified";
-const DECLINED_KEY  = "age_gate_declined";
 const META_KEY      = "age_gate_meta";
 const UNDERAGE_KEY  = "is_underage_session";
 
@@ -45,13 +44,6 @@ export interface AgeVerificationMeta {
 export function hasVerifiedAge(): boolean {
   try { return sessionStorage.getItem(VERIFIED_KEY) === "true"; }
   catch { return false; } // SSR — gate will show on client
-}
-
-// Once declined, this session can never retry — matches a real ID check:
-// you don't get a second guess after being told no.
-export function hasDeclinedAge(): boolean {
-  try { return sessionStorage.getItem(DECLINED_KEY) === "true"; }
-  catch { return false; }
 }
 
 export function getAgeVerificationMeta(): AgeVerificationMeta | null {

@@ -131,7 +131,7 @@ export function OrderReviewModal({
               </button>
               <div>
                 <h3 className="font-display text-xl font-semibold text-white leading-none">Review Order</h3>
-                <p className="text-[11px] text-mist-500 font-mono mt-0.5">
+                <p className="text-[11px] text-mist-400 font-mono mt-0.5">
                   {itemCount} drink{itemCount !== 1 ? "s" : ""} · {locationName}
                 </p>
               </div>
@@ -156,7 +156,7 @@ export function OrderReviewModal({
                 <p className="text-white text-sm font-body font-medium mt-0.5 truncate">{locationName}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-[10px] font-mono text-mist-500 leading-none">Total</p>
+                <p className="text-[10px] font-mono text-mist-400 leading-none">Total</p>
                 <p className="text-white font-mono font-bold text-base mt-0.5">{fmtUSD(total)}</p>
               </div>
             </div>
@@ -206,7 +206,7 @@ export function OrderReviewModal({
               <Plus size={15} /> Add More Drinks
             </button>
 
-            <p className="text-center text-[11px] text-mist-600 font-body">
+            <p className="text-center text-[11px] text-mist-400 font-body">
               Delivered to your seat · Payment handled at your table
             </p>
 
@@ -222,7 +222,7 @@ export function OrderReviewModal({
               className="flex items-center justify-between px-5 py-3 border-b border-edge text-mist-300 hover:text-white transition-colors flex-shrink-0"
             >
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-widest text-mist-500">Order Details</span>
+                <span className="text-xs font-mono uppercase tracking-widest text-mist-400">Order Details</span>
                 <span className="text-[10px] font-mono bg-lift border border-edge text-mist-400 rounded-full px-2 py-0.5">
                   {uniqueCount} {uniqueCount === 1 ? "item" : "items"}
                 </span>
@@ -252,37 +252,39 @@ export function OrderReviewModal({
                       {item.note && (
                         <p className="text-amber-400/70 text-xs font-body italic mt-0.5 line-clamp-1">"{item.note}"</p>
                       )}
-                      <p className="text-mist-500 font-mono text-xs mt-0.5">{fmtUSD(item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0))} each</p>
+                      <p className="text-mist-400 font-mono text-xs mt-0.5">{fmtUSD(item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0))} each</p>
                     </div>
 
-                    {/* Qty controls */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Qty controls — 36px targets (w-9 h-9), matching the
+                        same size already used in BeverageModal's quantity
+                        stepper, up from the previous 28px. */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => onUpdateQty(item.beverage.id, -1)}
                         aria-label="Decrease quantity"
-                        className="w-7 h-7 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90"
+                        className="w-9 h-9 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90"
                       >
-                        <Minus size={11} />
+                        <Minus size={13} />
                       </button>
                       <span className="w-5 text-center font-mono text-white font-bold text-sm">{item.quantity}</span>
                       <button
                         onClick={() => onUpdateQty(item.beverage.id, 1)}
                         aria-label="Increase quantity"
-                        className="w-7 h-7 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90"
+                        className="w-9 h-9 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90"
                       >
-                        <Plus size={11} />
+                        <Plus size={13} />
                       </button>
                     </div>
 
                     {/* Subtotal + remove */}
-                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-1">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-1">
                       <span className="font-mono text-sm font-semibold text-white">{fmtUSD((item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0)) * item.quantity)}</span>
                       <button
                         onClick={() => onRemoveItem(item.beverage.id)}
                         aria-label={`Remove ${item.beverage.name}`}
-                        className="text-mist-600 hover:text-red-400 transition-colors"
+                        className="w-8 h-8 -mr-1.5 flex items-center justify-center text-mist-400 hover:text-red-400 transition-colors"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
 

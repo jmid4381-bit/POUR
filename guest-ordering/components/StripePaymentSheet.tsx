@@ -76,7 +76,7 @@ function PayForm({ amountCents, onSuccess, onCancel }: Omit<StripePaymentSheetPr
           "w-full py-4 rounded-2xl font-body font-bold text-lg flex items-center justify-center gap-2.5",
           "transition-all duration-200 active:scale-[0.98]",
           (!stripe || !ready || busy)
-            ? "bg-lift border border-edge text-mist-600 cursor-not-allowed"
+            ? "bg-lift border border-edge text-mist-400 cursor-not-allowed"
             : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
         )}
       >
@@ -93,7 +93,7 @@ function PayForm({ amountCents, onSuccess, onCancel }: Omit<StripePaymentSheetPr
       <button
         onClick={onCancel}
         disabled={busy}
-        className="w-full text-center text-mist-500 hover:text-white text-xs font-body font-semibold transition-colors disabled:opacity-50"
+        className="w-full text-center text-mist-400 hover:text-white text-xs font-body font-semibold transition-colors disabled:opacity-50"
       >
         Cancel
       </button>
@@ -112,7 +112,7 @@ export function StripePaymentSheet({ clientSecret, amountCents, onSuccess, onCan
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-edge flex-shrink-0">
             <div>
               <h3 className="font-display text-xl font-semibold text-white leading-none">Secure Payment</h3>
-              <p className="text-[11px] text-mist-500 font-mono mt-0.5 flex items-center gap-1">
+              <p className="text-[11px] text-mist-400 font-mono mt-0.5 flex items-center gap-1">
                 <ShieldCheck size={11} className="text-felt-400" /> Powered by Stripe
               </p>
             </div>

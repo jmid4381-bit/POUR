@@ -14,6 +14,15 @@
  *
  * Keyed by locationId so a guest at Table 12 and another at the
  * VIP Lounge on the same device don't share a cart.
+ *
+ * Short-TTL localStorage backup (added): iOS Safari can reclaim a
+ * backgrounded tab's sessionStorage under memory pressure — the guest
+ * switches apps for a minute, comes back, and their in-progress cart is
+ * silently gone. A localStorage copy with a short expiry (BACKUP_TTL_MS)
+ * covers exactly that case without reintroducing the "stale cart from
+ * three days ago" problem sessionStorage was chosen to avoid — it's only
+ * ever consulted when sessionStorage itself comes back empty, and only
+ * within the TTL window.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -22,6 +31,11 @@ import { GIANT_UPCHARGE } from "@/lib/data";
 
 const CART_VERSION = "v2";
 const MAX_ALCOHOLIC_PER_ORDER = 2;
+
+// How long the localStorage backup stays valid — long enough to survive an
+// iOS Safari tab reclaim (typically minutes), short enough that it never
+// resurrects a genuinely abandoned cart on a later, unrelated visit.
+const CART_BACKUP_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 // Sliding 10-minute window: alcoholic drinks already *placed* (not just in
 // cart) count against the limit for 10 minutes from when each was ordered.
@@ -36,6 +50,10 @@ function cartKey(locationId: string): string {
   return `casino_cart_${CART_VERSION}_${locationId}`;
 }
 
+function cartBackupKey(locationId: string): string {
+  return `casino_cart_backup_${CART_VERSION}_${locationId}`;
+}
+
 function alcoholLogKey(locationId: string): string {
   return `casino_alcohol_log_${ALCOHOL_LOG_VERSION}_${locationId}`;
 }
@@ -44,17 +62,42 @@ function saveCart(locationId: string, cart: CartItem[]): void {
   try {
     sessionStorage.setItem(cartKey(locationId), JSON.stringify(cart));
   } catch { /* storage full or SSR */ }
+  // Backup only when there's something worth recovering — an empty cart
+  // never needs a resurrection path.
+  try {
+    if (cart.length > 0) {
+      localStorage.setItem(cartBackupKey(locationId), JSON.stringify({ cart, savedAt: Date.now() }));
+    } else {
+      localStorage.removeItem(cartBackupKey(locationId));
+    }
+  } catch { /* storage full or SSR */ }
+}
+
+function validateCartItems(parsed: unknown): CartItem[] {
+  if (!Array.isArray(parsed)) return [];
+  return (parsed as CartItem[]).filter(i =>
+    i.beverage?.id && i.beverage?.price != null && i.quantity > 0
+  );
 }
 
 function loadCart(locationId: string): CartItem[] {
   try {
     const raw = sessionStorage.getItem(cartKey(locationId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as CartItem[];
-    // Validate — items must have price, name, id
-    return parsed.filter(i =>
-      i.beverage?.id && i.beverage?.price != null && i.quantity > 0
-    );
+    if (raw) return validateCartItems(JSON.parse(raw));
+  } catch { /* fall through to backup */ }
+
+  // sessionStorage came back empty — either a genuinely new tab, or iOS
+  // reclaimed it while backgrounded. Only the latter should be recovered,
+  // so the backup is honored just within its short TTL.
+  try {
+    const rawBackup = localStorage.getItem(cartBackupKey(locationId));
+    if (!rawBackup) return [];
+    const { cart, savedAt } = JSON.parse(rawBackup) as { cart: CartItem[]; savedAt: number };
+    if (Date.now() - savedAt > CART_BACKUP_TTL_MS) {
+      localStorage.removeItem(cartBackupKey(locationId));
+      return [];
+    }
+    return validateCartItems(cart);
   } catch {
     return [];
   }
@@ -62,6 +105,8 @@ function loadCart(locationId: string): CartItem[] {
 
 function clearCart(locationId: string): void {
   try { sessionStorage.removeItem(cartKey(locationId)); }
+  catch { /* ignore */ }
+  try { localStorage.removeItem(cartBackupKey(locationId)); }
   catch { /* ignore */ }
 }
 

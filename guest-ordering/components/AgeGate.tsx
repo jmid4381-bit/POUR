@@ -15,7 +15,7 @@
  */
 
 import { useRef, useState } from "react";
-import { ShieldCheck, XCircle, UserRound, ChevronRight } from "lucide-react";
+import { ShieldCheck, UserRound, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
@@ -27,21 +27,20 @@ import {
 import { setGuestName, getRememberedGuestName, clearRememberedGuestName } from "@/lib/guestName";
 import { resetGuestId, getOrCreateGuestId } from "@/lib/guestSession";
 
-export { hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession } from "@/lib/ageGate";
+export { hasVerifiedAge, getAgeVerificationMeta, isUnderageSession } from "@/lib/ageGate";
 export { getGuestName } from "@/lib/guestName";
 
 const NAME_MAX_LEN = 30;
 
 interface AgeGateProps {
   onConfirm:  () => void;
-  onDecline:  () => void;
   onResetIdentity?: () => void; // called when the guest says "Not me"
   legalAge?:  number;
   venueName?: string;
 }
 
 export function AgeGate({
-  onConfirm, onDecline, onResetIdentity,
+  onConfirm, onResetIdentity,
   legalAge = LEGAL_DRINKING_AGE,
   venueName = DEFAULT_VENUE_NAME,
 }: AgeGateProps) {
@@ -223,9 +222,9 @@ export function AgeGate({
                     aria-label="Birth month"
                     value={month}
                     onChange={e => handleMonthChange(e.target.value)}
-                    className="w-16 text-center bg-lift border border-edge rounded-xl py-3 text-white font-mono text-lg placeholder-mist-600 focus:outline-none focus:border-gold-500/40 transition-colors"
+                    className="w-16 text-center bg-lift border border-edge rounded-xl py-3 text-white font-mono text-lg placeholder-mist-400 focus:outline-none focus:border-gold-500/40 transition-colors"
                   />
-                  <span className="text-mist-600 font-mono" aria-hidden>/</span>
+                  <span className="text-mist-400 font-mono" aria-hidden>/</span>
                   <input
                     ref={dayRef}
                     type="text"
@@ -235,9 +234,9 @@ export function AgeGate({
                     aria-label="Birth day"
                     value={day}
                     onChange={e => handleDayChange(e.target.value)}
-                    className="w-16 text-center bg-lift border border-edge rounded-xl py-3 text-white font-mono text-lg placeholder-mist-600 focus:outline-none focus:border-gold-500/40 transition-colors"
+                    className="w-16 text-center bg-lift border border-edge rounded-xl py-3 text-white font-mono text-lg placeholder-mist-400 focus:outline-none focus:border-gold-500/40 transition-colors"
                   />
-                  <span className="text-mist-600 font-mono" aria-hidden>/</span>
+                  <span className="text-mist-400 font-mono" aria-hidden>/</span>
                   <input
                     ref={yearRef}
                     type="text"
@@ -248,7 +247,7 @@ export function AgeGate({
                     value={year}
                     onChange={e => handleYearChange(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSubmitBirthdate()}
-                    className="w-20 text-center bg-lift border border-edge rounded-xl py-3 text-white font-mono text-lg placeholder-mist-600 focus:outline-none focus:border-gold-500/40 transition-colors"
+                    className="w-20 text-center bg-lift border border-edge rounded-xl py-3 text-white font-mono text-lg placeholder-mist-400 focus:outline-none focus:border-gold-500/40 transition-colors"
                   />
                 </div>
                 {error && (
@@ -274,7 +273,7 @@ export function AgeGate({
                   "w-full py-4 rounded-2xl font-body font-bold text-base transition-all active:scale-[0.98]",
                   isComplete
                     ? "bg-felt-grad text-white shadow-btn-felt hover:brightness-110"
-                    : "bg-lift border border-edge text-mist-600 cursor-not-allowed",
+                    : "bg-lift border border-edge text-mist-400 cursor-not-allowed",
                 )}
               >
                 Confirm
@@ -300,7 +299,7 @@ export function AgeGate({
               {/* Underage-only note — avoids confusion a moment later when
                   the menu shows no alcoholic drinks at all. */}
               {justVerifiedUnderage && (
-                <p className="text-mist-500 text-xs font-body -mt-2">
+                <p className="text-mist-400 text-xs font-body -mt-2">
                   You'll see our non-alcoholic menu.
                 </p>
               )}
@@ -316,7 +315,7 @@ export function AgeGate({
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSubmitName()}
-                className="w-full text-center bg-lift border border-edge rounded-xl py-3 text-white font-body text-base placeholder-mist-600 focus:outline-none focus:border-gold-500/40 transition-colors"
+                className="w-full text-center bg-lift border border-edge rounded-xl py-3 text-white font-body text-base placeholder-mist-400 focus:outline-none focus:border-gold-500/40 transition-colors"
               />
 
               {/* Action */}
@@ -340,23 +339,5 @@ export function AgeGate({
         </p>
       </div>
     </div>
-  );
-}
-
-// Shown when guest fails age verification — permanent end state, not retryable
-export function AgeGateDeclined() {
-  return (
-    <main className="min-h-screen bg-base flex items-center justify-center px-4">
-      <div className="text-center max-w-xs">
-        <div className="w-16 h-16 rounded-2xl bg-lift border border-edge mx-auto flex items-center justify-center mb-5">
-          <XCircle size={28} className="text-mist-600" strokeWidth={1.5} />
-        </div>
-        <h2 className="font-display text-2xl text-white mb-2">Service Unavailable</h2>
-        <p className="text-mist-400 text-sm font-body leading-relaxed">
-          Our beverage ordering service is only available to guests of legal age.
-          Please speak with a member of our service staff if you need assistance.
-        </p>
-      </div>
-    </main>
   );
 }

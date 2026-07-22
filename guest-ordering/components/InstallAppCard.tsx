@@ -77,7 +77,7 @@ export function InstallAppCard() {
         className={cn(
           "w-full mt-3 py-2.5 rounded-xl font-body font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
           busy
-            ? "bg-lift border border-edge text-mist-500 cursor-not-allowed"
+            ? "bg-lift border border-edge text-mist-400 cursor-not-allowed"
             : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
         )}
       >

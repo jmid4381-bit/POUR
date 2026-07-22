@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   ShoppingBag, Star, Sparkles, ChevronRight, Check, Clock, Building2, Info,
+  Search, X,
 } from "lucide-react";
 import { BeverageCard }      from "@/components/BeverageCard";
 import { BrandCard }        from "@/components/BrandCard";
@@ -16,7 +17,7 @@ import { StripePaymentSheet } from "@/components/StripePaymentSheet";
 import { July4MilestoneOverlay } from "@/components/July4MilestoneOverlay";
 import { useJuly4Milestones } from "@/hooks/useJuly4Milestones";
 import { useJuly4EventSettings } from "@/hooks/useJuly4EventSettings";
-import { AgeGate, AgeGateDeclined, hasVerifiedAge, hasDeclinedAge, getAgeVerificationMeta, isUnderageSession, getGuestName } from "@/components/AgeGate";
+import { AgeGate, hasVerifiedAge, getAgeVerificationMeta, isUnderageSession, getGuestName } from "@/components/AgeGate";
 import { CategoryNav, type CategoryTab } from "@/components/CategoryNav";
 import { useMenu }           from "@/hooks/useMenu";
 import { useCart }           from "@/hooks/useCart";
@@ -110,6 +111,10 @@ export default function GuestOrderPage({ params }: Props) {
   const [activeCategory, setActiveCategory] = useState<BeverageCategory>("cocktail");
   const savedCategory   = useRef<BeverageCategory>("cocktail");
 
+  // Menu search — lets a guest who already knows what they want find it
+  // directly instead of browsing category by category.
+  const [menuSearch, setMenuSearch] = useState("");
+
   const [selectedBeverage, setSelected]   = useState<Beverage | null>(null);
   const [showReview,       setShowReview] = useState(false);
   const [showOrders,       setShowOrders] = useState(false);
@@ -201,14 +206,15 @@ export default function GuestOrderPage({ params }: Props) {
     }
   }, [sessionOrders]);
 
-  // Age gate state (client-only, SSR-safe).
-  const [ageState, setAgeState] = useState<"checking" | "verified" | "declined">("checking");
+  // Age gate state (client-only, SSR-safe). There is no "declined"/blocked
+  // state — recordVerification() never hard-blocks a guest (see
+  // lib/ageGate.ts); an underage session is simply flagged to restrict the
+  // menu to non-alcoholic items, never a dead end.
+  const [ageState, setAgeState] = useState<"checking" | "verified">("checking");
   const [isUnderage, setIsUnderage] = useState(false);
   const [guestDisplayName, setGuestDisplayName] = useState<string | null>(null);
   useEffect(() => {
-    if (hasDeclinedAge())      setAgeState("declined");
-    else if (hasVerifiedAge()) setAgeState("verified");
-    else                       setAgeState("checking");
+    setAgeState(hasVerifiedAge() ? "verified" : "checking");
     setIsUnderage(isUnderageSession());
     setGuestDisplayName(getGuestName());
   }, []);
@@ -316,6 +322,22 @@ export default function GuestOrderPage({ params }: Props) {
     }
     return result;
   }, [menuDrinks]);
+
+  // Menu search results — searches across EVERY category at once (unlike
+  // the category grid, which only ever shows one category), matched by
+  // name/tagline/description. Flat list, no brand grouping — a search hit
+  // should show exactly what matched rather than folding it into a brand card.
+  const trimmedMenuSearch = menuSearch.trim().toLowerCase();
+  const menuSearchResults = useMemo(() => {
+    if (!trimmedMenuSearch) return [];
+    return visibleBeverages.filter(b =>
+      b.isAvailable && (
+        b.name.toLowerCase().includes(trimmedMenuSearch) ||
+        b.tagline.toLowerCase().includes(trimmedMenuSearch) ||
+        b.description.toLowerCase().includes(trimmedMenuSearch)
+      )
+    );
+  }, [visibleBeverages, trimmedMenuSearch]);
 
   // Lookup how many of each beverage are in cart
   const cartQuantityMap = useMemo(() => {
@@ -827,7 +849,6 @@ export default function GuestOrderPage({ params }: Props) {
     return (
       <AgeGate
         onConfirm={() => { setIsUnderage(isUnderageSession()); setGuestDisplayName(getGuestName()); setAgeState("verified"); }}
-        onDecline={() => setAgeState("declined")}
         onResetIdentity={() => {
           // "Not me" already minted a fresh guest-ID cookie — pick it up
           // here too so cooldown reads and order placement use the new
@@ -846,9 +867,6 @@ export default function GuestOrderPage({ params }: Props) {
       />
     );
   }
-  if (ageState === "declined") {
-    return <AgeGateDeclined />;
-  }
 
   if (placedOrder) {
     return (
@@ -866,6 +884,7 @@ export default function GuestOrderPage({ params }: Props) {
             onClose={() => setShowOrders(false)}
             cooldownMs={cooldownMs}
             onReorder={handleReorder}
+            onReorderItem={item => handleReorder({ items: [item] })}
           />
         )}
         {reorderCandidate && (
@@ -991,7 +1010,10 @@ export default function GuestOrderPage({ params }: Props) {
                 aria-label={`Drink cooldown: ${formatCooldown(cooldownMs)} remaining. Tap to learn why.`}
               >
                 <Clock size={11} className="text-gold-400 flex-shrink-0" />
-                <span className="hidden sm:inline text-[9px] font-mono text-gold-400/80 uppercase tracking-wider">
+                {/* Always shown, even on narrow phones — icon+number alone
+                    isn't self-explanatory to a first-time guest, who'd
+                    otherwise have to tap just to learn what it means. */}
+                <span className="text-[9px] font-mono text-gold-400/80 uppercase tracking-wider">
                   Cooldown
                 </span>
                 <span className="text-[11px] font-mono font-semibold text-gold-300 tabular-nums">
@@ -1150,6 +1172,56 @@ export default function GuestOrderPage({ params }: Props) {
         <AlertsSetupCard />
         <div className="px-4"><div className="max-w-lg mx-auto"><InstallAppCard /></div></div>
 
+        {/* ── MENU SEARCH ── lets a guest who already knows what they want
+            find it directly, instead of paging through category tabs. */}
+        <div className="px-4 pb-3 animate-fade-up" style={{ animationDelay: "0.11s" }}>
+          <div className="relative max-w-lg mx-auto">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mist-500" aria-hidden />
+            <input
+              type="text"
+              value={menuSearch}
+              onChange={e => setMenuSearch(e.target.value)}
+              placeholder="Search the menu…"
+              aria-label="Search the menu"
+              className="w-full bg-card border border-edge rounded-2xl pl-10 pr-10 py-3 text-sm text-white font-body placeholder-mist-500 focus:outline-none focus:border-felt-500/40 transition-colors"
+            />
+            {menuSearch && (
+              <button
+                onClick={() => setMenuSearch("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-mist-500 hover:text-white transition-colors"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {trimmedMenuSearch ? (
+          <section className="px-4 pt-1" aria-label={`Search results — ${menuSearchResults.length} items`}>
+            {menuSearchResults.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {menuSearchResults.map((bev, i) => (
+                  <BeverageCard
+                    key={bev.id}
+                    beverage={bev}
+                    onClick={setSelected}
+                    onQuickAdd={handleQuickAdd}
+                    cartQuantity={cartQuantityMap.get(bev.id) ?? 0}
+                    giantCupsAvailable={giantCupsAvailable}
+                    style={{ animationDelay: `${i * 40}ms` }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-20 text-center">
+                <p className="text-4xl mb-3" aria-hidden>🔍</p>
+                <p className="text-mist-400 font-body text-sm">No drinks match &ldquo;{menuSearch.trim()}&rdquo;</p>
+              </div>
+            )}
+          </section>
+        ) : (
+        <>
         {/* ── FEATURED STRIP ── */}
         {featured.length > 0 && (
           <section className="mb-8 animate-fade-up" style={{ animationDelay:"0.12s" }}>
@@ -1273,6 +1345,8 @@ export default function GuestOrderPage({ params }: Props) {
             </div>
           ) : null}
         </section>
+        </>
+        )}
 
         <div className="h-8" />
       </div>
@@ -1292,6 +1366,7 @@ export default function GuestOrderPage({ params }: Props) {
           onClose={() => setShowOrders(false)}
           cooldownMs={cooldownMs}
           onReorder={handleReorder}
+          onReorderItem={item => handleReorder({ items: [item] })}
         />
       )}
 

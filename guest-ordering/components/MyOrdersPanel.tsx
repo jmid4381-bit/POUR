@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, AlertCircle, UserRound, RotateCcw, Clock, CheckCircle, Search } from "lucide-react";
+import { X, AlertCircle, UserRound, RotateCcw, Clock, CheckCircle, Search, Plus } from "lucide-react";
 import { cn, fmtTime, fmtUSD } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { HistoryOrder } from "@/hooks/useOrderHistory";
 import type { QueuedOrderStatus } from "@/lib/queue";
-import { GIANT_UPCHARGE } from "@/lib/data";
+import { GIANT_UPCHARGE, type CartItem } from "@/lib/data";
 
 // "1:23" — same shape as the cooldown text shown elsewhere in the app
 function formatCooldown(ms: number): string {
@@ -93,13 +93,13 @@ function ProgressTracker({ status, placedAt, estimatedMinutes }: ProgressTracker
                 "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500",
                 isDone   ? "bg-felt-grad text-white shadow-btn-felt" :
                 isActive ? "border-2 border-felt-500 text-felt-400 animate-pulse-dot" :
-                           "bg-lift border border-edge text-mist-600",
+                           "bg-lift border border-edge text-mist-400",
               )}>
                 {isDone ? "✓" : i + 1}
               </div>
               <span className={cn(
                 "text-[8px] font-mono uppercase tracking-wide whitespace-nowrap",
-                isDone || isActive ? "text-felt-400" : "text-mist-600",
+                isDone || isActive ? "text-felt-400" : "text-mist-400",
               )}>
                 {step}
               </span>
@@ -125,18 +125,19 @@ const STATUS_DISPLAY: Record<QueuedOrderStatus, { label: string; color: string }
   preparing: { label: "Preparing", color: "text-violet-400 bg-violet-400/10 border-violet-400/20"},
   ready:     { label: "Ready",     color: "text-sky-400 bg-sky-400/10 border-sky-400/20"         },
   delivered: { label: "Delivered", color: "text-felt-400 bg-felt-400/10 border-felt-400/20"      },
-  cancelled: { label: "Cancelled", color: "text-mist-500 bg-mist-500/8 border-mist-500/20"       },
+  cancelled: { label: "Cancelled", color: "text-mist-400 bg-mist-500/8 border-mist-500/20"       },
 };
 
 // ─── Single order card ────────────────────────────────────────────────────────
 
 interface OrderCardProps {
-  order:       HistoryOrder;
-  cooldownMs:  number;
-  onReorder:   (order: HistoryOrder) => void;
+  order:          HistoryOrder;
+  cooldownMs:     number;
+  onReorder:      (order: HistoryOrder) => void;
+  onReorderItem:  (item: CartItem) => void;
 }
 
-function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
+function OrderCard({ order, cooldownMs, onReorder, onReorderItem }: OrderCardProps) {
   const subtotal  = order.items.reduce((s, i) => s + (i.beverage.price + (i.size === "giant" ? GIANT_UPCHARGE : 0)) * i.quantity, 0);
   const surcharge = order.surchargeAmount ?? 0;
   const total     = subtotal + surcharge;
@@ -162,7 +163,7 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="font-mono text-xs text-white font-semibold">{order.id}</p>
-            <p className="text-mist-500 text-[10px] font-mono mt-0.5">{fmtTime(order.placedAt)}</p>
+            <p className="text-mist-400 text-[10px] font-mono mt-0.5">{fmtTime(order.placedAt)}</p>
           </div>
           <span className={cn(
             "text-[10px] font-mono px-2 py-0.5 rounded-full border flex-shrink-0 mt-0.5",
@@ -176,8 +177,12 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
         <div className="space-y-1.5">
           {order.items.map((item, i) => {
             const unitPrice = item.beverage.price + (item.size === "giant" ? GIANT_UPCHARGE : 0);
+            // Same signal the whole-order Reorder button uses — an
+            // alcoholic item can't jump the cooldown just because it's
+            // being reordered one at a time instead of as a full order.
+            const itemBlockedByCooldown = item.beverage.isAlcoholic && cooldownMs > 0;
             return (
-              <div key={i} className="flex items-center justify-between">
+              <div key={i} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-sm flex-shrink-0" aria-hidden>{item.beverage.emoji}</span>
                   <span className="text-mist-200 font-body text-xs truncate">
@@ -186,13 +191,34 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
                       <span className="ml-1.5 text-[9px] font-mono font-bold text-blue-400 bg-blue-400/15 border border-blue-400/30 rounded px-1 py-0.5 align-middle">GIANT</span>
                     )}
                     {item.quantity > 1 && (
-                      <span className="text-mist-500 font-mono ml-1">×{item.quantity}</span>
+                      <span className="text-mist-400 font-mono ml-1">×{item.quantity}</span>
                     )}
                   </span>
                 </div>
-                <span className="font-mono text-mist-500 text-xs flex-shrink-0">
-                  {fmtUSD(unitPrice * item.quantity)}
-                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="font-mono text-mist-400 text-xs">
+                    {fmtUSD(unitPrice * item.quantity)}
+                  </span>
+                  {/* Quick reorder — just this one drink, not the whole
+                      order. Reuses the same live-price/availability check
+                      and confirm dialog as the full Reorder button below,
+                      just pre-filled with a single item. */}
+                  <button
+                    onClick={() => onReorderItem({ beverage: item.beverage, quantity: 1, note: item.note, size: item.size })}
+                    disabled={itemBlockedByCooldown}
+                    aria-label={itemBlockedByCooldown
+                      ? `Order one more ${item.beverage.name} — unavailable, ${formatCooldown(cooldownMs)} remaining`
+                      : `Order one more ${item.beverage.name}`}
+                    className={cn(
+                      "w-6 h-6 rounded-lg border flex items-center justify-center transition-all active:scale-90",
+                      itemBlockedByCooldown
+                        ? "border-edge text-mist-400/50 cursor-not-allowed"
+                        : "border-edge text-mist-400 hover:text-white hover:border-rim",
+                    )}
+                  >
+                    <Plus size={11} />
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -207,7 +233,7 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
 
         {/* Total */}
         <div className="flex justify-between pt-2.5 border-t border-edge/60">
-          <span className="text-xs text-mist-500 font-body">Total</span>
+          <span className="text-xs text-mist-400 font-body">Total</span>
           <span className="font-mono text-xs font-semibold text-white">{fmtUSD(total)}</span>
         </div>
 
@@ -249,7 +275,7 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
           className={cn(
             "w-full py-2.5 rounded-xl text-xs font-body font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]",
             blockedByCooldown
-              ? "bg-lift border border-edge text-mist-600 cursor-not-allowed"
+              ? "bg-lift border border-edge text-mist-400 cursor-not-allowed"
               : "bg-felt-grad text-white shadow-btn-felt hover:brightness-110",
           )}
         >
@@ -274,13 +300,14 @@ function OrderCard({ order, cooldownMs, onReorder }: OrderCardProps) {
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 interface MyOrdersPanelProps {
-  orders:     HistoryOrder[];
-  onClose:    () => void;
-  cooldownMs: number;
-  onReorder:  (order: HistoryOrder) => void;
+  orders:         HistoryOrder[];
+  onClose:        () => void;
+  cooldownMs:     number;
+  onReorder:      (order: HistoryOrder) => void;
+  onReorderItem:  (item: CartItem) => void;
 }
 
-export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrdersPanelProps) {
+export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder, onReorderItem }: MyOrdersPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true);
   const [tab, setTab] = useState<"history" | "summary">("history");
@@ -347,7 +374,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
         <div className="flex items-center justify-between px-5 py-3 border-b border-edge flex-shrink-0">
           <div>
             <h2 className="font-display font-semibold text-white text-xl leading-none">My Orders</h2>
-            <p className="text-mist-500 text-[11px] font-mono mt-0.5">
+            <p className="text-mist-400 text-[11px] font-mono mt-0.5">
               {orders.length} order{orders.length !== 1 ? "s" : ""} this session
               {billableOrders.length > 0 && (
                 <span className="text-mist-300"> · {fmtUSD(totalSpend)} total</span>
@@ -393,20 +420,20 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
                 enough that scrolling to find one drink is a real chore */}
             <div className="px-4 pt-2.5 pb-1 flex-shrink-0">
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mist-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mist-400" />
                 <input
                   type="text"
                   value={drinkSearch}
                   onChange={e => setDrinkSearch(e.target.value)}
                   placeholder="Search a drink you ordered…"
                   aria-label="Search past orders by drink name"
-                  className="w-full bg-lift border border-edge rounded-xl pl-9 pr-9 py-2.5 text-sm text-white font-body placeholder-mist-600 focus:outline-none focus:border-felt-500/40 transition-colors"
+                  className="w-full bg-lift border border-edge rounded-xl pl-9 pr-9 py-2.5 text-sm text-white font-body placeholder-mist-400 focus:outline-none focus:border-felt-500/40 transition-colors"
                 />
                 {drinkSearch && (
                   <button
                     onClick={() => setDrinkSearch("")}
                     aria-label="Clear search"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mist-500 hover:text-white transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mist-400 hover:text-white transition-colors"
                   >
                     <X size={14} />
                   </button>
@@ -422,7 +449,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
             <div className="py-16 text-center">
               <p className="text-4xl mb-3" aria-hidden>🍹</p>
               <p className="text-mist-400 text-sm font-body">No orders yet this session</p>
-              <p className="text-mist-600 text-xs font-body mt-1">Your orders will appear here after you place them</p>
+              <p className="text-mist-400 text-xs font-body mt-1">Your orders will appear here after you place them</p>
             </div>
           ) : q && (tab === "summary" ? visibleBillableOrders : visibleOrders).length === 0 ? (
             <div className="py-16 text-center">
@@ -433,7 +460,7 @@ export function MyOrdersPanel({ orders, onClose, cooldownMs, onReorder }: MyOrde
             <SummaryView orders={visibleBillableOrders} totalSpend={totalSpend} filterQuery={q} />
           ) : (
             visibleOrders.map(order => (
-              <OrderCard key={order.id} order={order} cooldownMs={cooldownMs} onReorder={onReorder} />
+              <OrderCard key={order.id} order={order} cooldownMs={cooldownMs} onReorder={onReorder} onReorderItem={onReorderItem} />
             ))
           )}
         </div>

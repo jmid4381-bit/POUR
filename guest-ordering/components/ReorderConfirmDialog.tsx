@@ -79,9 +79,9 @@ export function ReorderConfirmDialog({
                             onClick={() => onUpdateQty(item.beverage.id, -1)}
                             disabled={item.quantity <= 1}
                             aria-label={`Decrease ${item.beverage.name} quantity`}
-                            className="w-6 h-6 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-9 h-9 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            <Minus size={10} />
+                            <Minus size={13} />
                           </button>
                           <span className="w-4 text-center font-mono text-white font-bold text-xs">{item.quantity}</span>
                           <button
@@ -89,17 +89,17 @@ export function ReorderConfirmDialog({
                             disabled={atAlcoholLimit || item.quantity >= 8}
                             aria-label={`Increase ${item.beverage.name} quantity`}
                             title={atAlcoholLimit ? "Drink limit reached for now" : undefined}
-                            className="w-6 h-6 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-9 h-9 rounded-lg bg-void border border-edge flex items-center justify-center text-mist-400 hover:text-white hover:border-rim transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            <Plus size={10} />
+                            <Plus size={13} />
                           </button>
-                          <span className={cn("font-mono text-xs w-12 text-right", item.quantity > 1 ? "text-mist-300" : "text-mist-500")}>
+                          <span className={cn("font-mono text-xs w-12 text-right", item.quantity > 1 ? "text-mist-300" : "text-mist-400")}>
                             {fmtUSD(unitPrice * item.quantity)}
                           </span>
                         </div>
                       ) : (
                         <span className="font-mono text-mist-400 flex-shrink-0">
-                          {item.quantity > 1 && <span className="text-mist-500 mr-1">×{item.quantity}</span>}
+                          {item.quantity > 1 && <span className="text-mist-400 mr-1">×{item.quantity}</span>}
                           {fmtUSD(unitPrice * item.quantity)}
                         </span>
                       )}
@@ -124,7 +124,7 @@ export function ReorderConfirmDialog({
                                     : "bg-felt-600/20 border-felt-500/40 text-felt-300"
                                   : disabled
                                   ? "bg-lift/40 border-edge text-mist-700 cursor-not-allowed"
-                                  : "bg-void border-edge text-mist-500 hover:text-white hover:border-rim",
+                                  : "bg-void border-edge text-mist-400 hover:text-white hover:border-rim",
                               )}
                             >
                               {s === "regular" ? "Regular" : `Giant +$${GIANT_UPCHARGE}`}
