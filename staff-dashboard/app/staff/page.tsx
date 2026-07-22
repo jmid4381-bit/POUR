@@ -257,6 +257,20 @@ export default function StaffDashboard() {
     refreshOrders,
   } = useStaffOrders(staffName ?? "Staff", zones.isVisible, venueId);
 
+  // Auto-advance the mobile single-column view to wherever an order just
+  // moved — without this, accepting an order on mobile left staff staring
+  // at a column that order no longer belongs to, requiring a manual tab
+  // tap just to keep tracking it. No effect on desktop/tablet, which show
+  // every column at once and never read mobileCol.
+  //
+  // Must be declared here, above every early return below (the platform-admin
+  // venue picker and the staff-login gate) — a hook declared after a
+  // conditional return fires on some renders and not others, which is
+  // exactly what caused the "Rendered fewer hooks than expected" crash.
+  const handleAccept  = useCallback((id: string) => { acceptOrder(id);  setMobileCol("accepted");  }, [acceptOrder]);
+  const handleReady   = useCallback((id: string) => { markReady(id);    setMobileCol("ready");     }, [markReady]);
+  const handleDeliver = useCallback((id: string) => { deliverOrder(id); setMobileCol("delivered"); }, [deliverOrder]);
+
   // All active locations, for the zone picker — fetched once per venue,
   // doesn't need to be realtime itself (locations rarely change mid-event).
   const [allLocations, setAllLocations] = useState<StaffLocation[]>([]);
@@ -441,15 +455,6 @@ export default function StaffDashboard() {
 
   const emptyLabel = (base: string) =>
     guestSearch.trim() ? `No orders found for "${guestSearch.trim()}"` : base;
-
-  // Auto-advance the mobile single-column view to wherever an order just
-  // moved — without this, accepting an order on mobile left staff staring
-  // at a column that order no longer belongs to, requiring a manual tab
-  // tap just to keep tracking it. No effect on desktop/tablet, which show
-  // every column at once and never read mobileCol.
-  const handleAccept = useCallback((id: string) => { acceptOrder(id); setMobileCol("accepted"); }, [acceptOrder]);
-  const handleReady  = useCallback((id: string) => { markReady(id);   setMobileCol("ready");     }, [markReady]);
-  const handleDeliver = useCallback((id: string) => { deliverOrder(id); setMobileCol("delivered"); }, [deliverOrder]);
 
   // Shared column props
   const colProps = {
