@@ -75,7 +75,7 @@ export function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
                 <CheckCircle2 size={22} className="text-emerald-400" />
               </div>
               <p className="text-white font-body font-semibold text-sm">Password updated</p>
-              <p className="text-ink-500 text-xs font-body">Signing you in…</p>
+              <p className="text-ink-400 text-xs font-body">Signing you in…</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -84,7 +84,7 @@ export function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
               </p>
 
               <div>
-                <p className="text-[10px] font-mono text-ink-600 uppercase tracking-wider mb-1.5">New Password</p>
+                <p className="text-[10px] font-mono text-ink-400 uppercase tracking-wider mb-1.5">New Password</p>
                 <input
                   type="password"
                   value={password}
@@ -93,12 +93,12 @@ export function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
                   autoComplete="new-password"
                   autoFocus
                   placeholder="••••••••"
-                  className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder-ink-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
+                  className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder-ink-400 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
                 />
               </div>
 
               <div>
-                <p className="text-[10px] font-mono text-ink-600 uppercase tracking-wider mb-1.5">Confirm Password</p>
+                <p className="text-[10px] font-mono text-ink-400 uppercase tracking-wider mb-1.5">Confirm Password</p>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -106,7 +106,7 @@ export function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
                   required
                   autoComplete="new-password"
                   placeholder="••••••••"
-                  className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder-ink-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
+                  className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder-ink-400 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
                 />
               </div>
 
@@ -124,7 +124,7 @@ export function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
                   "w-full py-3.5 rounded-xl font-body font-bold text-base flex items-center justify-center gap-2",
                   "transition-all active:scale-[0.98]",
                   loading
-                    ? "bg-raised border border-edge text-ink-600 cursor-not-allowed"
+                    ? "bg-raised border border-edge text-ink-400 cursor-not-allowed"
                     : "bg-gold-gradient text-void shadow-btn-gold hover:brightness-110",
                 )}
               >

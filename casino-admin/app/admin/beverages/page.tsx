@@ -59,7 +59,7 @@ function PriceCell({ beverage, onSave }: { beverage: Beverage; onSave: (price: n
           className="w-20 bg-raised border border-gold-500/50 rounded-lg px-2 py-1 text-sm font-mono text-white focus:outline-none shadow-price-active"
         />
         <button onClick={commit}  className="text-felt-400 hover:text-felt-300 transition-colors"><Check size={13} /></button>
-        <button onClick={cancel}  className="text-ink-500 hover:text-red-400 transition-colors"><X size={13} /></button>
+        <button onClick={cancel}  className="text-ink-400 hover:text-red-400 transition-colors"><X size={13} /></button>
       </div>
     );
   }
@@ -76,7 +76,7 @@ function PriceCell({ beverage, onSave }: { beverage: Beverage; onSave: (price: n
       )}
     >
       <span className="font-mono text-sm font-semibold text-white">{fmtUSD(beverage.price)}</span>
-      <Pencil size={10} className="text-ink-600 group-hover:text-gold-400 transition-colors" />
+      <Pencil size={10} className="text-ink-400 group-hover:text-gold-400 transition-colors" />
     </button>
   );
 }
@@ -166,7 +166,7 @@ export default function BeveragesPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-ink-500 font-mono text-sm animate-pulse">Loading beverage menu…</p>
+        <p className="text-ink-400 font-mono text-sm animate-pulse">Loading beverage menu…</p>
       </div>
     );
   }
@@ -178,7 +178,7 @@ export default function BeveragesPage() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="font-display text-2xl font-semibold text-white">Beverage Menu</h1>
-            <p className="text-xs text-ink-500 font-mono mt-0.5">
+            <p className="text-xs text-ink-400 font-mono mt-0.5">
               {state.beverages.length} items · {availableCount} active
             </p>
           </div>
@@ -206,7 +206,7 @@ export default function BeveragesPage() {
               <div className={cn("h-0.5 w-full", top)} />
               <div className="p-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1">{label}</p>
+                  <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1">{label}</p>
                   <p className={cn("font-mono font-bold text-2xl leading-none", color)}>{value}</p>
                 </div>
                 <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", color, "bg-current/10 border border-current/20")}>
@@ -220,7 +220,7 @@ export default function BeveragesPage() {
         {/* ── Controls ── */}
         <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -258,13 +258,70 @@ export default function BeveragesPage() {
           </div>
         </div>
 
-        {/* ── Table ── */}
-        {/* This is a CSS grid, not a <table> -- grid items default to
-            min-width: auto, which refuses to shrink below content's
-            intrinsic width. On a narrow phone that pushed the row (and the
-            page) wider than the viewport. overflow-x-auto contains the
-            scroll to this card instead of letting it leak into the page. */}
-        <div className="rounded-2xl border border-edge overflow-hidden bg-surface shadow-card">
+        {/* ── Mobile cards (below md) — avoids the horizontal-scroll table entirely ── */}
+        <div className="md:hidden space-y-2.5">
+          {filtered.length > 0 ? filtered.map((bev, i) => {
+            const catMeta = CATEGORY_META[bev.category];
+            return (
+              <div
+                key={bev.id}
+                className="bg-surface border border-edge rounded-2xl shadow-card p-3.5 animate-row-in"
+                style={{ animationDelay: `${i * 25}ms` }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-lg overflow-hidden bg-raised flex items-center justify-center flex-shrink-0">
+                    {bev.imageUrl
+                      ? <img src={bev.imageUrl} alt={bev.name} loading="lazy" className="w-full h-full object-cover" />
+                      : <span className="text-2xl select-none">{bev.emoji}</span>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-white font-body font-medium text-sm leading-tight truncate">{bev.name}</p>
+                      {bev.isFeatured && <Star size={11} className="text-gold-400 fill-gold-400 flex-shrink-0" />}
+                    </div>
+                    <span className={cn("inline-block mt-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border", catMeta.color)}>
+                      {catMeta.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button variant="surface" size="xs" icon={<Pencil size={11} />} onClick={() => setEditing(bev)} />
+                    <Button variant="danger"  size="xs" icon={<Trash2 size={11} />} onClick={() => setDeleting(bev)} />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-edge/60">
+                  <PriceCell beverage={bev} onSave={price => updatePrice(bev.id, price)} />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-10 h-1.5 bg-rim rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gold-gradient rounded-full"
+                        style={{ width: `${Math.min(100, (bev.ordersTotal / 350) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-mono text-ink-400">{bev.ordersTotal}</span>
+                  </div>
+                  <AvailabilityToggle beverage={bev} onToggle={() => toggleAvailable(bev.id)} />
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="py-20 text-center">
+              <Wine size={32} className="text-ink-700 mx-auto mb-3" />
+              <p className="text-ink-400 font-body text-sm">No beverages match your search</p>
+              {(search || catFilter !== "all") && (
+                <button
+                  onClick={() => { setSearch(""); setCatFilter("all"); }}
+                  className="mt-2 text-gold-400 text-xs font-body hover:text-gold-300"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Table (md and up) ── */}
+        <div className="hidden md:block rounded-2xl border border-edge overflow-hidden bg-surface shadow-card">
         <div className="overflow-x-auto">
         <div className="min-w-[760px]">
           {/* Table header */}
@@ -281,7 +338,7 @@ export default function BeveragesPage() {
                 key={label}
                 onClick={field ? () => toggleSort(field) : undefined}
                 className={cn(
-                  "px-3 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest flex items-center gap-1",
+                  "px-3 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest flex items-center gap-1",
                   field && "cursor-pointer hover:text-ink-200 transition-colors select-none",
                   cl,
                 )}
@@ -315,7 +372,7 @@ export default function BeveragesPage() {
                           <p className="text-white font-body font-medium text-sm leading-tight truncate">{bev.name}</p>
                           {bev.isFeatured && <Star size={11} className="text-gold-400 fill-gold-400 flex-shrink-0" />}
                         </div>
-                        <p className="text-ink-500 text-xs font-body truncate mt-0.5 max-w-[200px]">{bev.description}</p>
+                        <p className="text-ink-400 text-xs font-body truncate mt-0.5 max-w-[200px]">{bev.description}</p>
                       </div>
                     </div>
 
@@ -357,7 +414,10 @@ export default function BeveragesPage() {
 
                     {/* Actions */}
                     <div className="px-4 py-3.5">
-                      <div className="flex items-center gap-1.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      {/* Only hidden-until-hover on devices that actually support hover (mouse/trackpad) --
+                          a touch laptop at lg+ width has no hover state, so gating on lg: alone stranded
+                          these controls fully unreachable there. */}
+                      <div className="flex items-center gap-1.5 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="surface"
                           size="xs"
@@ -381,7 +441,7 @@ export default function BeveragesPage() {
           ) : (
             <div className="py-20 text-center">
               <Wine size={32} className="text-ink-700 mx-auto mb-3" />
-              <p className="text-ink-500 font-body text-sm">No beverages match your search</p>
+              <p className="text-ink-400 font-body text-sm">No beverages match your search</p>
               {(search || catFilter !== "all") && (
                 <button
                   onClick={() => { setSearch(""); setCatFilter("all"); }}
@@ -397,7 +457,7 @@ export default function BeveragesPage() {
         </div>
 
         {/* Price edit hint */}
-        <p className="text-center text-[11px] text-ink-600 font-body">
+        <p className="text-center text-[11px] text-ink-400 font-body">
           💡 Click any price in the table to edit it inline — press Enter to save
         </p>
       </div>

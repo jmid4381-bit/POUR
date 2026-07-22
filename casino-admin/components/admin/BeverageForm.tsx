@@ -199,7 +199,7 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
             <label className={cn(
               "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-body font-medium border cursor-pointer transition-all",
               uploading
-                ? "bg-raised border-edge text-ink-600 cursor-not-allowed"
+                ? "bg-raised border-edge text-ink-400 cursor-not-allowed"
                 : "bg-surface border-edge text-ink-300 hover:text-white hover:border-rim",
             )}>
               {uploading ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />}
@@ -216,12 +216,12 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
               <button
                 type="button"
                 onClick={() => set("imageUrl", null)}
-                className="ml-2 text-xs font-body text-ink-500 hover:text-red-400 transition-colors"
+                className="ml-2 text-xs font-body text-ink-400 hover:text-red-400 transition-colors"
               >
                 Remove
               </button>
             )}
-            <p className="text-[11px] text-ink-600 font-body mt-1.5">
+            <p className="text-[11px] text-ink-400 font-body mt-1.5">
               Falls back to the emoji above when no photo is set.
             </p>
             {uploadError && <p className="text-red-400 text-xs font-body mt-1">{uploadError}</p>}
@@ -274,13 +274,16 @@ export function BeverageForm({ initial, onSubmit, onCancel }: BeverageFormProps)
         {form.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {form.tags.map(t => (
-              <span
+              <button
                 key={t}
+                type="button"
                 onClick={() => set("tags", form.tags.filter(x => x !== t))}
-                className="text-[11px] font-mono bg-raised border border-edge text-ink-300 px-2 py-0.5 rounded-full cursor-pointer hover:bg-red-600/15 hover:text-red-400 hover:border-red-500/30 transition-colors"
+                aria-label={`Remove tag ${t}`}
+                title={`Remove tag ${t}`}
+                className="text-[11px] font-mono bg-raised border border-edge text-ink-300 px-2 py-1.5 rounded-full hover:bg-red-600/15 hover:text-red-400 hover:border-red-500/30 focus:outline-none focus:ring-1 focus:ring-red-500/50 transition-colors"
               >
                 {t} ×
-              </span>
+              </button>
             ))}
           </div>
         )}

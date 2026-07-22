@@ -27,7 +27,13 @@ export function MobileNavBar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const { venueId, isPlatformAdmin, venues, chooseVenue } = useStore();
+  const { state, venueId, isPlatformAdmin, venues, chooseVenue } = useStore();
+  const pendingZoneRequests = state.zoneRequests.filter(r => r.status === "pending").length;
+  const offMenuCount        = state.beverages.filter(b => !b.isAvailable).length;
+  const NAV_BADGES: Record<string, number> = {
+    "/admin/overview":  pendingZoneRequests,
+    "/admin/beverages": offMenuCount,
+  };
   // Lazy initializer -- runs synchronously on the very first render, so a
   // refresh paints the LAST REAL venue seen (cached from a prior successful
   // fetch) instead of the hardcoded "POUR" default while session/venueId/
@@ -70,9 +76,24 @@ export function MobileNavBar() {
             >
               <Wine size={14} className="text-void" strokeWidth={2.5} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-display font-semibold text-white text-sm leading-none">Admin Console</p>
-              <p className="text-[9px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">{venueName}</p>
+              {/* Platform admins get the switcher right here -- burying it inside
+                  the hamburger drawer meant an extra tap (and an extra round-trip
+                  to find it) just to flip venues, every single time. */}
+              {isPlatformAdmin && venues.length > 0 ? (
+                <select
+                  value={venueId ?? ""}
+                  onChange={e => chooseVenue(e.target.value)}
+                  className="text-[9px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5 bg-transparent focus:outline-none max-w-[140px]"
+                >
+                  {venues.map(v => (
+                    <option key={v.id} value={v.id} className="bg-surface text-ink-200 normal-case tracking-normal">{v.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-[9px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">{venueName}</p>
+              )}
             </div>
           </div>
 
@@ -90,16 +111,22 @@ export function MobileNavBar() {
         <div className="flex border-t border-edge/40 overflow-x-auto no-scrollbar">
           {NAV.map(({ href, icon: Icon, label }) => {
             const active = pathname.startsWith(href);
+            const badge  = NAV_BADGES[href] ?? 0;
             return (
               <Link
                 key={href}
                 href={href}
                 className={cn(
-                  "flex-1 flex flex-col items-center gap-0.5 py-2 px-2 text-center transition-colors min-w-0",
-                  active ? "text-gold-400 border-b-2 border-gold-400/60 -mb-px" : "text-ink-500 hover:text-ink-200",
+                  "relative flex-1 flex flex-col items-center gap-0.5 py-2 px-2 text-center transition-colors min-w-0",
+                  active ? "text-gold-400 border-b-2 border-gold-400/60 -mb-px" : "text-ink-400 hover:text-ink-200",
                 )}
               >
-                <Icon size={16} strokeWidth={active ? 2 : 1.5} />
+                <span className="relative">
+                  <Icon size={16} strokeWidth={active ? 2 : 1.5} />
+                  {badge > 0 && !active && (
+                    <span className="absolute -top-1 -right-1.5 w-1.5 h-1.5 rounded-full bg-red-400" />
+                  )}
+                </span>
                 <span className="text-[9px] font-mono uppercase tracking-wide truncate w-full text-center">
                   {label}
                 </span>
@@ -130,14 +157,14 @@ export function MobileNavBar() {
                   <p className="text-[10px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">{venueName}</p>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="text-ink-500 hover:text-white transition-colors">
+              <button onClick={() => setOpen(false)} className="text-ink-400 hover:text-white transition-colors">
                 <X size={16} />
               </button>
             </div>
 
             {isPlatformAdmin && venues.length > 0 && (
               <div className="px-5 pt-4">
-                <label className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1.5 block">
+                <label className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1.5 block">
                   Venue
                 </label>
                 <select
@@ -155,6 +182,7 @@ export function MobileNavBar() {
             <nav className="p-3 space-y-1">
               {NAV.map(({ href, icon: Icon, label }) => {
                 const active = pathname.startsWith(href);
+                const badge  = NAV_BADGES[href] ?? 0;
                 return (
                   <Link
                     key={href}
@@ -170,6 +198,11 @@ export function MobileNavBar() {
                     <Icon size={16} strokeWidth={active ? 2 : 1.5}
                       className={active ? "text-gold-400" : "text-ink-400"} />
                     <span className="text-sm font-body font-medium flex-1">{label}</span>
+                    {badge > 0 && !active && (
+                      <span className="text-[9px] font-mono font-semibold bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-1.5 leading-[15px]">
+                        {badge}
+                      </span>
+                    )}
                     {active && <ChevronRight size={13} className="text-gold-500/60" />}
                   </Link>
                 );

@@ -26,7 +26,7 @@ function VenueGate({ children }: { children: React.ReactNode }) {
               </button>
             ))}
             {venues.length === 0 && (
-              <p className="text-ink-500 text-sm font-body text-center">No venues found.</p>
+              <p className="text-ink-400 text-sm font-body text-center">No venues found.</p>
             )}
           </div>
         </div>

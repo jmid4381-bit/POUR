@@ -28,7 +28,16 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const a = useAnalytics();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const { venueId, isPlatformAdmin, venues, chooseVenue } = useStore();
+  const { state, venueId, isPlatformAdmin, venues, chooseVenue } = useStore();
+  // Both of these live inside their own page's card (ZoneRequestsCard /
+  // Beverages' Off Menu stat) and were invisible from anywhere else --
+  // an admin on Staff or Orders had no way to know either needed attention.
+  const pendingZoneRequests = state.zoneRequests.filter(r => r.status === "pending").length;
+  const offMenuCount        = state.beverages.filter(b => !b.isAvailable).length;
+  const NAV_BADGES: Record<string, number> = {
+    "/admin/overview":  pendingZoneRequests,
+    "/admin/beverages": offMenuCount,
+  };
   // Lazy initializer -- runs synchronously on the very first render, so a
   // refresh paints the LAST REAL venue seen (cached from a prior successful
   // fetch) instead of the hardcoded "POUR" default while session/venueId/
@@ -92,7 +101,7 @@ export function AdminSidebar() {
 
       {/* Live operational metrics */}
       <div className="px-4 py-4 border-b border-edge">
-        <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest px-1 mb-3">Live Status</p>
+        <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest px-1 mb-3">Live Status</p>
 
         {/* Alert strip if overdue orders */}
         {a.overdueCount > 0 && (
@@ -106,14 +115,14 @@ export function AdminSidebar() {
 
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Active",   value: a.activeOrderCount,       color: a.activeOrderCount > 0 ? "text-amber-400" : "text-ink-500" },
+            { label: "Active",   value: a.activeOrderCount,       color: a.activeOrderCount > 0 ? "text-amber-400" : "text-ink-400" },
             { label: "Today Rev",value: fmtUSD(a.todayRevenue),   color: "text-gold-400"    },
-            { label: "Pending",  value: a.pendingCount,           color: a.pendingCount > 0  ? "text-amber-400" : "text-ink-500" },
+            { label: "Pending",  value: a.pendingCount,           color: a.pendingCount > 0  ? "text-amber-400" : "text-ink-400" },
             { label: "Avg Wait", value: a.avgWaitMinutes ? `${a.avgWaitMinutes}m` : "—", color: "text-blue-400" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-raised/50 border border-edge rounded-xl p-2.5">
               <p className={cn("font-mono font-bold text-base leading-none", color)}>{value}</p>
-              <p className="text-[9px] font-mono text-ink-600 uppercase tracking-wide mt-0.5">{label}</p>
+              <p className="text-[9px] font-mono text-ink-400 uppercase tracking-wide mt-0.5">{label}</p>
             </div>
           ))}
         </div>
@@ -123,6 +132,7 @@ export function AdminSidebar() {
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {NAV.map(({ href, icon: Icon, label, sub }) => {
           const active = pathname.startsWith(href);
+          const badge  = NAV_BADGES[href] ?? 0;
           return (
             <Link
               key={href}
@@ -140,10 +150,17 @@ export function AdminSidebar() {
                 className={active ? "text-gold-400" : "text-ink-400 group-hover:text-ink-200"}
               />
               <div className="flex-1 min-w-0">
-                <p className={cn("text-sm font-body font-medium leading-none", active ? "text-white" : "text-ink-300")}>
-                  {label}
-                </p>
-                <p className={cn("text-[10px] font-mono mt-0.5 truncate", active ? "text-gold-500/70" : "text-ink-600")}>
+                <div className="flex items-center gap-1.5">
+                  <p className={cn("text-sm font-body font-medium leading-none", active ? "text-white" : "text-ink-300")}>
+                    {label}
+                  </p>
+                  {badge > 0 && !active && (
+                    <span className="text-[9px] font-mono font-semibold bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-1.5 leading-[15px]">
+                      {badge}
+                    </span>
+                  )}
+                </div>
+                <p className={cn("text-[10px] font-mono mt-0.5 truncate", active ? "text-gold-500/70" : "text-ink-400")}>
                   {sub}
                 </p>
               </div>
@@ -169,12 +186,12 @@ export function AdminSidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-white font-body font-medium leading-none">Administrator</p>
-            <p className="text-[10px] font-mono text-ink-500 mt-0.5">Full access</p>
+            <p className="text-[10px] font-mono text-ink-400 mt-0.5">Full access</p>
           </div>
           <button
             onClick={() => setConfirmSignOut(true)}
             aria-label="Sign out"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-400 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
           >
             <LogOut size={15} />
           </button>

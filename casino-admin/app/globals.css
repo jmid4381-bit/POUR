@@ -42,7 +42,7 @@ html  { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
   }
   .field-input {
     @apply w-full bg-raised/80 border border-edge rounded-xl px-3.5 py-2.5
-           text-sm text-ink-50 placeholder-ink-600 font-body
+           text-sm text-ink-50 placeholder-ink-400 font-body
            focus:outline-none focus:border-gold-500/50 transition-colors;
   }
 }

@@ -28,7 +28,7 @@ function BarChart({ data, maxVal }: { data: { label:string; revenue:number; orde
             <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
               <div className="bg-raised border border-edge rounded-lg px-2 py-1.5 text-center shadow-modal whitespace-nowrap">
                 <p className="text-white font-mono text-xs font-bold">{fmtUSD(d.revenue)}</p>
-                <p className="text-ink-500 font-mono text-[10px]">{d.orders} orders</p>
+                <p className="text-ink-400 font-mono text-[10px]">{d.orders} orders</p>
               </div>
               <div className="w-2 h-2 bg-raised border-r border-b border-edge rotate-45 -mt-1" />
             </div>
@@ -41,7 +41,7 @@ function BarChart({ data, maxVal }: { data: { label:string; revenue:number; orde
             />
             <span className={cn(
               "text-[9px] font-mono whitespace-nowrap",
-              isToday ? "text-gold-400" : "text-ink-600",
+              isToday ? "text-gold-400" : "text-ink-400",
             )}>
               {d.label}
             </span>
@@ -78,7 +78,7 @@ function ActivityRow({ order, index }: { order: ReturnType<typeof useAnalytics>[
             <span className="text-gold-400/80 font-mono font-normal"> · {order.guestName}</span>
           )}
         </p>
-        <p className="text-ink-500 text-[10px] font-mono">
+        <p className="text-ink-400 text-[10px] font-mono">
           {order.items.map(i => `${i.quantity}× ${i.beverageName}`).join(", ").substring(0,40)}…
         </p>
       </div>
@@ -86,7 +86,7 @@ function ActivityRow({ order, index }: { order: ReturnType<typeof useAnalytics>[
         <span className={cn("text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full border", meta.color)}>
           {meta.label}
         </span>
-        <span className="text-[10px] font-mono text-ink-600 mt-0.5">
+        <span className="text-[10px] font-mono text-ink-400 mt-0.5">
           {ageMin < 1 ? "just now" : ageMin < 60 ? `${ageMin}m ago` : ageMin < 1440 ? `${Math.floor(ageMin/60)}h ago` : (() => { const d = Math.floor(ageMin/1440); const h = Math.floor((ageMin % 1440)/60); return h > 0 ? `${d}d ${h}h ago` : `${d}d ago`; })()}
         </span>
       </div>
@@ -139,7 +139,7 @@ export default function OverviewPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-ink-500 font-mono text-sm animate-pulse">Loading live data…</p>
+        <p className="text-ink-400 font-mono text-sm animate-pulse">Loading live data…</p>
       </div>
     );
   }
@@ -153,7 +153,7 @@ export default function OverviewPage() {
             <LayoutDashboard size={18} className="text-gold-400" />
             <div>
               <h1 className="font-display text-2xl font-semibold text-white">Operations Overview</h1>
-              <p className="text-xs text-ink-500 font-mono mt-0.5">{dateStr} · {timeStr}</p>
+              <p className="text-xs text-ink-400 font-mono mt-0.5">{dateStr} · {timeStr}</p>
             </div>
           </div>
           {/* Live indicator */}
@@ -213,7 +213,7 @@ export default function OverviewPage() {
 
         {/* ── EXECUTIVE KPIs ── */}
         <div>
-          <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-3">Executive Summary</p>
+          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3">Executive Summary</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
             <MetricCard
               label="Active Orders"
@@ -222,6 +222,7 @@ export default function OverviewPage() {
               icon={Activity}
               accent={a.activeOrderCount > 0 ? "amber" : "slate"}
               alert={a.overdueCount > 0}
+              href="/admin/orders"
             />
             <MetricCard
               label="Today's Revenue"
@@ -229,6 +230,7 @@ export default function OverviewPage() {
               sub={`${a.deliveredToday} orders delivered`}
               icon={DollarSign}
               accent="gold"
+              href="/admin/orders"
             />
             <MetricCard
               label="Orders Today"
@@ -236,6 +238,7 @@ export default function OverviewPage() {
               sub={`${a.cancelledToday} cancelled`}
               icon={ShoppingBag}
               accent="felt"
+              href="/admin/orders"
             />
             <MetricCard
               label="Avg Wait"
@@ -243,6 +246,7 @@ export default function OverviewPage() {
               sub="Delivered orders today"
               icon={Clock}
               accent="blue"
+              href="/admin/orders"
             />
             <MetricCard
               label="Delivered"
@@ -250,6 +254,7 @@ export default function OverviewPage() {
               sub="Completed today"
               icon={CheckCircle2}
               accent="felt"
+              href="/admin/orders"
             />
             <MetricCard
               label="Alerts"
@@ -258,13 +263,14 @@ export default function OverviewPage() {
               icon={AlertTriangle}
               accent={a.criticalAlertCount > 0 ? "red" : "slate"}
               alert={a.criticalAlertCount > 0}
+              onClick={() => document.getElementById("alert-centre")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             />
           </div>
         </div>
 
         {/* ── OPERATIONS PIPELINE ── */}
         <div>
-          <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-3">Operations Pipeline</p>
+          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3">Operations Pipeline</p>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {[
               { label:"New Orders", count:a.pendingCount,   color:"text-amber-400",  bg:"bg-amber-400/8 border-amber-400/20",  dot:"bg-amber-400"  },
@@ -276,10 +282,10 @@ export default function OverviewPage() {
               <div key={label} className={cn("rounded-2xl border p-4", bg)}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className={cn("w-2 h-2 rounded-full", dot, count > 0 && label !== "Cancelled" && "animate-ping-gold")} />
-                  <p className="text-[10px] font-mono text-ink-500 uppercase tracking-wider">{label}</p>
+                  <p className="text-[10px] font-mono text-ink-400 uppercase tracking-wider">{label}</p>
                 </div>
                 <p className={cn("font-mono font-bold text-3xl", color)}>{count}</p>
-                <p className="text-ink-600 text-[10px] font-mono mt-1">
+                <p className="text-ink-400 text-[10px] font-mono mt-1">
                   {label === "New Orders" && (count > 0 ? "Awaiting staff action" : "Queue clear")}
                   {label === "Preparing"  && (count > 0 ? "In progress" : "Nothing in progress")}
                   {label === "Ready"      && (count > 0 ? "Awaiting delivery" : "Nothing waiting")}
@@ -301,7 +307,7 @@ export default function OverviewPage() {
                 <Activity size={15} className="text-felt-400" />
                 <h2 className="font-display font-semibold text-white text-base">Live Activity</h2>
               </div>
-              <span className="text-[10px] font-mono text-ink-600">Recent {a.recentActivity.length} events</span>
+              <span className="text-[10px] font-mono text-ink-400">Recent {a.recentActivity.length} events</span>
             </div>
             <div className="px-5 py-3 max-h-80 overflow-y-auto">
               {a.recentActivity.length > 0 ? (
@@ -311,17 +317,17 @@ export default function OverviewPage() {
               ) : (
                 <div className="py-10 text-center">
                   <Activity size={24} className="text-ink-700 mx-auto mb-2" />
-                  <p className="text-ink-500 text-sm font-body">No activity yet today</p>
+                  <p className="text-ink-400 text-sm font-body">No activity yet today</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Alert centre */}
-          <div className="bg-surface border border-edge rounded-2xl overflow-hidden shadow-card">
+          <div id="alert-centre" className="bg-surface border border-edge rounded-2xl overflow-hidden shadow-card scroll-mt-4">
             <div className="flex items-center justify-between px-5 py-4 border-b border-edge">
               <div className="flex items-center gap-2">
-                <AlertTriangle size={15} className={a.criticalAlertCount > 0 ? "text-red-400" : "text-ink-500"} />
+                <AlertTriangle size={15} className={a.criticalAlertCount > 0 ? "text-red-400" : "text-ink-400"} />
                 <h2 className="font-display font-semibold text-white text-base">Alert Centre</h2>
                 {a.criticalAlertCount > 0 && (
                   <span className="text-[10px] font-mono bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-1.5 py-0.5">
@@ -339,7 +345,7 @@ export default function OverviewPage() {
                 <div className="py-10 text-center">
                   <CheckCircle2 size={24} className="text-felt-500/60 mx-auto mb-2" />
                   <p className="text-felt-400/70 text-sm font-body">All systems normal</p>
-                  <p className="text-ink-600 text-xs font-body mt-0.5">No alerts at this time</p>
+                  <p className="text-ink-400 text-xs font-body mt-0.5">No alerts at this time</p>
                 </div>
               )}
             </div>
@@ -358,7 +364,7 @@ export default function OverviewPage() {
               </div>
               <div className="text-right">
                 <p className="font-mono font-bold text-gold-300 text-lg leading-none">{fmtUSD(a.weekRevenue)}</p>
-                <p className="text-[10px] font-mono text-ink-600 mt-0.5">This week</p>
+                <p className="text-[10px] font-mono text-ink-400 mt-0.5">This week</p>
               </div>
             </div>
             <div className="px-5 pb-5 pt-3">
@@ -372,7 +378,7 @@ export default function OverviewPage() {
                 ].map(({ label, value }) => (
                   <div key={label} className="text-center">
                     <p className="font-mono font-bold text-gold-300 text-sm">{value}</p>
-                    <p className="text-[10px] font-mono text-ink-600 mt-0.5">{label}</p>
+                    <p className="text-[10px] font-mono text-ink-400 mt-0.5">{label}</p>
                   </div>
                 ))}
               </div>
@@ -386,7 +392,7 @@ export default function OverviewPage() {
                 <Star size={15} className="text-gold-400" />
                 <h2 className="font-display font-semibold text-white text-base">Top Selling Items</h2>
               </div>
-              <span className="text-[10px] font-mono text-ink-600">By revenue</span>
+              <span className="text-[10px] font-mono text-ink-400">By revenue</span>
             </div>
             <div className="px-5 py-3 space-y-2">
               {a.topItems.length > 0 ? a.topItems.slice(0,6).map((item, i) => {
@@ -399,7 +405,7 @@ export default function OverviewPage() {
                         <span className="text-sm text-white font-body truncate">{item.name}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[10px] font-mono text-ink-500">{item.count}×</span>
+                        <span className="text-[10px] font-mono text-ink-400">{item.count}×</span>
                         <span className="font-mono text-gold-300 text-sm font-semibold">{fmtUSD(item.revenue)}</span>
                       </div>
                     </div>
@@ -412,7 +418,7 @@ export default function OverviewPage() {
                   </div>
                 );
               }) : (
-                <p className="text-ink-500 text-sm font-body py-6 text-center">No order data yet</p>
+                <p className="text-ink-400 text-sm font-body py-6 text-center">No order data yet</p>
               )}
             </div>
           </div>
@@ -426,7 +432,7 @@ export default function OverviewPage() {
                 <Users size={15} className="text-felt-400" />
                 <h2 className="font-display font-semibold text-white text-base">Staff Performance</h2>
               </div>
-              <a href="/admin/staff" className="flex items-center gap-1 text-[11px] font-mono text-ink-500 hover:text-gold-400 transition-colors">
+              <a href="/admin/staff" className="flex items-center gap-1 text-[11px] font-mono text-ink-400 hover:text-gold-400 transition-colors">
                 View full report <ArrowRight size={11} />
               </a>
             </div>
@@ -435,7 +441,7 @@ export default function OverviewPage() {
                 <thead>
                   <tr className="border-b border-edge bg-raised/30">
                     {["Staff Member", "Orders", "Revenue", "Avg Delivery", "Status"].map((h, i) => (
-                      <th key={h} className={cn("px-5 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest text-left", i >= 2 && "hidden sm:table-cell")}>
+                      <th key={h} className={cn("px-5 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left", i >= 2 && "hidden sm:table-cell")}>
                         {h}
                       </th>
                     ))}
@@ -478,7 +484,7 @@ export default function OverviewPage() {
 
         {/* ── LOCATION ACTIVITY ── */}
         <div>
-          <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <MapPin size={12} />Location Activity
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -490,7 +496,7 @@ export default function OverviewPage() {
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0">
                     <p className="text-white font-body font-medium text-sm leading-tight">{sec.section}</p>
-                    <p className="text-ink-600 text-[10px] font-mono mt-0.5">Floor {sec.floor}</p>
+                    <p className="text-ink-400 text-[10px] font-mono mt-0.5">Floor {sec.floor}</p>
                   </div>
                   {sec.activeNow > 0 && (
                     <span className="text-[10px] font-mono bg-amber-400/15 text-amber-400 border border-amber-400/20 rounded-full px-1.5 py-0.5 flex-shrink-0">
@@ -501,11 +507,11 @@ export default function OverviewPage() {
                 <div className="flex gap-4">
                   <div>
                     <p className="font-mono font-bold text-xl text-white leading-none">{sec.orders}</p>
-                    <p className="text-[9px] font-mono text-ink-600 mt-0.5 uppercase tracking-wide">Orders</p>
+                    <p className="text-[9px] font-mono text-ink-400 mt-0.5 uppercase tracking-wide">Orders</p>
                   </div>
                   <div>
                     <p className="font-mono font-bold text-xl text-gold-300 leading-none">{fmtUSD(sec.revenue)}</p>
-                    <p className="text-[9px] font-mono text-ink-600 mt-0.5 uppercase tracking-wide">Revenue</p>
+                    <p className="text-[9px] font-mono text-ink-400 mt-0.5 uppercase tracking-wide">Revenue</p>
                   </div>
                 </div>
               </div>

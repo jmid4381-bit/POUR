@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -22,17 +23,16 @@ interface MetricCardProps {
   icon:    LucideIcon;
   accent:  Accent;
   alert?:  boolean;   // triggers pulse animation
-  href?:   string;
+  href?:   string;    // navigates to another page (e.g. Order History)
+  onClick?: () => void; // same-page action (e.g. scroll to Alert Centre)
 }
 
-export function MetricCard({ label, value, sub, icon: Icon, accent, alert }: MetricCardProps) {
+export function MetricCard({ label, value, sub, icon: Icon, accent, alert, href, onClick }: MetricCardProps) {
   const a = ACCENT_MAP[accent];
-  return (
-    <div className={cn(
-      "relative bg-surface border border-edge rounded-2xl overflow-hidden shadow-card",
-      "transition-all duration-200 hover:border-rim hover:shadow-card-hover",
-      alert && "border-red-500/30",
-    )}>
+  const isActionable = !!(href || onClick);
+
+  const content = (
+    <>
       {/* Top colour stripe */}
       <div className={cn("h-0.5 w-full", a.stripe)} />
 
@@ -43,7 +43,7 @@ export function MetricCard({ label, value, sub, icon: Icon, accent, alert }: Met
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
-          <p className="text-[10px] font-mono text-ink-500 uppercase tracking-[0.12em] leading-none mt-0.5">
+          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-[0.12em] leading-none mt-0.5">
             {label}
           </p>
           <div className={cn("w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0", a.icon)}>
@@ -57,8 +57,23 @@ export function MetricCard({ label, value, sub, icon: Icon, accent, alert }: Met
         )}>
           {value}
         </p>
-        {sub && <p className="text-[11px] text-ink-500 font-body mt-1.5 leading-snug">{sub}</p>}
+        {sub && <p className="text-[11px] text-ink-400 font-body mt-1.5 leading-snug">{sub}</p>}
       </div>
-    </div>
+    </>
   );
+
+  const className = cn(
+    "relative bg-surface border border-edge rounded-2xl overflow-hidden shadow-card block w-full text-left",
+    "transition-all duration-200 hover:border-rim hover:shadow-card-hover",
+    isActionable && "cursor-pointer active:scale-[0.98]",
+    alert && "border-red-500/30",
+  );
+
+  if (href) {
+    return <Link href={href} className={className}>{content}</Link>;
+  }
+  if (onClick) {
+    return <button onClick={onClick} className={className}>{content}</button>;
+  }
+  return <div className={className}>{content}</div>;
 }

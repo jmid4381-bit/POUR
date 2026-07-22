@@ -118,7 +118,7 @@ export function VenueSettingsCard() {
           <h2 className="font-display font-semibold text-white text-base">Venue Branding</h2>
         </div>
         {loaded && (
-          <span className="text-[10px] font-mono font-bold rounded-full px-2 py-0.5 border text-ink-500 bg-raised border-edge">
+          <span className="text-[10px] font-mono font-bold rounded-full px-2 py-0.5 border text-ink-400 bg-raised border-edge">
             Live: {savedName}
           </span>
         )}
@@ -131,7 +131,7 @@ export function VenueSettingsCard() {
         </p>
 
         <div>
-          <label htmlFor="venue-name-input" className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1.5 block">
+          <label htmlFor="venue-name-input" className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1.5 block">
             Venue Name
           </label>
           <input
@@ -140,15 +140,15 @@ export function VenueSettingsCard() {
             onChange={e => setDraftName(e.target.value.slice(0, MAX_VENUE_NAME_LEN))}
             placeholder="e.g. The Grand Casino"
             maxLength={MAX_VENUE_NAME_LEN}
-            className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-ink-600 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
+            className="w-full bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-ink-400 font-body focus:outline-none focus:border-gold-500/40 transition-colors"
           />
-          <p className="text-[10px] font-mono text-ink-600 mt-1 text-right">
+          <p className="text-[10px] font-mono text-ink-400 mt-1 text-right">
             {draftName.length}/{MAX_VENUE_NAME_LEN}
           </p>
         </div>
 
         <div>
-          <label htmlFor="venue-accent-input" className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1.5 block">
+          <label htmlFor="venue-accent-input" className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1.5 block">
             Accent Color
           </label>
           <div className="flex items-center gap-2.5">
@@ -165,7 +165,7 @@ export function VenueSettingsCard() {
               onChange={e => setDraftAccent(e.target.value)}
               placeholder="#C9A030"
               maxLength={7}
-              className="flex-1 bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-ink-600 font-mono focus:outline-none focus:border-gold-500/40 transition-colors"
+              className="flex-1 bg-raised border border-edge rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-ink-400 font-mono focus:outline-none focus:border-gold-500/40 transition-colors"
             />
           </div>
           {!validAccent && (
@@ -176,7 +176,7 @@ export function VenueSettingsCard() {
         {/* Live preview — mirrors the exact markup used on the guest header's
             subtitle line (see app/order/[locationId]/page.tsx) */}
         <div>
-          <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1.5">
+          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1.5">
             Guest Page Preview
           </p>
           <div className="bg-base border border-edge rounded-xl px-4 py-4 text-center">
@@ -195,7 +195,7 @@ export function VenueSettingsCard() {
             "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-body font-bold text-sm transition-all disabled:opacity-50",
             isDirty && !saving && validAccent
               ? "bg-gold-gradient text-void shadow-gold-sm hover:brightness-110"
-              : "bg-raised border border-edge text-ink-600 cursor-not-allowed",
+              : "bg-raised border border-edge text-ink-400 cursor-not-allowed",
           )}
         >
           {savedFlash

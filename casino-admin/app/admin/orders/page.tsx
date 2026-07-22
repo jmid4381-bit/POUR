@@ -13,18 +13,25 @@ import type { Order } from "@/lib/types";
 
 // ─── Date range filter ────────────────────────────────────────────────────────
 
-type DateRange = "today" | "7days" | "30days" | "all";
+type DateRange = "today" | "7days" | "30days" | "all" | "custom";
 const DATE_OPTIONS: { key: DateRange; label: string }[] = [
   { key: "today",  label: "Today"    },
   { key: "7days",  label: "7 Days"   },
   { key: "30days", label: "30 Days"  },
   { key: "all",    label: "All Time" },
+  { key: "custom", label: "Custom"   },
 ];
 
-function inRange(iso: string, range: DateRange): boolean {
+function inRange(iso: string, range: DateRange, customStart: string, customEnd: string): boolean {
   if (range === "today")  return isToday(iso);
   if (range === "7days")  return isWithinDays(iso, 7);
   if (range === "30days") return isWithinDays(iso, 30);
+  if (range === "custom") {
+    const t = new Date(iso).getTime();
+    if (customStart && t < new Date(`${customStart}T00:00:00`).getTime()) return false;
+    if (customEnd   && t > new Date(`${customEnd}T23:59:59.999`).getTime()) return false;
+    return true;
+  }
   return true;
 }
 
@@ -62,7 +69,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
           <div className="flex items-center gap-2">
             <ChevronRight
               size={13}
-              className={cn("text-ink-600 transition-transform flex-shrink-0", open && "rotate-90 text-gold-400")}
+              className={cn("text-ink-400 transition-transform flex-shrink-0", open && "rotate-90 text-gold-400")}
             />
             <span className="font-mono text-xs text-ink-400">{order.id}</span>
           </div>
@@ -71,7 +78,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
         {/* Location */}
         <td className="px-3 py-3.5">
           <p className="text-white text-sm font-body font-medium leading-tight">{order.locationName}</p>
-          <p className="text-ink-500 text-xs font-body">{order.section}</p>
+          <p className="text-ink-400 text-xs font-body">{order.section}</p>
           {order.guestName && (
             <p className="text-gold-400/80 text-[11px] font-mono mt-0.5">For {order.guestName}</p>
           )}
@@ -96,7 +103,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
         <td className="px-3 py-3.5">
           <p className="text-ink-300 text-xs font-mono">{fmtDateTime(order.placedAt)}</p>
           {waitMin !== null && (
-            <p className="text-ink-600 text-[10px] font-mono mt-0.5 flex items-center gap-1">
+            <p className="text-ink-400 text-[10px] font-mono mt-0.5 flex items-center gap-1">
               <Clock size={9} />{waitMin}m delivery
             </p>
           )}
@@ -105,7 +112,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
         {/* Revenue */}
         <td className="px-4 py-3.5 text-right">
           {order.status === "cancelled" ? (
-            <span className="text-ink-600 font-mono text-sm">—</span>
+            <span className="text-ink-400 font-mono text-sm">—</span>
           ) : (
             <span className={cn("font-mono font-semibold text-sm", order.total >= 100 ? "text-gold-300" : "text-white")}>
               {fmtUSD(order.total)}
@@ -121,12 +128,12 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
             <div className="rounded-xl border border-edge bg-surface/50 p-4 space-y-3">
               {/* Items breakdown */}
               <div>
-                <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-2">Items</p>
+                <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-2">Items</p>
                 <div className="space-y-1.5">
                   {order.items.map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-ink-500 w-5 text-right flex-shrink-0">×{item.quantity}</span>
+                        <span className="font-mono text-ink-400 w-5 text-right flex-shrink-0">×{item.quantity}</span>
                         <span className="text-ink-200 font-body">{item.beverageName}</span>
                         {item.note && <span className="text-amber-400/70 text-xs font-body italic">"{item.note}"</span>}
                       </div>
@@ -141,13 +148,13 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
                   </div>
                 )}
                 <div className={cn("flex justify-between pt-2", order.surchargeAmount > 0 ? "" : "mt-2 border-t border-edge/60")}>
-                  <span className="text-xs font-mono text-ink-500">Order Total</span>
+                  <span className="text-xs font-mono text-ink-400">Order Total</span>
                   <span className="font-mono font-bold text-white">{fmtUSD(order.total)}</span>
                 </div>
               </div>
 
               {/* Meta */}
-              <div className="flex flex-wrap gap-4 text-xs font-mono text-ink-500 pt-1 border-t border-edge/60">
+              <div className="flex flex-wrap gap-4 text-xs font-mono text-ink-400 pt-1 border-t border-edge/60">
                 <span>Placed: {fmtDateTime(order.placedAt)}</span>
                 {order.acceptedAt  && <span>Accepted: {fmtDateTime(order.acceptedAt)}</span>}
                 {order.deliveredAt && <span>Delivered: {fmtDateTime(order.deliveredAt)}</span>}
@@ -192,7 +199,7 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
       >
         <ChevronRight
           size={13}
-          className={cn("text-ink-600 transition-transform flex-shrink-0 mt-1", open && "rotate-90 text-gold-400")}
+          className={cn("text-ink-400 transition-transform flex-shrink-0 mt-1", open && "rotate-90 text-gold-400")}
         />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center justify-between gap-2">
@@ -210,9 +217,9 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
             {order.items.map(i => `${i.quantity}× ${i.beverageName}`).join(", ")}
           </p>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-ink-500 text-[11px] font-mono">{fmtDateTime(order.placedAt)}</p>
+            <p className="text-ink-400 text-[11px] font-mono">{fmtDateTime(order.placedAt)}</p>
             {order.status === "cancelled" ? (
-              <span className="text-ink-600 font-mono text-sm">—</span>
+              <span className="text-ink-400 font-mono text-sm">—</span>
             ) : (
               <span className={cn("font-mono font-semibold text-sm", order.total >= 100 ? "text-gold-300" : "text-white")}>
                 {fmtUSD(order.total)}
@@ -226,12 +233,12 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
         <div className="px-4 pb-4 pt-1">
           <div className="rounded-xl border border-edge bg-surface/50 p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-2">Items</p>
+              <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-2">Items</p>
               <div className="space-y-1.5">
                 {order.items.map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-sm gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-ink-500 w-5 text-right flex-shrink-0">×{item.quantity}</span>
+                      <span className="font-mono text-ink-400 w-5 text-right flex-shrink-0">×{item.quantity}</span>
                       <span className="text-ink-200 font-body truncate">{item.beverageName}</span>
                     </div>
                     <span className="font-mono text-ink-300 flex-shrink-0">{fmtUSD(item.unitPrice * item.quantity)}</span>
@@ -245,11 +252,11 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
                 </div>
               )}
               <div className={cn("flex justify-between pt-2", order.surchargeAmount > 0 ? "" : "mt-2 border-t border-edge/60")}>
-                <span className="text-xs font-mono text-ink-500">Order Total</span>
+                <span className="text-xs font-mono text-ink-400">Order Total</span>
                 <span className="font-mono font-bold text-white">{fmtUSD(order.total)}</span>
               </div>
             </div>
-            <div className="flex flex-col gap-1.5 text-xs font-mono text-ink-500 pt-1 border-t border-edge/60">
+            <div className="flex flex-col gap-1.5 text-xs font-mono text-ink-400 pt-1 border-t border-edge/60">
               <span>Placed: {fmtDateTime(order.placedAt)}</span>
               {order.acceptedAt  && <span>Accepted: {fmtDateTime(order.acceptedAt)}</span>}
               {order.deliveredAt && <span>Delivered: {fmtDateTime(order.deliveredAt)}</span>}
@@ -271,12 +278,14 @@ export default function OrdersPage() {
   const { state, loading } = useStore();
 
   const [dateRange,     setDateRange]     = useState<DateRange>("30days");
+  const [customStart,   setCustomStart]   = useState("");
+  const [customEnd,     setCustomEnd]     = useState("");
   const [statusFilter,  setStatusFilter]  = useState<OrderStatus | "all">("all");
   const [search,        setSearch]        = useState("");
 
   const filtered = useMemo(() => {
     return state.orders.filter(o => {
-      if (!inRange(o.placedAt, dateRange)) return false;
+      if (!inRange(o.placedAt, dateRange, customStart, customEnd)) return false;
       if (statusFilter !== "all" && o.status !== statusFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -284,12 +293,13 @@ export default function OrdersPage() {
           !o.id.toLowerCase().includes(q) &&
           !o.locationName.toLowerCase().includes(q) &&
           !(o.guestName?.toLowerCase().includes(q)) &&
+          !(o.staffName?.toLowerCase().includes(q)) &&
           !o.items.some(i => i.beverageName.toLowerCase().includes(q))
         ) return false;
       }
       return true;
     }).sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-  }, [state.orders, dateRange, statusFilter, search]);
+  }, [state.orders, dateRange, customStart, customEnd, statusFilter, search]);
 
   // Analytics
   const analytics = useMemo(() => {
@@ -308,10 +318,36 @@ export default function OrdersPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-ink-500 font-mono text-sm animate-pulse">Loading orders…</p>
+        <p className="text-ink-400 font-mono text-sm animate-pulse">Loading orders…</p>
       </div>
     );
   }
+
+  // Exports exactly what's currently filtered/visible, not the whole table —
+  // matches what the admin is actually looking at. A quoted-field CSV,
+  // simple enough not to need a library for this row shape.
+  const csvField = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const handleExportCsv = () => {
+    const header = ["Order ID", "Placed At", "Location", "Guest", "Staff", "Status", "Items", "Total"];
+    const rows = filtered.map(o => [
+      o.id,
+      fmtDateTime(o.placedAt),
+      o.locationName,
+      o.guestName ?? "",
+      o.staffName ?? "",
+      o.status,
+      o.items.map(i => `${i.quantity}x ${i.beverageName}`).join("; "),
+      fmtUSD(o.total),
+    ]);
+    const csv = [header, ...rows].map(row => row.map(csvField).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `orders_${dateRange}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
@@ -320,11 +356,15 @@ export default function OrdersPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-semibold text-white">Order History</h1>
-            <p className="text-xs text-ink-500 font-mono mt-0.5">
+            <p className="text-xs text-ink-400 font-mono mt-0.5">
               {filtered.length} orders · {DATE_OPTIONS.find(d => d.key === dateRange)?.label}
             </p>
           </div>
-          <button className="flex items-center gap-1.5 text-xs font-body text-ink-400 hover:text-white border border-edge hover:border-rim bg-surface rounded-xl px-3 py-2 transition-all">
+          <button
+            onClick={handleExportCsv}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 text-xs font-body text-ink-400 hover:text-white border border-edge hover:border-rim bg-surface rounded-xl px-3 py-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-ink-400 disabled:hover:border-edge"
+          >
             <Download size={13} />Export CSV
           </button>
         </div>
@@ -344,7 +384,7 @@ export default function OrdersPage() {
               <div className={cn("h-0.5 w-full", top)} />
               <div className="p-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-1">{label}</p>
+                  <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1">{label}</p>
                   <p className={cn("font-mono font-bold text-2xl leading-none", color)}>{value}</p>
                 </div>
                 <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center bg-current/10 border border-current/20", color)}>
@@ -375,6 +415,27 @@ export default function OrdersPage() {
             ))}
           </div>
 
+          {/* Custom date bounds — only shown once "Custom" is selected */}
+          {dateRange === "custom" && (
+            <div className="flex items-center gap-1.5 bg-surface border border-edge rounded-xl px-2.5 py-1.5">
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                max={customEnd || undefined}
+                className="bg-transparent text-xs font-mono text-ink-200 focus:outline-none [color-scheme:dark]"
+              />
+              <span className="text-ink-400 text-xs">–</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                min={customStart || undefined}
+                className="bg-transparent text-xs font-mono text-ink-200 focus:outline-none [color-scheme:dark]"
+              />
+            </div>
+          )}
+
           {/* Status filter */}
           <div className="flex gap-1.5 flex-wrap">
             {STATUS_FILTERS.map(({ key, label }) => (
@@ -397,15 +458,15 @@ export default function OrdersPage() {
 
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by guest name or order #…"
+              placeholder="Search by guest, staff, or order #…"
               className="field-input pl-8 w-full text-xs"
             />
             {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-600 hover:text-white">
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-white">
                 <X size={13} />
               </button>
             )}
@@ -424,7 +485,7 @@ export default function OrdersPage() {
                       <th
                         key={h}
                         className={cn(
-                          "px-4 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest text-left",
+                          "px-4 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left",
                           i === 5 && "text-right",
                         )}
                       >
@@ -451,7 +512,7 @@ export default function OrdersPage() {
         ) : (
           <div className="rounded-2xl border border-edge bg-surface shadow-card py-20 text-center">
             <BarChart3 size={32} className="text-ink-700 mx-auto mb-3" />
-            <p className="text-ink-500 font-body text-sm">
+            <p className="text-ink-400 font-body text-sm">
               {search.trim() ? `No orders found for "${search.trim()}"` : "No orders match your filters"}
             </p>
             <button
@@ -465,7 +526,7 @@ export default function OrdersPage() {
 
         {/* Row count */}
         {filtered.length > 0 && (
-          <p className="text-center text-[11px] text-ink-600 font-mono">
+          <p className="text-center text-[11px] text-ink-400 font-mono">
             Showing {filtered.length} order{filtered.length !== 1 ? "s" : ""} · Click any row to expand
           </p>
         )}

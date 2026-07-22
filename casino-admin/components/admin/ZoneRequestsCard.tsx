@@ -73,7 +73,7 @@ export function ZoneRequestsCard() {
                 "inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border",
                 count >= 4 ? "text-red-400 bg-red-400/10 border-red-400/20"
                   : count > 0 ? "text-amber-400 bg-amber-400/10 border-amber-400/20"
-                  : "text-ink-500 bg-raised border-edge",
+                  : "text-ink-400 bg-raised border-edge",
               )}
             >
               <MapPin size={10} />
@@ -87,7 +87,7 @@ export function ZoneRequestsCard() {
       {/* Pending requests */}
       <div className="p-5">
         {pending.length === 0 ? (
-          <p className="text-ink-600 text-xs font-body text-center py-2">No pending zone requests</p>
+          <p className="text-ink-400 text-xs font-body text-center py-2">No pending zone requests</p>
         ) : (
           <div className="space-y-2.5">
             {pending.map(req => {
@@ -99,10 +99,10 @@ export function ZoneRequestsCard() {
                     <p className="text-white font-body font-semibold text-sm leading-tight">{req.staffName}</p>
                     <div className="flex items-center gap-1.5 text-[11px] font-mono text-ink-400 mt-0.5 flex-wrap">
                       <span className="truncate">{currentZones.length > 0 ? currentZones.join(", ") : "No zone"}</span>
-                      <ArrowRight size={10} className="text-ink-600 flex-shrink-0" />
+                      <ArrowRight size={10} className="text-ink-400 flex-shrink-0" />
                       <span className="text-gold-300">{zoneName(req.requestedZoneId)}</span>
-                      <span className="text-ink-600">·</span>
-                      <span className="uppercase tracking-wide text-ink-500">{req.requestType}</span>
+                      <span className="text-ink-400">·</span>
+                      <span className="uppercase tracking-wide text-ink-400">{req.requestType}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -110,17 +110,17 @@ export function ZoneRequestsCard() {
                       onClick={() => handleDeny(req.id)}
                       disabled={isBusy}
                       aria-label="Deny request"
-                      className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-all disabled:opacity-50"
+                      className="w-11 h-11 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 flex items-center justify-center transition-all disabled:opacity-50"
                     >
-                      <X size={14} />
+                      <X size={16} />
                     </button>
                     <button
                       onClick={() => handleApprove(req)}
                       disabled={isBusy}
                       aria-label="Approve request"
-                      className="w-8 h-8 rounded-lg bg-felt-500/15 border border-felt-500/25 text-felt-400 hover:bg-felt-500/25 flex items-center justify-center transition-all disabled:opacity-50"
+                      className="w-11 h-11 rounded-lg bg-felt-500/15 border border-felt-500/25 text-felt-400 hover:bg-felt-500/25 flex items-center justify-center transition-all disabled:opacity-50"
                     >
-                      <Check size={14} />
+                      <Check size={16} />
                     </button>
                   </div>
                 </div>
@@ -133,9 +133,9 @@ export function ZoneRequestsCard() {
       {/* Current assignments — pull a staff member off a zone once they're
           done helping, no request/approval needed for this direction */}
       <div className="px-5 pb-5 pt-1 border-t border-edge">
-        <p className="text-[10px] font-mono text-ink-500 uppercase tracking-widest mb-3">Current Assignments</p>
+        <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3">Current Assignments</p>
         {staffNames.length === 0 ? (
-          <p className="text-ink-600 text-xs font-body">No zones assigned</p>
+          <p className="text-ink-400 text-xs font-body">No zones assigned</p>
         ) : (
           <div className="space-y-2">
             {staffNames.map(staffName => (
@@ -147,7 +147,7 @@ export function ZoneRequestsCard() {
                     return (
                       <span
                         key={z.locationId}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-mono text-ink-300 bg-raised border border-edge rounded-full pl-2.5 pr-1.5 py-1"
+                        className="inline-flex items-center gap-1 text-[11px] font-mono text-ink-300 bg-raised border border-edge rounded-full pl-2.5 pr-1 py-1"
                       >
                         {zoneName(z.locationId)}
                         <button
@@ -155,9 +155,9 @@ export function ZoneRequestsCard() {
                           disabled={busyId === key}
                           aria-label={`Remove ${staffName} from ${zoneName(z.locationId)}`}
                           title="Remove from this zone"
-                          className="w-4 h-4 rounded-full bg-red-500/15 text-red-400 hover:bg-red-500/25 flex items-center justify-center transition-all disabled:opacity-50"
+                          className="w-8 h-8 rounded-full bg-red-500/15 text-red-400 hover:bg-red-500/25 flex items-center justify-center transition-all disabled:opacity-50 flex-shrink-0"
                         >
-                          <UserMinus size={9} />
+                          <UserMinus size={12} />
                         </button>
                       </span>
                     );

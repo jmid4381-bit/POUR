@@ -24,7 +24,7 @@ export default function StaffPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-ink-500 font-mono text-sm animate-pulse">Loading staff data…</p>
+        <p className="text-ink-400 font-mono text-sm animate-pulse">Loading staff data…</p>
       </div>
     );
   }
@@ -37,7 +37,7 @@ export default function StaffPage() {
           <Users size={18} className="text-felt-400" />
           <div>
             <h1 className="font-display text-2xl font-semibold text-white">Staff Performance</h1>
-            <p className="text-xs text-ink-500 font-mono mt-0.5">
+            <p className="text-xs text-ink-400 font-mono mt-0.5">
               {a.staffPerformance.length} active staff · All-time data
             </p>
           </div>
@@ -65,7 +65,7 @@ export default function StaffPage() {
               <thead>
                 <tr className="border-b border-edge bg-raised/40">
                   {["Rank","Staff Member","Orders","Revenue","Avg Delivery","Actions"].map((h, i) => (
-                    <th key={h} className={cn("px-5 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest text-left",
+                    <th key={h} className={cn("px-5 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left",
                       i === 5 && "text-right",
                     )}>
                       {h}
@@ -83,7 +83,7 @@ export default function StaffPage() {
                   >
                     <td className="px-5 py-4">
                       <span className={cn("font-mono font-bold text-sm",
-                        i === 0 ? "text-gold-300" : i === 1 ? "text-ink-300" : i === 2 ? "text-amber-600" : "text-ink-600",
+                        i === 0 ? "text-gold-300" : i === 1 ? "text-ink-300" : i === 2 ? "text-amber-600" : "text-ink-400",
                       )}>
                         #{i + 1}
                       </span>
@@ -98,7 +98,7 @@ export default function StaffPage() {
                         </div>
                         <div>
                           <p className="text-white font-body font-medium text-sm leading-none">{staff.name}</p>
-                          <p className="text-ink-600 text-[10px] font-mono mt-0.5">
+                          <p className="text-ink-400 text-[10px] font-mono mt-0.5">
                             {selected === staff.name ? "Click to collapse" : "Click to view orders"}
                           </p>
                         </div>
@@ -132,7 +132,7 @@ export default function StaffPage() {
                   <tr>
                     <td colSpan={6} className="py-16 text-center">
                       <Users size={28} className="text-ink-700 mx-auto mb-3" />
-                      <p className="text-ink-500 font-body text-sm">No staff order data yet</p>
+                      <p className="text-ink-400 font-body text-sm">No staff order data yet</p>
                     </td>
                   </tr>
                 )}
@@ -148,14 +148,14 @@ export default function StaffPage() {
               <h3 className="font-display font-semibold text-white text-base">
                 {selected} — Order History
               </h3>
-              <p className="text-ink-500 text-xs font-mono mt-0.5">{staffOrders.length} orders</p>
+              <p className="text-ink-400 text-xs font-mono mt-0.5">{staffOrders.length} orders</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-edge bg-raised/30">
                     {["Order ID","Location","Items","Status","Delivery","Revenue"].map((h,i) => (
-                      <th key={h} className={cn("px-4 py-3 text-[10px] font-mono text-ink-500 uppercase tracking-widest text-left", i===5 && "text-right")}>
+                      <th key={h} className={cn("px-4 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left", i===5 && "text-right")}>
                         {h}
                       </th>
                     ))}
@@ -181,7 +181,7 @@ export default function StaffPage() {
                           {wait !== null ? `${wait}m` : "—"}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-sm text-white font-semibold">
-                          {order.status === "cancelled" ? <span className="text-ink-600">—</span> : fmtUSD(order.total)}
+                          {order.status === "cancelled" ? <span className="text-ink-400">—</span> : fmtUSD(order.total)}
                         </td>
                       </tr>
                     );

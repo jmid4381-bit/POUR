@@ -5,6 +5,7 @@ import { Sparkles, Play, Square, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { ConfirmDialog } from "@/components/ui/Modal";
 
 const SURCHARGE_DELAY_MS = 60 * 60_000;
 const POLL_MS            = 3_000;
@@ -20,6 +21,7 @@ export function EventControlCard() {
   const [now,     setNow]     = useState(Date.now());
   const [busy,    setBusy]    = useState(false);
   const [loaded,  setLoaded]  = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // Always the CURRENT venueId -- lets refresh() discard a response that
   // arrives after the switcher has already moved on to a different venue,
@@ -111,9 +113,9 @@ export function EventControlCard() {
           <span className={cn(
             "text-[10px] font-mono font-bold rounded-full px-2 py-0.5 border",
             !state.startedAt
-              ? "text-ink-500 bg-raised border-edge"
+              ? "text-ink-400 bg-raised border-edge"
               : !state.enabled
-              ? "text-ink-500 bg-raised border-edge"
+              ? "text-ink-400 bg-raised border-edge"
               : surchargeActive
               ? "text-gold-400 bg-gold-400/10 border-gold-400/20"
               : "text-amber-400 bg-amber-400/10 border-amber-400/20",
@@ -166,7 +168,7 @@ export function EventControlCard() {
                     Surcharge disabled — won't activate
                   </p>
                 )}
-                <p className="text-ink-500 text-[11px] font-mono mt-0.5">
+                <p className="text-ink-400 text-[11px] font-mono mt-0.5">
                   Event started {new Date(state.startedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                 </p>
               </div>
@@ -193,7 +195,7 @@ export function EventControlCard() {
                 </button>
               )}
               <button
-                onClick={handleReset}
+                onClick={() => setConfirmReset(true)}
                 disabled={busy}
                 className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-raised border border-edge text-ink-400 font-body font-semibold text-xs hover:text-white hover:border-rim transition-all disabled:opacity-50"
               >
@@ -203,6 +205,17 @@ export function EventControlCard() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmReset}
+        title="Reset the surcharge timer?"
+        message={surchargeActive
+          ? "The surcharge is currently active. Resetting clears the start time and restarts the 1-hour countdown from scratch — the surcharge will stop applying until it counts down again."
+          : "This clears the event's start time, restarting the 1-hour countdown from scratch."}
+        confirmLabel="Reset Timer"
+        onConfirm={() => { setConfirmReset(false); handleReset(); }}
+        onCancel={() => setConfirmReset(false)}
+      />
     </div>
   );
 }
