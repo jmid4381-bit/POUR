@@ -56,7 +56,7 @@ export function ZoneRequestsCard() {
           <h2 className="font-display font-semibold text-white text-base">Zone Requests</h2>
         </div>
         {pending.length > 0 && (
-          <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-2 py-0.5">
+          <span className="text-2xs font-mono font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-full px-2 py-0.5">
             {pending.length} pending
           </span>
         )}
@@ -133,7 +133,7 @@ export function ZoneRequestsCard() {
       {/* Current assignments — pull a staff member off a zone once they're
           done helping, no request/approval needed for this direction */}
       <div className="px-5 pb-5 pt-1 border-t border-edge">
-        <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3">Current Assignments</p>
+        <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-3">Current Assignments</p>
         {staffNames.length === 0 ? (
           <p className="text-ink-400 text-xs font-body">No zones assigned</p>
         ) : (

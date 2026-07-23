@@ -48,9 +48,18 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-syne)",      "Georgia",   "serif"     ],
+        display: ["var(--font-syne)",      "ui-sans-serif", "system-ui"],
         body:    ["var(--font-outfit)",    "system-ui", "sans-serif"],
         mono:    ["var(--font-jetbrains)", "monospace"              ],
+      },
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1.4" }],   // 11px — tiny badges/tags
+        xs:    ["0.75rem",   { lineHeight: "1.4" }],   // 12px — eyebrow/label
+        sm:    ["0.875rem",  { lineHeight: "1.4" }],   // 14px — secondary body/nav
+        base:  ["1rem",      { lineHeight: "1.4" }],   // 16px — card title/body
+        lg:    ["1.125rem",  { lineHeight: "1.3" }],   // 18px — section card heading
+        xl:    ["1.375rem",  { lineHeight: "1.25" }],  // 22px — modal heading
+        "2xl": ["1.75rem",   { lineHeight: "1.2"  }],  // 28px — page heading
       },
       backgroundImage: {
         // ── Brand gradients — both naming conventions supported ──

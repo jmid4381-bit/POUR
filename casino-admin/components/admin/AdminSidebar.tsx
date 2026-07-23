@@ -83,7 +83,7 @@ export function AdminSidebar() {
           </div>
           <div>
             <p className="font-display font-semibold text-white text-base leading-none">Admin Console</p>
-            <p className="text-[10px] font-mono text-gold-500/70 tracking-[0.18em] uppercase mt-0.5">{venueName}</p>
+            <p className="text-2xs font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">{venueName}</p>
           </div>
         </div>
         {isPlatformAdmin && venues.length > 0 && (
@@ -101,7 +101,7 @@ export function AdminSidebar() {
 
       {/* Live operational metrics */}
       <div className="px-4 py-4 border-b border-edge">
-        <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest px-1 mb-3">Live Status</p>
+        <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest px-1 mb-3">Live Status</p>
 
         {/* Alert strip if overdue orders */}
         {a.overdueCount > 0 && (
@@ -160,7 +160,7 @@ export function AdminSidebar() {
                     </span>
                   )}
                 </div>
-                <p className={cn("text-[10px] font-mono mt-0.5 truncate", active ? "text-gold-500/70" : "text-ink-400")}>
+                <p className={cn("text-2xs font-mono mt-0.5 truncate", active ? "text-gold-500/70" : "text-ink-400")}>
                   {sub}
                 </p>
               </div>
@@ -177,7 +177,7 @@ export function AdminSidebar() {
             <span className="animate-ping absolute h-full w-full rounded-full bg-felt-400 opacity-60" />
             <span className="relative h-1.5 w-1.5 rounded-full bg-felt-500 inline-flex" />
           </span>
-          <span className="text-[10px] font-mono text-felt-400 uppercase tracking-wider">System Online</span>
+          <span className="text-2xs font-mono text-felt-400 uppercase tracking-wider">System Online</span>
           <Activity size={10} className="text-felt-500/60 ml-auto" />
         </div>
         <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-raised/50 transition-colors">
@@ -186,7 +186,7 @@ export function AdminSidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-white font-body font-medium leading-none">Administrator</p>
-            <p className="text-[10px] font-mono text-ink-400 mt-0.5">Full access</p>
+            <p className="text-2xs font-mono text-ink-400 mt-0.5">Full access</p>
           </div>
           <button
             onClick={() => setConfirmSignOut(true)}

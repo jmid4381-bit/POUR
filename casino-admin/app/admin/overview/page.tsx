@@ -78,15 +78,15 @@ function ActivityRow({ order, index }: { order: ReturnType<typeof useAnalytics>[
             <span className="text-gold-400/80 font-mono font-normal"> · {order.guestName}</span>
           )}
         </p>
-        <p className="text-ink-400 text-[10px] font-mono">
+        <p className="text-ink-400 text-2xs font-mono">
           {order.items.map(i => `${i.quantity}× ${i.beverageName}`).join(", ").substring(0,40)}…
         </p>
       </div>
       <div className="flex flex-col items-end flex-shrink-0">
-        <span className={cn("text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full border", meta.color)}>
+        <span className={cn("text-2xs font-mono font-semibold px-1.5 py-0.5 rounded-full border", meta.color)}>
           {meta.label}
         </span>
-        <span className="text-[10px] font-mono text-ink-400 mt-0.5">
+        <span className="text-2xs font-mono text-ink-400 mt-0.5">
           {ageMin < 1 ? "just now" : ageMin < 60 ? `${ageMin}m ago` : ageMin < 1440 ? `${Math.floor(ageMin/60)}h ago` : (() => { const d = Math.floor(ageMin/1440); const h = Math.floor((ageMin % 1440)/60); return h > 0 ? `${d}d ${h}h ago` : `${d}d ago`; })()}
         </span>
       </div>
@@ -165,7 +165,7 @@ export default function OverviewPage() {
               {!error && <span className="animate-ping absolute h-full w-full rounded-full bg-felt-400 opacity-60" />}
               <span className={cn("relative h-1.5 w-1.5 rounded-full inline-flex", error ? "bg-red-500" : "bg-felt-500")} />
             </span>
-            <span className={cn("text-[10px] font-mono uppercase tracking-wider", error ? "text-red-400" : "text-felt-400")}>
+            <span className={cn("text-2xs font-mono uppercase tracking-wider", error ? "text-red-400" : "text-felt-400")}>
               {error ? "Connection Error" : "Live"}
             </span>
           </div>
@@ -196,7 +196,7 @@ export default function OverviewPage() {
               {a.overdueOrders.map(o => o.locationName).join(" · ")}
             </p>
           </div>
-          <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider">Action Required</span>
+          <span className="text-2xs font-mono text-red-400 uppercase tracking-wider">Action Required</span>
         </div>
       )}
 
@@ -213,7 +213,7 @@ export default function OverviewPage() {
 
         {/* ── EXECUTIVE KPIs ── */}
         <div>
-          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3">Executive Summary</p>
+          <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-3">Executive Summary</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
             <MetricCard
               label="Active Orders"
@@ -270,7 +270,7 @@ export default function OverviewPage() {
 
         {/* ── OPERATIONS PIPELINE ── */}
         <div>
-          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3">Operations Pipeline</p>
+          <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-3">Operations Pipeline</p>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {[
               { label:"New Orders", count:a.pendingCount,   color:"text-amber-400",  bg:"bg-amber-400/8 border-amber-400/20",  dot:"bg-amber-400"  },
@@ -282,10 +282,10 @@ export default function OverviewPage() {
               <div key={label} className={cn("rounded-2xl border p-4", bg)}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className={cn("w-2 h-2 rounded-full", dot, count > 0 && label !== "Cancelled" && "animate-ping-gold")} />
-                  <p className="text-[10px] font-mono text-ink-400 uppercase tracking-wider">{label}</p>
+                  <p className="text-2xs font-mono text-ink-400 uppercase tracking-wider">{label}</p>
                 </div>
                 <p className={cn("font-mono font-bold text-3xl", color)}>{count}</p>
-                <p className="text-ink-400 text-[10px] font-mono mt-1">
+                <p className="text-ink-400 text-2xs font-mono mt-1">
                   {label === "New Orders" && (count > 0 ? "Awaiting staff action" : "Queue clear")}
                   {label === "Preparing"  && (count > 0 ? "In progress" : "Nothing in progress")}
                   {label === "Ready"      && (count > 0 ? "Awaiting delivery" : "Nothing waiting")}
@@ -307,7 +307,7 @@ export default function OverviewPage() {
                 <Activity size={15} className="text-felt-400" />
                 <h2 className="font-display font-semibold text-white text-base">Live Activity</h2>
               </div>
-              <span className="text-[10px] font-mono text-ink-400">Recent {a.recentActivity.length} events</span>
+              <span className="text-2xs font-mono text-ink-400">Recent {a.recentActivity.length} events</span>
             </div>
             <div className="px-5 py-3 max-h-80 overflow-y-auto">
               {a.recentActivity.length > 0 ? (
@@ -330,7 +330,7 @@ export default function OverviewPage() {
                 <AlertTriangle size={15} className={a.criticalAlertCount > 0 ? "text-red-400" : "text-ink-400"} />
                 <h2 className="font-display font-semibold text-white text-base">Alert Centre</h2>
                 {a.criticalAlertCount > 0 && (
-                  <span className="text-[10px] font-mono bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-1.5 py-0.5">
+                  <span className="text-2xs font-mono bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-1.5 py-0.5">
                     {a.criticalAlertCount} active
                   </span>
                 )}
@@ -364,7 +364,7 @@ export default function OverviewPage() {
               </div>
               <div className="text-right">
                 <p className="font-mono font-bold text-gold-300 text-lg leading-none">{fmtUSD(a.weekRevenue)}</p>
-                <p className="text-[10px] font-mono text-ink-400 mt-0.5">This week</p>
+                <p className="text-2xs font-mono text-ink-400 mt-0.5">This week</p>
               </div>
             </div>
             <div className="px-5 pb-5 pt-3">
@@ -378,7 +378,7 @@ export default function OverviewPage() {
                 ].map(({ label, value }) => (
                   <div key={label} className="text-center">
                     <p className="font-mono font-bold text-gold-300 text-sm">{value}</p>
-                    <p className="text-[10px] font-mono text-ink-400 mt-0.5">{label}</p>
+                    <p className="text-2xs font-mono text-ink-400 mt-0.5">{label}</p>
                   </div>
                 ))}
               </div>
@@ -392,7 +392,7 @@ export default function OverviewPage() {
                 <Star size={15} className="text-gold-400" />
                 <h2 className="font-display font-semibold text-white text-base">Top Selling Items</h2>
               </div>
-              <span className="text-[10px] font-mono text-ink-400">By revenue</span>
+              <span className="text-2xs font-mono text-ink-400">By revenue</span>
             </div>
             <div className="px-5 py-3 space-y-2">
               {a.topItems.length > 0 ? a.topItems.slice(0,6).map((item, i) => {
@@ -405,7 +405,7 @@ export default function OverviewPage() {
                         <span className="text-sm text-white font-body truncate">{item.name}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[10px] font-mono text-ink-400">{item.count}×</span>
+                        <span className="text-2xs font-mono text-ink-400">{item.count}×</span>
                         <span className="font-mono text-gold-300 text-sm font-semibold">{fmtUSD(item.revenue)}</span>
                       </div>
                     </div>
@@ -441,7 +441,7 @@ export default function OverviewPage() {
                 <thead>
                   <tr className="border-b border-edge bg-raised/30">
                     {["Staff Member", "Orders", "Revenue", "Avg Delivery", "Status"].map((h, i) => (
-                      <th key={h} className={cn("px-5 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left", i >= 2 && "hidden sm:table-cell")}>
+                      <th key={h} className={cn("px-5 py-3 text-2xs font-mono text-ink-400 uppercase tracking-widest text-left", i >= 2 && "hidden sm:table-cell")}>
                         {h}
                       </th>
                     ))}
@@ -470,7 +470,7 @@ export default function OverviewPage() {
                         <span className="font-mono text-blue-400 text-sm">{staff.avgWait}m</span>
                       </td>
                       <td className="px-5 py-3 hidden sm:table-cell">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border text-felt-400 bg-felt-400/10 border-felt-400/20">
+                        <span className="text-2xs font-mono px-2 py-0.5 rounded-full border text-felt-400 bg-felt-400/10 border-felt-400/20">
                           Active
                         </span>
                       </td>
@@ -484,7 +484,7 @@ export default function OverviewPage() {
 
         {/* ── LOCATION ACTIVITY ── */}
         <div>
-          <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <MapPin size={12} />Location Activity
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -496,10 +496,10 @@ export default function OverviewPage() {
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0">
                     <p className="text-white font-body font-medium text-sm leading-tight">{sec.section}</p>
-                    <p className="text-ink-400 text-[10px] font-mono mt-0.5">Floor {sec.floor}</p>
+                    <p className="text-ink-400 text-2xs font-mono mt-0.5">Floor {sec.floor}</p>
                   </div>
                   {sec.activeNow > 0 && (
-                    <span className="text-[10px] font-mono bg-amber-400/15 text-amber-400 border border-amber-400/20 rounded-full px-1.5 py-0.5 flex-shrink-0">
+                    <span className="text-2xs font-mono bg-amber-400/15 text-amber-400 border border-amber-400/20 rounded-full px-1.5 py-0.5 flex-shrink-0">
                       {sec.activeNow} active
                     </span>
                   )}

@@ -93,7 +93,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
 
         {/* Status */}
         <td className="px-3 py-3.5">
-          <span className={cn("inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border", meta.color)}>
+          <span className={cn("inline-flex items-center gap-1 text-2xs font-mono font-semibold px-2 py-0.5 rounded-full border", meta.color)}>
             <span className={cn("w-1 h-1 rounded-full", meta.dot)} />
             {meta.label}
           </span>
@@ -103,7 +103,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
         <td className="px-3 py-3.5">
           <p className="text-ink-300 text-xs font-mono">{fmtDateTime(order.placedAt)}</p>
           {waitMin !== null && (
-            <p className="text-ink-400 text-[10px] font-mono mt-0.5 flex items-center gap-1">
+            <p className="text-ink-400 text-2xs font-mono mt-0.5 flex items-center gap-1">
               <Clock size={9} />{waitMin}m delivery
             </p>
           )}
@@ -128,7 +128,7 @@ function OrderRow({ order, index }: { order: Order; index: number }) {
             <div className="rounded-xl border border-edge bg-surface/50 p-4 space-y-3">
               {/* Items breakdown */}
               <div>
-                <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-2">Items</p>
+                <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-2">Items</p>
                 <div className="space-y-1.5">
                   {order.items.map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
@@ -204,7 +204,7 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <span className="font-mono text-[11px] text-ink-400 truncate">{order.id}</span>
-            <span className={cn("flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border", meta.color)}>
+            <span className={cn("flex-shrink-0 inline-flex items-center gap-1 text-2xs font-mono font-semibold px-2 py-0.5 rounded-full border", meta.color)}>
               <span className={cn("w-1 h-1 rounded-full", meta.dot)} />
               {meta.label}
             </span>
@@ -233,7 +233,7 @@ function OrderCardMobile({ order, index }: { order: Order; index: number }) {
         <div className="px-4 pb-4 pt-1">
           <div className="rounded-xl border border-edge bg-surface/50 p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-2">Items</p>
+              <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-2">Items</p>
               <div className="space-y-1.5">
                 {order.items.map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-sm gap-2">
@@ -384,7 +384,7 @@ export default function OrdersPage() {
               <div className={cn("h-0.5 w-full", top)} />
               <div className="p-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1">{label}</p>
+                  <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-1">{label}</p>
                   <p className={cn("font-mono font-bold text-2xl leading-none", color)}>{value}</p>
                 </div>
                 <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center bg-current/10 border border-current/20", color)}>
@@ -485,7 +485,7 @@ export default function OrdersPage() {
                       <th
                         key={h}
                         className={cn(
-                          "px-4 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left",
+                          "px-4 py-3 text-2xs font-mono text-ink-400 uppercase tracking-widest text-left",
                           i === 5 && "text-right",
                         )}
                       >

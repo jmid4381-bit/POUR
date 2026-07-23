@@ -206,7 +206,7 @@ export default function BeveragesPage() {
               <div className={cn("h-0.5 w-full", top)} />
               <div className="p-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1">{label}</p>
+                  <p className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-1">{label}</p>
                   <p className={cn("font-mono font-bold text-2xl leading-none", color)}>{value}</p>
                 </div>
                 <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", color, "bg-current/10 border border-current/20")}>
@@ -279,7 +279,7 @@ export default function BeveragesPage() {
                       <p className="text-white font-body font-medium text-sm leading-tight truncate">{bev.name}</p>
                       {bev.isFeatured && <Star size={11} className="text-gold-400 fill-gold-400 flex-shrink-0" />}
                     </div>
-                    <span className={cn("inline-block mt-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border", catMeta.color)}>
+                    <span className={cn("inline-block mt-1 text-2xs font-mono font-semibold px-2 py-0.5 rounded-full border", catMeta.color)}>
                       {catMeta.label}
                     </span>
                   </div>
@@ -338,7 +338,7 @@ export default function BeveragesPage() {
                 key={label}
                 onClick={field ? () => toggleSort(field) : undefined}
                 className={cn(
-                  "px-3 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest flex items-center gap-1",
+                  "px-3 py-3 text-2xs font-mono text-ink-400 uppercase tracking-widest flex items-center gap-1",
                   field && "cursor-pointer hover:text-ink-200 transition-colors select-none",
                   cl,
                 )}
@@ -378,7 +378,7 @@ export default function BeveragesPage() {
 
                     {/* Category */}
                     <div className="px-3 py-3.5">
-                      <span className={cn("text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border", catMeta.color)}>
+                      <span className={cn("text-2xs font-mono font-semibold px-2 py-0.5 rounded-full border", catMeta.color)}>
                         {catMeta.label}
                       </span>
                     </div>

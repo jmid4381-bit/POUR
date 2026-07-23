@@ -65,7 +65,7 @@ export default function StaffPage() {
               <thead>
                 <tr className="border-b border-edge bg-raised/40">
                   {["Rank","Staff Member","Orders","Revenue","Avg Delivery","Actions"].map((h, i) => (
-                    <th key={h} className={cn("px-5 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left",
+                    <th key={h} className={cn("px-5 py-3 text-2xs font-mono text-ink-400 uppercase tracking-widest text-left",
                       i === 5 && "text-right",
                     )}>
                       {h}
@@ -98,7 +98,7 @@ export default function StaffPage() {
                         </div>
                         <div>
                           <p className="text-white font-body font-medium text-sm leading-none">{staff.name}</p>
-                          <p className="text-ink-400 text-[10px] font-mono mt-0.5">
+                          <p className="text-ink-400 text-2xs font-mono mt-0.5">
                             {selected === staff.name ? "Click to collapse" : "Click to view orders"}
                           </p>
                         </div>
@@ -123,7 +123,7 @@ export default function StaffPage() {
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <span className="text-[10px] font-mono text-felt-400 bg-felt-400/10 border border-felt-400/20 px-2 py-0.5 rounded-full">
+                      <span className="text-2xs font-mono text-felt-400 bg-felt-400/10 border border-felt-400/20 px-2 py-0.5 rounded-full">
                         Active
                       </span>
                     </td>
@@ -155,7 +155,7 @@ export default function StaffPage() {
                 <thead>
                   <tr className="border-b border-edge bg-raised/30">
                     {["Order ID","Location","Items","Status","Delivery","Revenue"].map((h,i) => (
-                      <th key={h} className={cn("px-4 py-3 text-[10px] font-mono text-ink-400 uppercase tracking-widest text-left", i===5 && "text-right")}>
+                      <th key={h} className={cn("px-4 py-3 text-2xs font-mono text-ink-400 uppercase tracking-widest text-left", i===5 && "text-right")}>
                         {h}
                       </th>
                     ))}
@@ -173,7 +173,7 @@ export default function StaffPage() {
                           {order.items.map(i => `${i.quantity}× ${i.beverageName}`).join(", ")}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={cn("text-[10px] font-mono px-2 py-0.5 rounded-full border", meta.color)}>
+                          <span className={cn("text-2xs font-mono px-2 py-0.5 rounded-full border", meta.color)}>
                             {meta.label}
                           </span>
                         </td>

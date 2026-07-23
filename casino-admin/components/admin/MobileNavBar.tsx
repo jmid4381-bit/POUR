@@ -154,7 +154,7 @@ export function MobileNavBar() {
                 </div>
                 <div>
                   <p className="font-display font-semibold text-white text-base leading-none">Admin Console</p>
-                  <p className="text-[10px] font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">{venueName}</p>
+                  <p className="text-2xs font-mono text-gold-500/70 tracking-widest uppercase mt-0.5">{venueName}</p>
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="text-ink-400 hover:text-white transition-colors">
@@ -164,7 +164,7 @@ export function MobileNavBar() {
 
             {isPlatformAdmin && venues.length > 0 && (
               <div className="px-5 pt-4">
-                <label className="text-[10px] font-mono text-ink-400 uppercase tracking-widest mb-1.5 block">
+                <label className="text-2xs font-mono text-ink-400 uppercase tracking-widest mb-1.5 block">
                   Venue
                 </label>
                 <select
