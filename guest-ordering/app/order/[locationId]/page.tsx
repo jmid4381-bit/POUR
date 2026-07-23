@@ -37,6 +37,7 @@ import { ensureAudioUnlock } from "@/lib/notify";
 import { ensureServiceWorker } from "@/lib/push";
 import { initInstallPrompt } from "@/lib/installPrompt";
 import { AlertsSetupCard } from "@/components/AlertsSetupCard";
+import { NotificationsBellButton } from "@/components/NotificationsBellButton";
 import { InstallAppCard } from "@/components/InstallAppCard";
 import { fetchGuestOrderHistory } from "@/lib/guestOrderHistory";
 
@@ -1032,6 +1033,9 @@ export default function GuestOrderPage({ params }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Recovery entry point for a guest who dismissed AlertsSetupCard's
+                  "Not now" — otherwise there'd be no way back into notifications. */}
+              <NotificationsBellButton />
               {/* My Orders button — shown once at least one order exists this session */}
               {sessionOrders.length > 0 && (
                 <button
