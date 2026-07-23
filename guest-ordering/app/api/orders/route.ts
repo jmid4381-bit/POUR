@@ -3,21 +3,11 @@ import { computeOrderCharge, type PricingItemInput } from "@/lib/pricing";
 import { createOrder, type OrderMeta } from "@/lib/createOrder";
 import { isStripeConfigured } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
+import { createRateLimiter, clientIp } from "@/lib/rateLimit";
 
-// ─── In-memory rate limiter ────────────────────────────────────────────────
 // Best-effort: resets on cold start and isn't shared across regions/instances.
 // Sufficient to deter a casual script flooding a single QR location.
-const WINDOW_MS      = 60_000;
-const MAX_PER_WINDOW = 5;
-const hits = new Map<string, number[]>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter(t => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > MAX_PER_WINDOW;
-}
+const isRateLimited = createRateLimiter(60_000, 5);
 
 interface OrderPayload extends OrderMeta {
   items: PricingItemInput[];
@@ -30,7 +20,7 @@ interface OrderPayload extends OrderMeta {
  * straight here. $0 orders (the common case) are created immediately.
  */
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(req);
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { error: "Too many orders placed too quickly. Please wait a moment." },

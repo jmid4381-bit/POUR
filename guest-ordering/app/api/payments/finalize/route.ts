@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { finalizePaidOrder } from "@/lib/finalizeOrder";
+import { createRateLimiter, clientIp } from "@/lib/rateLimit";
+
+// Same defense-in-depth as create-intent — a valid paymentIntentId already
+// bounds abuse somewhat (it has to come from a rate-limited create-intent
+// call), but this route still hits Stripe's retrieve() API on every call
+// with no cap of its own otherwise.
+const isRateLimited = createRateLimiter(60_000, 5);
 
 /**
  * Client calls this right after stripe.confirmPayment resolves, for instant
@@ -12,6 +19,13 @@ import { finalizePaidOrder } from "@/lib/finalizeOrder";
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) {
     return NextResponse.json({ error: "Payments are not configured." }, { status: 503 });
+  }
+
+  if (isRateLimited(clientIp(req))) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429 },
+    );
   }
 
   let body: { paymentIntentId?: string };

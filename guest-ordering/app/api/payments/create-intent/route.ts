@@ -3,10 +3,18 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { computeOrderCharge, type PricingItemInput } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
 import type { OrderMeta } from "@/lib/createOrder";
+import { createRateLimiter, clientIp } from "@/lib/rateLimit";
 
 interface OrderPayload extends OrderMeta {
   items: PricingItemInput[];
 }
+
+// Same protection as /api/orders — unlike the free path, this route has no
+// downstream RPC-level rate limit of its own (create_pending_order has none),
+// so without this a script could create unlimited Stripe PaymentIntents and
+// pending_order rows with zero pushback. Own Map, own budget — not shared
+// with the free-order route's limiter.
+const isRateLimited = createRateLimiter(60_000, 5);
 
 // Stripe's minimum chargeable amount (USD). Our pricing is whole-dollar
 // ($1 Giant, $3 surcharge), so a >0 total is always >= $1 — this guard just
@@ -22,6 +30,13 @@ const STRIPE_MIN_CENTS = 50;
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) {
     return NextResponse.json({ error: "Payments are not configured." }, { status: 503 });
+  }
+
+  if (isRateLimited(clientIp(req))) {
+    return NextResponse.json(
+      { error: "Too many orders placed too quickly. Please wait a moment." },
+      { status: 429 },
+    );
   }
 
   let body: { order?: OrderPayload };
