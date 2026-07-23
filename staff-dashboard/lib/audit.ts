@@ -2,26 +2,29 @@ import { supabase } from "./supabase";
 import { logError } from "./logger";
 
 // Records who did what and when, for accountability and dispute resolution.
-// Never throws — a logging failure should never block the actual operation.
-// (Also never surfaces to the staff member — this is purely a background
-// record — but a failure here IS worth knowing about, so it's reported to
-// Sentry: previously this was silently unrecoverable, since Supabase's
-// insert() doesn't throw on a query error, so the try/catch never even
-// caught anything — the `{ error }` result was simply discarded.)
+// Writes go through the log_audit_event SECURITY DEFINER RPC — actor_email
+// and venue_id are both derived server-side from the caller's own JWT, never
+// trusted from the client, same lockdown pattern as orders/pending_orders.
+// venueId is only actually used for a platform_admin caller (who has no
+// venue pinned to their own JWT); for regular staff/admin it's ignored
+// server-side in favor of their real jwt_venue_id().
+//
+// Never throws — a logging failure should never block the actual operation,
+// but IS worth knowing about, so it's reported to Sentry.
 export async function logAudit(
   action:      string,
   targetTable: string,
   targetId:    string,
   details?:    Record<string, unknown>,
+  venueId?:    string | null,
 ): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("audit_log").insert({
-      actor_email:  user?.email ?? "unknown",
-      action,
-      target_table: targetTable,
-      target_id:    targetId,
-      details:      details ?? null,
+    const { error } = await supabase.rpc("log_audit_event", {
+      p_action:       action,
+      p_target_table: targetTable,
+      p_target_id:    targetId,
+      p_details:      details ?? null,
+      p_venue_id:     venueId ?? null,
     });
     if (error) {
       logError("Audit log write failed", new Error(error.message), { action, targetTable, targetId });

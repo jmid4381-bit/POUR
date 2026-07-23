@@ -177,7 +177,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
       showFeedback(id, "⚠ Failed to save — reverted");
     } else {
-      logAudit("accept_order", "orders", id, { staffName });
+      logAudit("accept_order", "orders", id, { staffName }, venueId);
     }
   }, [staffName, venueId]);
 
@@ -202,7 +202,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
       showFeedback(id, "⚠ Failed to save — reverted");
     } else {
-      logAudit("mark_preparing", "orders", id);
+      logAudit("mark_preparing", "orders", id, undefined, venueId);
     }
   }, [venueId]);
 
@@ -228,7 +228,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
       showFeedback(id, "⚠ Failed to save — reverted");
     } else {
-      logAudit("mark_ready", "orders", id);
+      logAudit("mark_ready", "orders", id, undefined, venueId);
     }
   }, [venueId]);
 
@@ -254,7 +254,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
       showFeedback(id, "⚠ Failed to save — reverted");
     } else {
-      logAudit("deliver_order", "orders", id);
+      logAudit("deliver_order", "orders", id, undefined, venueId);
     }
   }, [venueId]);
 
@@ -279,7 +279,7 @@ export function useStaffOrders(staffName = "Staff", isVisible: (locationId: stri
       if (previous) setOrders(prev => prev.map(o => o.id === id ? previous! : o));
       showFeedback(id, "⚠ Failed to save — reverted");
     } else {
-      logAudit("cancel_order", "orders", id, { reason: cancelReason });
+      logAudit("cancel_order", "orders", id, { reason: cancelReason }, venueId);
     }
   }, [venueId]);
 
