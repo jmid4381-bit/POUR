@@ -528,8 +528,8 @@ export default function GuestOrderPage({ params }: Props) {
     if (result.rateLimited) {
       setPlacingOrder(false);
       isConfirming.current = false;
-      setToast("You're ordering too quickly — please wait a moment and try again");
-      setTimeout(() => setToast(null), 3500);
+      setToast("Your order didn't go through — you're ordering too quickly. Please try again in about a minute.");
+      setTimeout(() => setToast(null), 4500);
       return false;
     }
 
@@ -538,8 +538,8 @@ export default function GuestOrderPage({ params }: Props) {
       isConfirming.current = false;
       setCooldownMs(result.cooldownMs ?? 0);
       const mins = Math.max(1, Math.ceil((result.cooldownMs ?? 0) / 60_000));
-      setToast(`Drink limit reached — try again in ${mins} minute${mins !== 1 ? "s" : ""}`);
-      setTimeout(() => setToast(null), 3500);
+      setToast(`Your order didn't go through — you've reached the 2-drink limit for alcoholic beverages. Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`);
+      setTimeout(() => setToast(null), 4500);
       return false;
     }
 
@@ -577,7 +577,7 @@ export default function GuestOrderPage({ params }: Props) {
           setPlacingOrder(false);
           isConfirming.current = false;
           setToast(pi.error || "Couldn't start payment — please try again");
-          setTimeout(() => setToast(null), 4000);
+          setTimeout(() => setToast(null), 4500);
           return false;
         }
         setPendingPayment({
@@ -719,6 +719,7 @@ export default function GuestOrderPage({ params }: Props) {
 
     let droppedAlcoholicQty = 0;
     let leftoverRoom = 0;
+    let cooldownMins = 0;
     if (alcoholic.length > 0) {
       const gid  = guestIdRef.current ?? getOrCreateGuestId();
       let room   = await readAlcoholRoom(gid);
@@ -732,20 +733,27 @@ export default function GuestOrderPage({ params }: Props) {
       alcoholic.length = 0;
       alcoholic.push(...kept);
       leftoverRoom = room;
+
+      // Room alone doesn't tell the guest how long to wait — fetch the actual
+      // cooldown expiry so the message states a real number, not just the rule.
+      if (droppedAlcoholicQty > 0) {
+        const cooldownMs = await readAlcoholCooldownMs(gid);
+        cooldownMins = Math.max(1, Math.ceil(cooldownMs / 60_000));
+      }
     }
 
     const resolved = [...nonAlcoholic, ...alcoholic];
 
     if (resolved.length === 0) {
       setToast(droppedAlcoholicQty > 0
-        ? "Limit reached: 2 alcoholic drinks per 10 min"
+        ? `Your order didn't go through — you've reached the 2-drink limit for alcoholic beverages. Try again in ${cooldownMins} minute${cooldownMins !== 1 ? "s" : ""}.`
         : "Those items are no longer available");
-      setTimeout(() => setToast(null), 3500);
+      setTimeout(() => setToast(null), 4500);
       return;
     }
 
     const notes: string[] = [];
-    if (droppedAlcoholicQty > 0) notes.push(`${droppedAlcoholicQty} alcoholic drink${droppedAlcoholicQty !== 1 ? "s" : ""} skipped — limit is 2 per 10 min`);
+    if (droppedAlcoholicQty > 0) notes.push(`${droppedAlcoholicQty} alcoholic drink${droppedAlcoholicQty !== 1 ? "s" : ""} skipped — try again in ${cooldownMins} minute${cooldownMins !== 1 ? "s" : ""} for more`);
     if (unavailableCount   > 0) notes.push(`${unavailableCount} item${unavailableCount !== 1 ? "s" : ""} no longer available`);
     setReorderNote(notes.join(" · ") || null);
     setReorderRoomLeft(leftoverRoom);

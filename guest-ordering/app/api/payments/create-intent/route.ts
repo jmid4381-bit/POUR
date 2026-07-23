@@ -3,7 +3,7 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { computeOrderCharge, type PricingItemInput } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
 import type { OrderMeta } from "@/lib/createOrder";
-import { createRateLimiter, clientIp } from "@/lib/rateLimit";
+import { createRateLimiter, clientIp, RATE_LIMIT_MESSAGE } from "@/lib/rateLimit";
 
 interface OrderPayload extends OrderMeta {
   items: PricingItemInput[];
@@ -33,10 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (isRateLimited(clientIp(req))) {
-    return NextResponse.json(
-      { error: "Too many orders placed too quickly. Please wait a moment." },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: RATE_LIMIT_MESSAGE }, { status: 429 });
   }
 
   let body: { order?: OrderPayload };

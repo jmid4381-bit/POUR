@@ -21,3 +21,9 @@ export function createRateLimiter(windowMs: number, maxPerWindow: number) {
 export function clientIp(req: Request): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 }
+
+// Shared wording across every rate-limited route, so a guest sees the same
+// clear "it didn't go through, here's why, try again in ~1 minute" message
+// regardless of which endpoint (free order, Stripe payment) rejected them.
+export const RATE_LIMIT_MESSAGE =
+  "Your order didn't go through — you're ordering too quickly. Please try again in about a minute.";

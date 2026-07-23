@@ -3,7 +3,7 @@ import { computeOrderCharge, type PricingItemInput } from "@/lib/pricing";
 import { createOrder, type OrderMeta } from "@/lib/createOrder";
 import { isStripeConfigured } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
-import { createRateLimiter, clientIp } from "@/lib/rateLimit";
+import { createRateLimiter, clientIp, RATE_LIMIT_MESSAGE } from "@/lib/rateLimit";
 
 // Best-effort: resets on cold start and isn't shared across regions/instances.
 // Sufficient to deter a casual script flooding a single QR location.
@@ -22,10 +22,7 @@ interface OrderPayload extends OrderMeta {
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
   if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Too many orders placed too quickly. Please wait a moment." },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: RATE_LIMIT_MESSAGE }, { status: 429 });
   }
 
   let body: { order?: OrderPayload };
