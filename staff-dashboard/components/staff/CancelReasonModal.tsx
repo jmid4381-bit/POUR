@@ -87,7 +87,7 @@ export function CancelReasonModal({ orderLocation, onConfirm, onDismiss }: Cance
 
             {/* Reason options */}
             <div>
-              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-2">
+              <p className="text-2xs font-mono text-slate-400 uppercase tracking-widest mb-2">
                 Reason for cancellation
               </p>
               <div className="space-y-1.5">

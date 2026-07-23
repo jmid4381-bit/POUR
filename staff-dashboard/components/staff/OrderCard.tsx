@@ -112,7 +112,7 @@ export function OrderCard({
               <span className="font-mono text-[11px] text-slate-400 tracking-wider">{order.id}</span>
               {/* Status badge */}
               <span className={cn(
-                "inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border tracking-wide uppercase",
+                "inline-flex items-center gap-1 text-2xs font-mono font-semibold px-2 py-0.5 rounded-full border tracking-wide uppercase",
                 meta.color, meta.bg, meta.border,
               )}>
                 {order.status === "pending" && isOverdue
@@ -121,7 +121,7 @@ export function OrderCard({
                 }
               </span>
               {order.isPriority && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-mono text-gold-400 bg-gold-500/10 border border-gold-500/20 rounded-full px-1.5 py-0.5">
+                <span className="inline-flex items-center gap-0.5 text-2xs font-mono text-gold-400 bg-gold-500/10 border border-gold-500/20 rounded-full px-1.5 py-0.5">
                   <Star size={8} className="fill-gold-400" />VIP
                 </span>
               )}
@@ -143,7 +143,7 @@ export function OrderCard({
             <LiveTimer placedAt={order.placedAt} status={order.status} />
             <div className="flex items-center gap-1 text-slate-400">
               <Clock size={10} />
-              <span className="text-[10px] font-mono">{fmtTime(order.placedAt)}</span>
+              <span className="text-2xs font-mono">{fmtTime(order.placedAt)}</span>
             </div>
             {expanded
               ? <ChevronUp size={14} className="text-slate-400" />
@@ -166,7 +166,7 @@ export function OrderCard({
 
           {/* Items list */}
           <div>
-            <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-2">
+            <p className="text-2xs font-mono text-slate-400 uppercase tracking-widest mb-2">
               Order Items
             </p>
             <div className="space-y-2">

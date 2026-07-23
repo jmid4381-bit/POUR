@@ -495,10 +495,10 @@ export default function StaffDashboard() {
                 <Bell size={16} className="text-amber-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-0.5">
+                <p className="text-2xs font-mono text-amber-400 uppercase tracking-widest mb-0.5">
                   ✦ New Order
                 </p>
-                <p className="text-white font-display font-bold text-sm leading-tight truncate">
+                <p className="text-white font-display font-semibold text-sm leading-tight truncate">
                   {newOrderAlert.locationName}
                 </p>
                 <p className="text-slate-400 text-xs font-body mt-0.5 truncate">
@@ -570,7 +570,7 @@ export default function StaffDashboard() {
             {stats.overdueCount > 0 && (
               <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/25 rounded-full px-2 py-1 animate-pulse-red">
                 <AlertTriangle size={10} className="text-red-400" />
-                <span className="text-[10px] font-mono text-red-400 font-bold">
+                <span className="text-2xs font-mono text-red-400 font-bold">
                   {stats.overdueCount} late
                 </span>
               </div>
@@ -583,7 +583,7 @@ export default function StaffDashboard() {
             <div
               title={connLabel}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-2 py-1 border text-[10px] font-mono",
+                "flex items-center gap-1.5 rounded-full px-2 py-1 border text-2xs font-mono",
                 connColor,
               )}
             >
@@ -716,7 +716,7 @@ export default function StaffDashboard() {
               <GlassWater size={13} />
               {GIANT_CUP_MAX - giantCupsAvailable} giant cup{GIANT_CUP_MAX - giantCupsAvailable !== 1 ? "s" : ""} out
             </span>
-            <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-blue-400">
+            <span className="flex items-center gap-1 text-2xs font-mono font-bold text-blue-400">
               <Undo2 size={11} />
               Cup Returned
             </span>
@@ -781,7 +781,7 @@ export default function StaffDashboard() {
             <div className="h-[2px] w-full bg-blue-400" />
             <div className="p-3.5">
               <div className="flex items-start justify-between gap-2 mb-2.5">
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-[0.12em] leading-none mt-0.5">Giants</p>
+                <p className="text-2xs font-mono text-slate-400 uppercase tracking-[0.12em] leading-none mt-0.5">Giants</p>
                 <div className="w-7 h-7 rounded-xl border flex items-center justify-center flex-shrink-0 text-blue-400 bg-blue-400/10 border-blue-400/20">
                   <GlassWater size={13} strokeWidth={1.8} />
                 </div>
@@ -794,7 +794,7 @@ export default function StaffDashboard() {
               <button
                 onClick={markGiantReturned}
                 disabled={giantReturning || giantCupsAvailable >= GIANT_CUP_MAX}
-                className="mt-2 w-full flex items-center justify-center gap-1 text-[10px] font-mono bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg px-2 py-1.5 hover:bg-blue-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-2 w-full flex items-center justify-center gap-1 text-2xs font-mono bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg px-2 py-1.5 hover:bg-blue-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Undo2 size={10} />
                 Cup Returned
@@ -860,7 +860,7 @@ export default function StaffDashboard() {
                 {label}
                 {count > 0 && (
                   <span className={cn(
-                    "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center",
+                    "text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center",
                     isActive ? "bg-white/15 text-current" : "bg-raised text-slate-400",
                   )}>
                     {count}
