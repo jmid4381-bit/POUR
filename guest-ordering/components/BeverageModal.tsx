@@ -138,13 +138,13 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                   <span className="animate-pulse-dot absolute h-full w-full rounded-full bg-felt-400 opacity-75" />
                   <span className="relative h-2 w-2 rounded-full bg-felt-500 inline-flex" />
                 </span>
-                <span className="text-[10px] font-mono text-felt-300 uppercase tracking-wider">Available</span>
+                <span className="text-2xs font-mono text-felt-300 uppercase tracking-wider">Available</span>
               </div>
               {/* VIP badge */}
               {beverage.isVip && (
                 <div className="absolute top-3.5 right-12 flex items-center gap-1 bg-gold-500/15 border border-gold-400/25 rounded-full px-2.5 py-1">
                   <Star size={10} className="text-gold-400 fill-gold-400" />
-                  <span className="text-[10px] font-mono text-gold-300 uppercase tracking-wider">VIP</span>
+                  <span className="text-2xs font-mono text-gold-300 uppercase tracking-wider">VIP</span>
                 </div>
               )}
             </div>
@@ -174,7 +174,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
                     </div>
                   )}
                   {!beverage.isAlcoholic && (
-                    <span className="text-[10px] font-mono text-sky-400 bg-sky-400/10 border border-sky-400/20 rounded-full px-2 py-0.5">
+                    <span className="text-2xs font-mono text-sky-400 bg-sky-400/10 border border-sky-400/20 rounded-full px-2 py-0.5">
                       Non-alcoholic
                     </span>
                   )}
@@ -192,7 +192,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
               {beverage.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {beverage.tags.map(tag => (
-                    <span key={tag} className="text-[10px] font-mono uppercase tracking-wider text-mist-400 bg-lift border border-edge rounded-full px-2 py-0.5">
+                    <span key={tag} className="text-2xs font-mono uppercase tracking-wider text-mist-400 bg-lift border border-edge rounded-full px-2 py-0.5">
                       {tag}
                     </span>
                   ))}
@@ -209,7 +209,7 @@ export function BeverageModal({ beverage, giantCupsAvailable, onClose, onOrder }
 
               {/* Ingredients */}
               <div className="bg-lift/60 border border-edge rounded-2xl px-4 py-3">
-                <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest mb-2">Ingredients</p>
+                <p className="text-2xs font-mono text-mist-400 uppercase tracking-widest mb-2">Ingredients</p>
                 <ul className="space-y-1.5">
                   {beverage.ingredients.map(ing => (
                     <li key={ing} className="flex items-center gap-2.5 text-sm text-mist-200 font-body">

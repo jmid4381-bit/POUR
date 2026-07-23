@@ -49,6 +49,17 @@ const config: Config = {
         body:    ["var(--font-outfit)",    "system-ui", "sans-serif"],
         mono:    ["var(--font-jetbrains)", "monospace"],
       },
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1.4" }],   // 11px — tiny badges
+        xs:    ["0.75rem",   { lineHeight: "1.4" }],   // 12px — eyebrow/label
+        sm:    ["0.875rem",  { lineHeight: "1.5" }],   // 14px — secondary body
+        base:  ["1rem",      { lineHeight: "1.5" }],   // 16px — body copy
+        lg:    ["1.125rem",  { lineHeight: "1.4" }],   // 18px — card title
+        xl:    ["1.375rem",  { lineHeight: "1.3" }],   // 22px — modal title
+        "2xl": ["1.75rem",   { lineHeight: "1.2" }],   // 28px — section heading
+        "3xl": ["2.125rem",  { lineHeight: "1.15" }],  // 34px — hero
+        "4xl": ["2.75rem",   { lineHeight: "1.1"  }],  // 44px — large hero
+      },
       backgroundImage: {
         "felt-grad":     "linear-gradient(135deg,#10b981 0%,#059669 100%)",
         "gold-grad":     "linear-gradient(135deg,#f0b429 0%,#d4960a 100%)",

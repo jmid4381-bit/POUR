@@ -938,7 +938,7 @@ export default function GuestOrderPage({ params }: Props) {
       <main className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="text-center max-w-xs">
           <p className="text-4xl mb-4">❓</p>
-          <h2 className="font-display text-2xl text-white mb-2">Location Not Found</h2>
+          <h2 className="font-display font-semibold text-2xl text-white mb-2">Location Not Found</h2>
           <p className="text-mist-400 text-sm font-body leading-relaxed">
             This QR code doesn&apos;t match an active location. Please scan the QR code at your table or ask a member of floor staff for assistance.
           </p>
@@ -952,7 +952,7 @@ export default function GuestOrderPage({ params }: Props) {
       <main className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="text-center max-w-xs">
           <p className="text-4xl mb-4">🚫</p>
-          <h2 className="font-display text-2xl text-white mb-2">Service Paused</h2>
+          <h2 className="font-display font-semibold text-2xl text-white mb-2">Service Paused</h2>
           <p className="text-mist-400 text-sm font-body leading-relaxed">
             Ordering is temporarily unavailable at this location. Please speak with a member of our floor staff.
           </p>
@@ -1162,7 +1162,7 @@ export default function GuestOrderPage({ params }: Props) {
           )}
           <div className="flex items-center gap-4 mt-6 animate-fade-up" style={{ animationDelay:"0.1s" }}>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent to-gold-600/25" />
-            <span className="text-[10px] font-mono text-gold-600/50 tracking-[0.25em] uppercase">Menu</span>
+            <span className="text-2xs font-mono text-gold-600/50 tracking-widest uppercase">Menu</span>
             <div className="flex-1 h-px bg-gradient-to-l from-transparent to-gold-600/25" />
           </div>
         </div>

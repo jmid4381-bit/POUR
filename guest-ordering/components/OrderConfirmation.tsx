@@ -292,11 +292,11 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest">Order</p>
+                <p className="text-2xs font-mono text-mist-400 uppercase tracking-widest">Order</p>
                 <p className="font-mono text-sm text-white font-semibold">{order.id}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest">Placed</p>
+                <p className="text-2xs font-mono text-mist-400 uppercase tracking-widest">Placed</p>
                 <p className="font-mono text-sm text-mist-200">{fmtTime(order.placedAt)}</p>
               </div>
             </div>
@@ -399,7 +399,7 @@ export function OrderConfirmation({ order, onOrderMore, onReorder, onViewOrders 
           aria-label={`Order status: ${STEPS[displayStep].ariaLabel}`}
           aria-live="polite"
         >
-          <p className="text-[10px] font-mono text-mist-400 uppercase tracking-widest mb-4">Order Progress</p>
+          <p className="text-2xs font-mono text-mist-400 uppercase tracking-widest mb-4">Order Progress</p>
           <div className="flex items-center">
             {STEPS.map((step, i) => {
               const isDone   = i < currentStep;
